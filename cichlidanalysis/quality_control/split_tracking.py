@@ -17,7 +17,7 @@ from cichlidanalysis.io.meta import load_yaml, extract_meta
 from cichlidanalysis.io.tracks import load_track
 # from cichlidanalysis.analysis.processing import remove_high_spd_xy, remove_high_spd, smooth_speed, neg_values, coord_smooth
 
-from offline_tracker import tracker, threshold_select
+from cichlidanalysis.tracking import offline_tracker
 
 
 # load offending movie, median (camera/roi?) and track
@@ -284,6 +284,7 @@ if __name__ == '__main__':
     else:
         # load track and mark the excluded part (keeps copy of the track as it saves out a "cleaned" version which is
         # prioritised), later '-1' are replaced by nans (after nans from non tracking are interpolated)
+        os.chdir(vid_folder_path)
         orig_file = glob.glob("*{}.csv".format(video_name[0:-4]))
         na, track_single = load_track(os.path.join(vid_folder_path, orig_file[0]))
         track_single_cleaned = copy.copy(track_single)
