@@ -19,7 +19,7 @@ from cichlidanalysis.io.tracks import load_track
 
 from cichlidanalysis.tracking import offline_tracker
 # adding line Annika - testing github
-
+# 2
 
 # load offending movie, median (camera/roi?) and track
 # identify point when disturbance starts, identify point when disturbance ends (video viewer?)
