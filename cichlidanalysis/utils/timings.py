@@ -65,3 +65,8 @@ def get_time_state(tv_i_s, day_unit_s, change_times_unit_s, fps):
         time_state[change_times_unit_fps[2] + day_unit * day_n:change_times_unit_fps[3]+day_unit * day_n] = 1
 
     return time_state
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()

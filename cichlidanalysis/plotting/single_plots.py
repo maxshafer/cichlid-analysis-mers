@@ -140,7 +140,7 @@ def plot_hist_2(bin_edges_plt, data1, data1_label, data2, data2_label, xlabel_na
 
 def fill_plot_ts(ax, change_times_unit, tv_internal):
     if isinstance(tv_internal.iloc[-1], datetime.datetime):
-        td = tv_internal.iloc[-1] -  tv_internal.iloc[0]
+        td = tv_internal.iloc[-1] - tv_internal.iloc[0]
         days = td.round('d')
         if td > days:
             days = days + '1d'

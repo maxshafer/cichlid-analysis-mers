@@ -180,13 +180,14 @@ while 1:
     values = speed_sm_mm_ps[win_min:win_max]
     values_2 = displacement_internal_mm_s[win_min:win_max]
     plt.plot(values)
-    plt.plot(values_2)
+    # plt.plot(values_2)
     plt.plot([0, 400], [threshold, threshold])
 
     ax.set_ylim([0, max_sp])
     ax.set_xlim([0, 400])
     ax.set_aspect('auto')
-    ax.legend(["current frame", "speed_sm_mm_ps", "speed_raw_mm_ps", "threshold (0.25 bl)"])
+    ax.legend(["current frame", "speed_sm_mm_ps", "threshold (0.25 bl)"])
+    # ax.legend(["current frame", "speed_sm_mm_ps", "speed_raw_mm_ps", "threshold (0.25 bl)"])
     plt.ylabel("mm/s")
 
     k = cv2.waitKey(33)
