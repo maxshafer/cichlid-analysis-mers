@@ -18,6 +18,7 @@ from cichlidanalysis.io.tracks import load_track
 # from cichlidanalysis.analysis.processing import remove_high_spd_xy, remove_high_spd, smooth_speed, neg_values, coord_smooth
 
 from cichlidanalysis.tracking import offline_tracker
+# adding line Annika - testing github
 
 
 # load offending movie, median (camera/roi?) and track
