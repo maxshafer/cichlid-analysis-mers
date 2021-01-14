@@ -45,7 +45,7 @@ def full_analysis(rootdir):
     start_total_sec = (int(start_time[0:2]) * 60 * 60 + int(start_time[2:4]) * 60 + int(start_time[4:]))
 
     # set sunrise, day, sunset, night times (ns, s, m, h) and set day length in ns
-    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s = output_timings()
+    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d = output_timings()
 
     # set time vector
     if track_full[0, 0] == 0:
