@@ -17,8 +17,7 @@ from cichlidanalysis.io.meta import load_yaml, extract_meta
 from cichlidanalysis.io.tracks import load_track
 # from cichlidanalysis.analysis.processing import remove_high_spd_xy, remove_high_spd, smooth_speed, neg_values, coord_smooth
 
-# adding line Annika - testing github
-# 2
+
 
 # load offending movie, median (camera/roi?) and track
 # identify point when disturbance starts, identify point when disturbance ends (video viewer?)

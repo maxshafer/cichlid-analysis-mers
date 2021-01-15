@@ -119,7 +119,7 @@ def load_als_files(folder):
 
     for file in files:
         if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',', index_col=0)
+            data_s = pd.read_csv(os.path.join(folder, file), sep=',') # Removed index_col=0, as is giving Type error ufunc "isnan'
             print("loaded file {}".format(file))
             data_s['FishID'] = file[0:-8]
             data_s['species'] =file[0:-8].split("_")[3]
@@ -129,7 +129,7 @@ def load_als_files(folder):
 
         else:
             # inititate data frames for each of the fish, beside the time series, also add in the species name and ID at the start
-            data = pd.read_csv(os.path.join(folder, file), sep=',', index_col=0)
+            data = pd.read_csv(os.path.join(folder, file), sep=',') # Removed index_col=0, as is giving Type error ufunc "isnan'
             print("loaded file {}".format(file))
             data['FishID'] = file[0:-8]
             data['species'] =file[0:-8].split("_")[3]
