@@ -28,6 +28,7 @@ from cichlidanalysis.io.tracks import load_als_files
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import add_col
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
+from cichlidanalysis.plotting.position_plots import spd_vs_y
 
 
 # debug pycharm problem
@@ -54,10 +55,11 @@ fish_IDs = fish_tracks['FishID'].unique()
 
 # get timings
 fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, day_ns, day_s,\
-    change_times_d = load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
+    change_times_d, change_times_m = load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
 change_times_unit = [7.5*2, 8*2, 19*2, 19.5*2]
 
 # # if from 7am - 7pm # need  better way to deal with this change!
+# if statement for date (then add 30min to times stamps? as some fish will have ethis and others won't
 # change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
 # change_times_s = [i - 1800 for i in change_times_s]
 # change_times_h = [i - 0.5 for i in change_times_h]
@@ -65,6 +67,15 @@ change_times_unit = [7.5*2, 8*2, 19*2, 19.5*2]
 
 # convert tv into datetime and add as new column
 fish_tracks['ts'] = pd.to_datetime(fish_tracks['tv_ns'], unit='ns')
+
+# add new column with Day or Night
+# fish_tracks['time_of_day'] = fish_tracks.ts.apply(lambda row: str(row)[11:16])
+# fish_tracks['time_of_day_m'] = fish_tracks.time_of_day.apply(lambda row: int(row[:-3]) * 60 + int(row[-2:]))
+fish_tracks['time_of_day_m'] = fish_tracks.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
+
+fish_tracks['daynight'] = "day"
+fish_tracks.loc[fish_tracks.time_of_day_m < change_times_m[0], 'daynight'] = "night"
+fish_tracks.loc[fish_tracks.time_of_day_m > change_times_m[3], 'daynight'] = "night"
 
 # resample data
 fish_tracks_30m = fish_tracks.groupby('FishID').resample('30T', on='ts').mean()
@@ -74,6 +85,10 @@ fish_tracks_30m.reset_index(inplace=True)
 for col_name in ['species', 'sex', 'fish_length_mm']:
     add_col(fish_tracks_30m, col_name, fish_IDs, meta)
 all_species = fish_tracks_30m['species'].unique()
+
+fish_tracks_30m['daynight'] = "day"
+fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m < change_times_m[0], 'daynight'] = "night"
+fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight'] = "night"
 
 # speed_mm (30m bins) for each fish (individual lines)
 date_form = DateFormatter("%H")
@@ -301,6 +316,9 @@ for idx, species in enumerate(meta.loc["species"].unique()):
         ax1[1, idx].set_ylabel("Night")
 fig1.savefig(os.path.join(rootdir, "xy_ave_DN_all.png"))
 
+
+# speed vs Y position, for each fish, for combine fish of species, separated between day and night
+spd_vs_y(meta, fish_tracks, fish_tracks_30m, fish_IDs, rootdir)
 
 # fraction mobile/immobile
 

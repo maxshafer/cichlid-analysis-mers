@@ -119,22 +119,29 @@ def load_als_files(folder):
 
     for file in files:
         if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',') # Removed index_col=0, as is giving Type error ufunc "isnan'
+            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
+            # Removed index_col=0, as is giving Type error ufunc "isnan'
             print("loaded file {}".format(file))
             data_s['FishID'] = file[0:-8]
-            data_s['species'] =file[0:-8].split("_")[3]
+            data_s['species'] = file[0:-8].split("_")[3]
             data_s['sex'] = file[0:-8].split("_")[4]
 
             data = pd.concat([data, data_s])
 
         else:
-            # inititate data frames for each of the fish, beside the time series, also add in the species name and ID at the start
-            data = pd.read_csv(os.path.join(folder, file), sep=',') # Removed index_col=0, as is giving Type error ufunc "isnan'
+            # initiate data frames for each of the fish, beside the time series,
+            # also add in the species name and ID at the start
+            data = pd.read_csv(os.path.join(folder, file), sep=',')
+            # Removed index_col=0, as is giving Type error ufunc "isnan'
             print("loaded file {}".format(file))
             data['FishID'] = file[0:-8]
-            data['species'] =file[0:-8].split("_")[3]
+            data['species'] = file[0:-8].split("_")[3]
             data['sex'] = file[0:-8].split("_")[4]
             first_done = 1
+
+    # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
+    data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
+    # also change how the csv is saved in run_fish_als.py
 
     print("All als.csv files loaded")
     return data

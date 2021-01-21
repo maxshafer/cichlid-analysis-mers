@@ -27,7 +27,7 @@ def load_timings(vector_length):
     fps = 10
 
     # get time variables
-    change_times_s, change_times_ns, _, change_times_h, day_ns, day_s,  change_times_d = output_timings()
+    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s,  change_times_d = output_timings()
     tv_ns = np.arange(0, day_ns * 8, 10 ** 9 / 10)
     tv_ns = tv_ns[0:vector_length]
     tv_sec = tv_ns / 10 ** 9
@@ -38,7 +38,7 @@ def load_timings(vector_length):
     tv_s_type = get_time_state(tv_sec, day_s, change_times_s, fps)
 
     return fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, \
-           day_ns, day_s, change_times_d
+           day_ns, day_s, change_times_d, change_times_m
 
 
 def get_time_state(tv_i_s, day_unit_s, change_times_unit_s, fps):
