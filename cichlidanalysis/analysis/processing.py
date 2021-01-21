@@ -3,6 +3,7 @@ import copy
 import numpy as np
 import pandas as pd
 
+
 def smooth_speed(speed, win_size=2):
     df = pd.DataFrame(speed)
     smooth_speed = (df.rolling(window=win_size, min_periods=1).mean()).values

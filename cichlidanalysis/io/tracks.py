@@ -145,3 +145,8 @@ def load_als_files(folder):
 
     print("All als.csv files loaded")
     return data
+
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()

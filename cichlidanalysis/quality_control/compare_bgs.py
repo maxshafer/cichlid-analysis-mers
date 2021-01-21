@@ -6,13 +6,13 @@ from tkinter.filedialog import askopenfilename
 import matplotlib.pyplot as plt
 import cv2
 
-from tracker_functions import *
+from cichlidanalysis.tracking.backgrounds import background_vid
 
 
 def compare_backgrounds(video_path, frame_n):
-    background_50 = median_vid(video_path, 200, 50)
-    background_90 = median_vid(video_path, 200, 90)
-    background_95 = median_vid(video_path, 200, 95)
+    background_50 = background_vid(video_path, 200, 50)
+    background_90 = background_vid(video_path, 200, 90)
+    background_95 = background_vid(video_path, 200, 95)
 
     cap = cv2.VideoCapture(video_path)
 

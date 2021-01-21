@@ -11,8 +11,8 @@ import numpy as np
 
 from cichlidanalysis.io.meta import load_yaml, extract_meta
 from cichlidanalysis.io.tracks import load_track
-from spilt_tracking import background_vid_split
-from offline_tracker import tracker
+from cichlidanalysis.quality_control.split_tracking import background_vid_split
+from cichlidanalysis.tracking.offline_tracker import tracker
 
 if __name__ == '__main__':
     # find file path for video and load track

@@ -2,9 +2,10 @@
 # To get around it we use this script. There are two cases which is will take care of:
 # if you want to NaN a region, or if you want to spilt the video and recalculate a background image for each part and
 # retrack. This second option also retracks the next video as it assumes that the background used wasn't good enough.
+
 import os
 import glob
-from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter.filedialog import askopenfilename
 from tkinter import Tk
 import copy
 import sys
@@ -15,18 +16,13 @@ import numpy as np
 
 from cichlidanalysis.io.meta import load_yaml, extract_meta
 from cichlidanalysis.io.tracks import load_track
-# from cichlidanalysis.analysis.processing import remove_high_spd_xy, remove_high_spd, smooth_speed, neg_values, coord_smooth
-
-
+from cichlidanalysis.tracking.offline_tracker import tracker
 
 # load offending movie, median (camera/roi?) and track
 # identify point when disturbance starts, identify point when disturbance ends (video viewer?)
 # remake medians for each part of the video
 # retrack the video parts
 # copy the timepoints from the original track.
-
-# function called by trackbar, sets the next frame to be read
-from cichlidanalysis.tracking.offline_tracker import tracker
 
 
 def background_vid_split(videofilepath, nth_frame, percentile, split_range):
@@ -227,8 +223,8 @@ if __name__ == '__main__':
         for part in split_range:
             backgrounds.append(background_vid_split(video_path, 100, 90, part))
 
-        # retrack part of the movie with the correct background. Will also need to use the second background for the movie afterwards
-        # making roi for full video
+        # retrack part of the movie with the correct background. Will also need to use the second background for the
+        # movie afterwards making roi for full video
         vid_rois = load_yaml(cam_folder_path, "roi_file")
         width_trim, height_trim = vid_rois['roi_{}'.format(fish_data['roi'][-1])][2:4]
         rois = {'roi_0': (0, 0, width_trim, height_trim)}

@@ -299,7 +299,7 @@ def full_analysis(rootdir):
     sec_axis_h(ax2, start_total_sec)
     plt.xlabel("Time (h)")
     plt.ylabel("Speed pixels/0.1s")
-    plt.title("Speed_{0}_raw-black_thresholded-blue")
+    plt.title("Speed_{0}_raw-black_thresholded-blue".format(fish_ID,meta["species"].replace(' ', '-')))
     plt.savefig(os.path.join(rootdir, "{0}_speed_{1}_speed_full_speed_thresholded.png".format(fish_ID,
                                                                                               meta["species"].replace(
                                                                                                   ' ', '-'))))

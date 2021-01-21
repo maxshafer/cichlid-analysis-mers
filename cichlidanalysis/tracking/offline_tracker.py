@@ -3,6 +3,7 @@
 # Copyright (c) 2019 Vassilis Bitsikas
 # Modified by Annika Nichols
 ##########
+
 import datetime
 import os
 
@@ -10,8 +11,8 @@ import cv2
 import numpy as np
 
 
-def tracker(video_path, median_full, rois, threshold=5, display=True, area_size=0, split_range=False):
-    """ Function that takes a video path, a median file, rois, threshold and display switch. This then uses
+def tracker(video_path, background_full, rois, threshold=5, display=True, area_size=0, split_range=False):
+    """ Function that takes a video path, a background file, rois, threshold and display switch. This then uses
     background subtraction and centroid tracking to find the XZ coordinates of the largest contour. Saves out a csv file
      with frame #, X, Y, contour area"""
 
@@ -50,7 +51,7 @@ def tracker(video_path, median_full, rois, threshold=5, display=True, area_size=
             break
         if frame_id in np.arange(split_range[0], split_range[1]):
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frameDelta_full = cv2.absdiff(median_full, gray)
+            frameDelta_full = cv2.absdiff(background_full, gray)
 
             # tracking
             cx = list()

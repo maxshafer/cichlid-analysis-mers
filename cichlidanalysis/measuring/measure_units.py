@@ -4,10 +4,9 @@
 # https://stackoverflow.com/questions/16195190/python-cv2-how-do-i-draw-a-line-on-an-image-with-mouse-then-return-line-coord
 # def measure_barrier():
 #     ''''''
-import glob
-import sys
+
 import os
-from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter.filedialog import askopenfilename
 from tkinter import *
 
 import cv2
@@ -100,7 +99,3 @@ def main():
 
     with open(os.path.join(parts[0], "config.yaml"), "w") as file:
         documents = yaml.dump(config_file, file)
-
-
-if __name__ == "__main__":
-    main()

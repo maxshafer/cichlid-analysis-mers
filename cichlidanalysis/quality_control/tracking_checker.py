@@ -45,9 +45,11 @@ track_single, displacement_internal = extract_tracks_from_fld(vid_folder_path, v
 video_name = os.path.split(video_path)[1]
 
 meta = load_yaml(vid_folder_path, "meta_data")
-rois = load_yaml(cam_folder_path, "roi_file")
 config = load_yaml(cam_folder_path, "config")
 fish_data = extract_meta(vid_folder)
+
+new_rois = load_yaml(vid_folder_path, "roi_file")
+rois = load_yaml(cam_folder_path, "roi_file")
 
 os.chdir(cam_folder_path)
 files = glob.glob("*.png")
@@ -78,6 +80,14 @@ try:
 except:
     x_n = track_single[:, 1]
     y_n = track_single[:, 2]
+
+if new_rois:
+    # subtract the difference so that the centroids are plotted at the right coordinates
+    # output: (x,y,w,h)
+    x_n += new_rois['roi_{}'.format(fish_data['roi'][1])][0]
+    y_n += new_rois['roi_{}'.format(fish_data['roi'][1])][1]
+    track_single[:, 1] += new_rois['roi_{}'.format(fish_data['roi'][1])][0]
+    track_single[:, 2] += new_rois['roi_{}'.format(fish_data['roi'][1])][1]
 
 # find displacement
 displacement_internal_mm_s = displacement_internal * config["mm_per_pixel"] * config['fps']
