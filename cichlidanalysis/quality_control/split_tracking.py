@@ -26,6 +26,9 @@ from cichlidanalysis.io.tracks import load_track
 # copy the timepoints from the original track.
 
 # function called by trackbar, sets the next frame to be read
+from cichlidanalysis.tracking.offline_tracker import tracker
+
+
 def background_vid_split(videofilepath, nth_frame, percentile, split_range):
     """ (str, int, int, list)
      This function will create a median image of the defined area"""
