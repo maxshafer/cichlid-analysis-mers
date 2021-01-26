@@ -99,3 +99,8 @@ def main():
 
     with open(os.path.join(parts[0], "config.yaml"), "w") as file:
         documents = yaml.dump(config_file, file)
+
+
+
+if __name__ == "__main__":
+    main()
