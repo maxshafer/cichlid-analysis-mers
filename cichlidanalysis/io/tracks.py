@@ -10,11 +10,17 @@ def load_track(csv_file_path):
     """
     track_internal = np.genfromtxt(csv_file_path, delimiter=',')
 
-    # find displacement
-    b = np.diff(track_internal[:, 1])
-    c = np.diff(track_internal[:, 2])
-    displacement_internal = np.sqrt(b ** 2 + c ** 2)
-    return displacement_internal, track_internal
+    if track_internal.size == 0:
+        # if empty return empty
+        displacement_internal = []
+        track_internal = []
+        return displacement_internal, track_internal
+    else:
+        # find displacement
+        b = np.diff(track_internal[:, 1])
+        c = np.diff(track_internal[:, 2])
+        displacement_internal = np.sqrt(b ** 2 + c ** 2)
+        return displacement_internal, track_internal
 
 
 def remove_tags(input_files, remove=["exclude", "meta.csv", "als.csv"]):
@@ -105,7 +111,8 @@ def extract_tracks_from_fld(folder, file_ending):
     for file in files_to_load:
         print(file)
         na, track_single = load_track(os.path.join(folder, file))
-        track_full = np.append(track_full, track_single, axis=0)
+        if len(track_single) > 0:
+            track_full = np.append(track_full, track_single, axis=0)
 
     print("All files loaded")
 
