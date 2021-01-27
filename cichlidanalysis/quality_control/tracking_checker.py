@@ -88,6 +88,15 @@ if new_rois:
     y_n += new_rois['roi_{}'.format(fish_data['roi'][1])][1]
     track_single[:, 1] += new_rois['roi_{}'.format(fish_data['roi'][1])][0]
     track_single[:, 2] += new_rois['roi_{}'.format(fish_data['roi'][1])][1]
+    roi_n = new_rois['roi_{}'.format(fish_data['roi'][1])]
+
+    # add in ROI to video
+    start_point = (roi_n[0], roi_n[1])
+    end_point = (roi_n[0] + roi_n[2], roi_n[1] + roi_n[3])
+else:
+    start_point = (0, 0)
+    end_point = (roi_n[2], roi_n[3])
+
 
 # find displacement
 displacement_internal_mm_s = displacement_internal * config["mm_per_pixel"] * config['fps']
@@ -144,7 +153,9 @@ while 1:
             cX, cY = (int(track_single[int(curr_frame), 1]), int(track_single[int(curr_frame), 2]))
             cv2.circle(frame, (int(x_nt[int(curr_frame)]), int(y_nt[int(curr_frame)])), 4, (0, 255, 255), 4)
             cv2.circle(frame, (cX, cY), 4, (0, 0, 255), 2)
-            cv2.putText(frame, "yellow: corrected centroid, red: raw centroid, frame: {}".format(curr_frame), (5, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (10, 10, 200), 1)
+            cv2.putText(frame, "yellow: corrected centroid, red: raw centroid, frame: {}".format(curr_frame), (5, 15),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (10, 10, 200), 1)
+            cv2.rectangle(frame, start_point, end_point, 220, 2)
         except:
             cv2.rectangle(img=frame, pt1=(0, 0), pt2=(10, 10), color=(0, 0, 255), thickness=-1)
 
@@ -166,6 +177,8 @@ while 1:
             cv2.circle(frameDelta, (cX, cY), 4, (0, 0, 255), 2)
         except:
             cv2.rectangle(frame, 0, 10, 255, 1)
+
+        cv2.rectangle(frameDelta, start_point, end_point, 220, 2)
         cv2.imshow("Background subtraction of {}".format(video_name), frameDelta)
 
 
