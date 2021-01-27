@@ -17,6 +17,7 @@ from cichlidanalysis.tracking.offline_tracker import tracker
 from cichlidanalysis.tracking.helpers import update_csvs
 from cichlidanalysis.tracking.backgrounds import background_vid, update_background
 from cichlidanalysis.io.meta import extract_meta, load_yaml
+from cichlidanalysis.io.tracks import remove_tags
 
 
 if __name__ == '__main__':
@@ -69,6 +70,7 @@ if __name__ == '__main__':
             cam_dir = os.path.split(vid_dir)[0]
 
             backgrounds = glob.glob("*background.png")
+            backgrounds = remove_tags(backgrounds, remove=["frame"])
             if len(backgrounds) < 1:
                 print("Didn't find remade background, will use original background in camera folder")
                 os.chdir(cam_dir)
@@ -93,6 +95,7 @@ if __name__ == '__main__':
 
             os.chdir(os.path.split(video_file)[0])
             backgrounds = glob.glob(video_file[0:-4] + "*background.png")
+            backgrounds = remove_tags(backgrounds, remove=["frame"])
             if len(backgrounds) < 1:
                 print("Didn't find remade background, will use original background in camera folder")
                 os.chdir(cam_dir)
