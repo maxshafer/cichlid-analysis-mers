@@ -105,6 +105,12 @@ if __name__ == '__main__':
             track_roi = input("Track with another roi? y/n: \n")
 
         if track_roi == 'y':
+            if track_all == 'n':
+                roi_on_one = input("You are now changing the ROI for  only one video, this  is not recommended!\n "
+                      "y to continue, n to  stop: \n")
+                if roi_on_one == 'n':
+                    exit()
+
             # Define video rois
             os.chdir(cam_dir)
             background_full = cv2.imread(backgrounds[0])

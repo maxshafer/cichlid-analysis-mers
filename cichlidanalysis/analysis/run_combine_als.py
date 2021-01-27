@@ -14,11 +14,11 @@ from tkinter.filedialog import askdirectory
 from tkinter import *
 import os
 import warnings
+import time
 
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (MultipleLocator)
 import seaborn as sns
 
@@ -26,10 +26,11 @@ import seaborn as sns
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.analysis.processing import add_col
-from cichlidanalysis.plotting.single_plots import fill_plot_ts
+from cichlidanalysis.analysis.processing import add_col, threshold_data
 from cichlidanalysis.plotting.position_plots import spd_vs_y
-
+# from cichlidanalysis.analysis.bouts import find_bouts
+from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
+from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -46,9 +47,18 @@ root.update()
 rootdir = askdirectory(parent=root)
 root.destroy()
 
+t0 = time.time()
 fish_tracks = load_als_files(rootdir)
+t1 = time.time()
+print("time to load tracks {}".format(t1-t0))
+
 meta = load_meta_files(rootdir)
 metat = meta.transpose()
+remove = ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity']
+for remove_name in remove:
+    if remove_name in fish_tracks.columns:
+        fish_tracks = fish_tracks.drop(remove_name, axis=1)
+        print("removed {}".format(remove_name))
 
 # get each fish ID
 fish_IDs = fish_tracks['FishID'].unique()
@@ -59,74 +69,83 @@ fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_time
 change_times_unit = [7.5*2, 8*2, 19*2, 19.5*2]
 
 # # if from 7am - 7pm # need  better way to deal with this change!
-# if statement for date (then add 30min to times stamps? as some fish will have ethis and others won't
+# if statement for date (then add 30min to times stamps? as some fish will have this and others won't
 # change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
 # change_times_s = [i - 1800 for i in change_times_s]
 # change_times_h = [i - 0.5 for i in change_times_h]
 # change_times_d = [i - .5/24 for i in change_times_d]
 
-# convert tv into datetime and add as new column
-fish_tracks['ts'] = pd.to_datetime(fish_tracks['tv_ns'], unit='ns')
+# # convert tv into datetime and add as new column
+# fish_tracks['ts'] = pd.to_datetime(fish_tracks['tv_ns'], unit='ns')
 
 # add new column with Day or Night
-# fish_tracks['time_of_day'] = fish_tracks.ts.apply(lambda row: str(row)[11:16])
-# fish_tracks['time_of_day_m'] = fish_tracks.time_of_day.apply(lambda row: int(row[:-3]) * 60 + int(row[-2:]))
+t0 = time.time()
 fish_tracks['time_of_day_m'] = fish_tracks.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
+t1 = time.time()
+print("time to load tracks {}".format(t1-t0))
 
-fish_tracks['daynight'] = "day"
-fish_tracks.loc[fish_tracks.time_of_day_m < change_times_m[0], 'daynight'] = "night"
-fish_tracks.loc[fish_tracks.time_of_day_m > change_times_m[3], 'daynight'] = "night"
+fish_tracks['daynight'] = "d"
+fish_tracks.loc[fish_tracks.time_of_day_m < change_times_m[0], 'daynight'] = "n"
+fish_tracks.loc[fish_tracks.time_of_day_m > change_times_m[3], 'daynight'] = "n"
+
+#### Movement moving/not-moving use 0.25bl threshold ####
+fish_tracks['movement'] = np.nan
+for fish in fish_IDs:
+    # threshold the speed_mm with 0.25 of the body length of the fish
+    fish_tracks.loc[(fish_tracks.FishID == fish), 'movement'] = \
+        threshold_data(fish_tracks.loc[(fish_tracks.FishID == fish), "speed_mm"], metat.loc[fish, 'fish_length_mm']*0.25)
+
+fish_tracks.info()
+
+##### x,y position (binned day/night, and average day/night) #####
+# resample data
+horizontal_pos = fish_tracks.pivot(columns="FishID", values="x_nt")
+vertical_pos = fish_tracks.pivot(columns="FishID", values="y_nt")
+
+# scale each fish by min/max
+horizontal_pos -= horizontal_pos.min()
+horizontal_pos /= horizontal_pos.max()
+vertical_pos -= vertical_pos.min()
+vertical_pos /= vertical_pos.max()
+# flip Y axis
+vertical_pos = abs(1 - vertical_pos)
+
+# put this data back into fish_tracks
+fish_tracks['vertical_pos'] = np.nan
+for fish in fish_IDs:
+    fish_tracks.loc[fish_tracks.FishID == fish, 'vertical_pos'] = vertical_pos.loc[:, fish]
+
+# data gets heavy so remove what is not necessary
+remove = ['y_nt', 'x_nt', 'tv_ns']
+for remove_name in remove:
+    if remove_name in fish_tracks.columns:
+        fish_tracks = fish_tracks.drop(remove_name, axis=1)
+        print("removed {}".format(remove_name))
 
 # resample data
 fish_tracks_30m = fish_tracks.groupby('FishID').resample('30T', on='ts').mean()
 fish_tracks_30m.reset_index(inplace=True)
 
 # add back 'species', 'sex'
-for col_name in ['species', 'sex', 'fish_length_mm']:
+# for col_name in ['species', 'sex', 'fish_length_mm']:
+for col_name in ['species']:
     add_col(fish_tracks_30m, col_name, fish_IDs, meta)
 all_species = fish_tracks_30m['species'].unique()
 
-fish_tracks_30m['daynight'] = "day"
-fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m < change_times_m[0], 'daynight'] = "night"
-fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight'] = "night"
+fish_tracks_30m['daynight'] = "d"
+fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m < change_times_m[0], 'daynight'] = "n"
+fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight'] = "n"
 
 # speed_mm (30m bins) for each fish (individual lines)
-date_form = DateFormatter("%H")
-for species_f in all_species:
-    plt.figure(figsize=(10, 4))
-    ax = sns.lineplot(data=fish_tracks_30m[fish_tracks_30m.species == species_f], x='ts', y='speed_mm', hue='FishID')
-    ax.xaxis.set_major_locator(MultipleLocator(0.5))
-    ax.xaxis.set_major_formatter(date_form)
-    fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
-    ax.set_ylim([0, 60])
-    plt.xlabel("Time (h)")
-    plt.ylabel("Speed (mm/s)")
-    plt.title(species_f)
-    plt.savefig(os.path.join(rootdir, "speed_30min_individual{0}.png".format(species_f.replace(' ', '-'))))
+plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 
 # speed_mm (30m bins) for each species (mean  +- std)
-for species_f in all_species:
-    # get speeds for each individual for a given species
-    spd = fish_tracks_30m[fish_tracks_30m.species == species_f][['speed_mm', 'FishID', 'ts']]
-    sp_spd = spd.pivot(columns='FishID', values='speed_mm', index='ts')
+plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
-    # calculate ave and stdv
-    average = sp_spd.mean(axis=1)
-    stdv = sp_spd.std(axis=1)
-
-    plt.figure(figsize=(10, 4))
-    ax = sns.lineplot(x=sp_spd.index, y=average + stdv, color='lightgrey')
-    sns.lineplot(x=sp_spd.index, y=average - stdv, color='lightgrey')
-    sns.lineplot(x=sp_spd.index, y=average)
-    ax.xaxis.set_major_locator(MultipleLocator(0.5))
-    ax.xaxis.set_major_formatter(date_form)
-    fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
-    ax.set_ylim([0, 60])
-    plt.xlabel("Time (h)")
-    plt.ylabel("Speed (mm/s)")
-    plt.title(species_f)
-    plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev{0}.png".format(species_f.replace(' ', '-'))))
-
+# movement for each fish (individual lines)
+plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
+# movement (30m bins) for each species (mean  +- std)
+plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
 ##### get daily average #####
 
@@ -177,17 +196,23 @@ for species_f in all_species:
 
 
 ##### x,y position (binned day/night, and average day/night) #####
-# resample data
-horizontal_pos = fish_tracks.pivot(columns="FishID", values="x_nt")
-vertical_pos = fish_tracks.pivot(columns="FishID", values="y_nt")
+# # resample data
+# horizontal_pos = fish_tracks.pivot(columns="FishID", values="x_nt")
+# vertical_pos = fish_tracks.pivot(columns="FishID", values="y_nt")
+#
+# # scale each fish by min/max
+# horizontal_pos -= horizontal_pos.min()
+# horizontal_pos /= horizontal_pos.max()
+# vertical_pos -= vertical_pos.min()
+# vertical_pos /= vertical_pos.max()
+# # flip Y axis
+# vertical_pos = abs(1 - vertical_pos)
+#
+# # put this data back into fish_tracks
+# fish_tracks['vertical_pos'] = np.nan
+# for fish in fish_IDs:
+#     fish_tracks.loc[fish_tracks.FishID == fish, 'vertical_pos'] = vertical_pos.loc[:, fish]
 
-# scale each fish by min/max
-horizontal_pos -= horizontal_pos.min()
-horizontal_pos /= horizontal_pos.max()
-vertical_pos -= vertical_pos.min()
-vertical_pos /= vertical_pos.max()
-# flip Y axis
-vertical_pos = abs(1- vertical_pos)
 
 # split data into day and night
 position_night_x = horizontal_pos.iloc[np.where(change_times_s[0] > tv_24h_sec)[0], ]
@@ -320,17 +345,45 @@ fig1.savefig(os.path.join(rootdir, "xy_ave_DN_all.png"))
 # speed vs Y position, for each fish, for combine fish of species, separated between day and night
 spd_vs_y(meta, fish_tracks, fish_tracks_30m, fish_IDs, rootdir)
 
-# fraction mobile/immobile
+
+# #### Behavioural state - calculated from Movement ####
 
 
 
 
 
+# feature vector: for each fish readout vector of feature values
+# version 1: Day/Night for: speed -  mean, stdev, median; y position - mean, stdev, median;
+# FM - mean, stdev, median;
+# to add later:
+#   BS - mean, stdev, median
+#   30min bins of each data
 
 
+for species in all_species:
+    df = pd.DataFrame([],  columns=['spd_mean_d', 'spd_mean_n', 'spd_std_d', 'spd_std_n', 'spd_median_d',
+                                    'spd_median_n', 'move_mean_d', 'move_mean_n', 'move_std_d', 'move_std_n',
+                                    'move_median_d', 'move_median_n', 'y_mean_d', 'y_mean_n', 'y_std_d', 'y_std_n',
+                                    'y_median_d', 'y_median_n'])
+    for fish in fish_IDs:
+        fish_v_d = fish_tracks.loc[(fish_tracks.FishID == fish) & (fish_tracks.daynight == "d"),
+                                            ["speed_mm", "movement", "vertical_pos"]]
+        fish_v_n = fish_tracks.loc[(fish_tracks.FishID == fish) & (fish_tracks.daynight == "n"),
+                                            ["speed_mm", "movement", "vertical_pos"]]
 
-# fraction active/quiescent
+        df_f = pd.DataFrame([[fish_v_d.mean()[0], fish_v_n.mean()[0], fish_v_d.std()[0], fish_v_n.std()[0],
+                              fish_v_d.median()[0], fish_v_n.median()[0], fish_v_d.mean()[1], fish_v_n.mean()[1],
+                              fish_v_d.std()[1], fish_v_n.std()[1], fish_v_d.median()[1], fish_v_n.median()[1],
+                              fish_v_d.mean()[2], fish_v_n.mean()[2], fish_v_d.std()[2], fish_v_n.std()[2],
+                              fish_v_d.median()[2], fish_v_n.median()[2]]], index=[fish],
+                            columns=['spd_mean_d', 'spd_mean_n', 'spd_std_d', 'spd_std_n', 'spd_median_d',
+                                                 'spd_median_n', 'move_mean_d', 'move_mean_n', 'move_std_d',
+                                                 'move_std_n', 'move_median_d', 'move_median_n', 'y_mean_d', 'y_mean_n',
+                                                 'y_std_d', 'y_std_n', 'y_median_d', 'y_median_n'])
+        df_f = df_f.round(4)
+        df = pd.concat([df, df_f])
 
+    df.to_csv(os.path.join(rootdir, "{}_als_fv.csv".format(species)))
 
 
 

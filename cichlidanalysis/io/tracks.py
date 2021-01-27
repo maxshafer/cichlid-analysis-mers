@@ -123,9 +123,9 @@ def load_als_files(folder):
             # Removed index_col=0, as is giving Type error ufunc "isnan'
             print("loaded file {}".format(file))
             data_s['FishID'] = file[0:-8]
-            data_s['species'] = file[0:-8].split("_")[3]
-            data_s['sex'] = file[0:-8].split("_")[4]
-
+            # data_s['species'] = file[0:-8].split("_")[3]
+            # data_s['sex'] = file[0:-8].split("_")[4]
+            data_s['ts'] = pd.to_datetime(data_s['tv_ns'], unit='ns')
             data = pd.concat([data, data_s])
 
         else:
@@ -135,8 +135,9 @@ def load_als_files(folder):
             # Removed index_col=0, as is giving Type error ufunc "isnan'
             print("loaded file {}".format(file))
             data['FishID'] = file[0:-8]
-            data['species'] = file[0:-8].split("_")[3]
-            data['sex'] = file[0:-8].split("_")[4]
+            # data['species'] = file[0:-8].split("_")[3]
+            # data['sex'] = file[0:-8].split("_")[4]
+            data['ts'] = pd.to_datetime(data['tv_ns'], unit='ns')
             first_done = 1
 
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'

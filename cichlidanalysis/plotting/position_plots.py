@@ -20,24 +20,24 @@ def spd_vs_y(meta, fish_tracks, fish_tracks_30m, fish_IDs, rootdir):
         sf_sp_night, sf_sp_30m_night = [], []
 
         for fish in fish_IDs:
-            # full time resolution
-            vertical_pos = fish_tracks[fish_tracks.FishID == fish].y_nt
-            vertical_pos -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            vertical_pos /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
-            # flip Y axis
-            vertical_pos = abs(1 - vertical_pos)
-            speed_fish = fish_tracks[fish_tracks.FishID == fish].speed_mm
-            full_data = ~np.isnan(vertical_pos) & ~np.isnan(speed_fish)
-
-            vp = vertical_pos[full_data]
-            sf = speed_fish[full_data]
-
-            # down sample data as sns too slow to properly plot all data
-            vp_ds = vp[::100]
-            sf_ds = sf[::100]
-
-            vp_sp = np.concatenate([vp_sp, vp_ds])
-            sf_sp = np.concatenate([sf_sp, sf_ds])
+            # # full time resolution
+            # vertical_pos = fish_tracks[fish_tracks.FishID == fish].y_nt
+            # vertical_pos -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
+            # vertical_pos /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
+            # # flip Y axis
+            # vertical_pos = abs(1 - vertical_pos)
+            # speed_fish = fish_tracks[fish_tracks.FishID == fish].speed_mm
+            # full_data = ~np.isnan(vertical_pos) & ~np.isnan(speed_fish)
+            #
+            # vp = vertical_pos[full_data]
+            # sf = speed_fish[full_data]
+            #
+            # # down sample data as sns too slow to properly plot all data
+            # vp_ds = vp[::100]
+            # sf_ds = sf[::100]
+            #
+            # vp_sp = np.concatenate([vp_sp, vp_ds])
+            # sf_sp = np.concatenate([sf_sp, sf_ds])
 
             # fig4 = plt.figure(figsize=(4, 4))
             # sns.kdeplot(sf_ds, vp_ds, cmap="Reds", fill=True, levels=20)
@@ -78,39 +78,40 @@ def spd_vs_y(meta, fish_tracks, fish_tracks_30m, fish_IDs, rootdir):
             # x = y * model.coef_ + model.intercept_
             # plt.plot(x, y, 'k')
 
-            vertical_pos_night = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'night')].y_nt
-            # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
-            vertical_pos_night -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            vertical_pos_night /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
-
-            # flip Y axis
-            vertical_pos_night = abs(1 - vertical_pos_night)
-            speed_fish_night = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'night')].speed_mm
-            full_data = ~np.isnan(vertical_pos_night) & ~np.isnan(speed_fish_night)
-
-            # down sample data as sns too slow to properly plot all data
-            vp_night = vertical_pos_night[full_data][::100]
-            sf_night = speed_fish_night[full_data][::100]
-
-            vp_sp_night = np.concatenate([vp_sp_night, vp_night])
-            sf_sp_night = np.concatenate([sf_sp_night, sf_night])
-
-            vertical_pos_day = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'day')].y_nt
-            # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
-            vertical_pos_day -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            vertical_pos_day /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
-
-            # flip Y axis
-            vertical_pos_day = abs(1 - vertical_pos_day)
-            speed_fish_day = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'day')].speed_mm
-            full_data = ~np.isnan(vertical_pos_day) & ~np.isnan(speed_fish_day)
-
-            # down sample data as sns too slow to properly plot all data
-            vp_day = vertical_pos_day[full_data][::100]
-            sf_day = speed_fish_day[full_data][::100]
-
-            vp_sp_day = np.concatenate([vp_sp_day, vp_day])
-            sf_sp_day = np.concatenate([sf_sp_day, sf_day])
+            # # full time resolution
+            # vertical_pos_night = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'night')].y_nt
+            # # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
+            # vertical_pos_night -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
+            # vertical_pos_night /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
+            #
+            # # flip Y axis
+            # vertical_pos_night = abs(1 - vertical_pos_night)
+            # speed_fish_night = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'night')].speed_mm
+            # full_data = ~np.isnan(vertical_pos_night) & ~np.isnan(speed_fish_night)
+            #
+            # # down sample data as sns too slow to properly plot all data
+            # vp_night = vertical_pos_night[full_data][::100]
+            # sf_night = speed_fish_night[full_data][::100]
+            #
+            # vp_sp_night = np.concatenate([vp_sp_night, vp_night])
+            # sf_sp_night = np.concatenate([sf_sp_night, sf_night])
+            #
+            # vertical_pos_day = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'day')].y_nt
+            # # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
+            # vertical_pos_day -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
+            # vertical_pos_day /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
+            #
+            # # flip Y axis
+            # vertical_pos_day = abs(1 - vertical_pos_day)
+            # speed_fish_day = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'day')].speed_mm
+            # full_data = ~np.isnan(vertical_pos_day) & ~np.isnan(speed_fish_day)
+            #
+            # # down sample data as sns too slow to properly plot all data
+            # vp_day = vertical_pos_day[full_data][::100]
+            # sf_day = speed_fish_day[full_data][::100]
+            #
+            # vp_sp_day = np.concatenate([vp_sp_day, vp_day])
+            # sf_sp_day = np.concatenate([sf_sp_day, sf_day])
 
             # #### 30min binned time resolution ##### #
             vertical_pos_30m_day = fish_tracks_30m[(fish_tracks_30m.FishID == fish) &

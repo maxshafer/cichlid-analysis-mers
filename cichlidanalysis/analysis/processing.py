@@ -155,7 +155,7 @@ def remove_high_spd_xy(speed_raw, x, y):
 def threshold_data(speed, threshold):
     """ gives back a np.array with 1 for where the input array is above the threshold. Puts back NaNs
 
-    :param speed: np.array
+    :param speed: np.array or pd.series
     :param threshold: float
     :return: super_threshold_indices: np.array
 
@@ -167,6 +167,7 @@ def threshold_data(speed, threshold):
     # apply movement threshold to define active bouts
     super_threshold_indices = (speed > threshold).astype(np.float)
     super_threshold_indices[np.isnan(speed)] = np.nan
+    super_threshold_indices = np.array(super_threshold_indices)
     super_threshold_indices.resize(super_threshold_indices.shape[0],)
 
     # plt.figure()
