@@ -15,7 +15,7 @@ import cv2
 import numpy as np
 
 from cichlidanalysis.io.meta import load_yaml, extract_meta
-from cichlidanalysis.io.tracks import load_track
+from cichlidanalysis.io.tracks import load_track, get_latest_tracks
 from cichlidanalysis.tracking.offline_tracker import tracker
 
 # load offending movie, median (camera/roi?) and track
@@ -102,12 +102,12 @@ def split_select(video_path, background_cropped):
         frameDelta = cv2.absdiff(frame, background_cropped)
         cv2.putText(frameDelta, "Press enter to select frame, press space bar to pause", (5, 15),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
-        cv2.putText(frameDelta, "'a' for backwards, 'd' advance, 'enter' = save out the start/end values", (5, 40),
+        cv2.putText(frameDelta, "'a' for backwards, 'd' advance, 'enter' = save out the values", (5, 40),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.5, (200, 200, 200), 1)
-        cv2.putText(frameDelta, "frame = {}, split_start ('s') = {}, split_end ('e') = {}".format(frame_nr,
-                                                                                                  split_start,
-                                                                                                  split_end), (5, 75),
+        cv2.putText(frameDelta, "frame = {}".format(frame_nr), (5, 75), cv2.FONT_HERSHEY_SIMPLEX, 0.5,
+                                                    (200, 200, 200), 1)
+        cv2.putText(frameDelta, "split_start ('s') = {}, split_end ('e') = {}".format(split_start, split_end), (5, 105),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.5, (200, 200, 200), 1)
         cv2.imshow("Splitting finder", frameDelta)
 
@@ -168,9 +168,21 @@ if __name__ == '__main__':
     vid_timestamp = os.path.split(video_path)[1][0:-10]
     cam_folder_path = os.path.split(vid_folder_path)[0]
     vid_folder_name = os.path.split(vid_folder_path)[1]
-
-    track_path = video_path[0:-4] + ".csv"
     video_name = os.path.split(video_path)[1]
+
+    # find current path
+    track_path = video_path[0:-4] + ".csv"
+    if not os.path.isfile(track_path):
+        track_path = []
+        # movie has been retracked, so pick the right csv
+        _, all_files = get_latest_tracks(vid_folder_path, video_path[-9:-4])
+        for file in all_files:
+            print(file)
+            if video_name[0:-4] in file:
+                track_path = file
+                print("Using retracked csv  {}".format(track_path))
+    if not track_path:
+        print("Can't find right track! - add issue to github")
 
     displacement_internal, track_single = load_track(track_path)
     meta = load_yaml(vid_folder_path, "meta_data")

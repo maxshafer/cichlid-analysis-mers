@@ -42,6 +42,27 @@ def remove_tags(input_files, remove=["exclude", "meta.csv", "als.csv"]):
     return files
 
 
+def get_latest_tracks(folder_path, file_end):
+    os.chdir(folder_path)
+    all_files = glob.glob("*{}*.csv".format(file_end))
+
+    # remove files with  certain tags
+    files = remove_tags(all_files, ["exclude", "meta.csv", "als.csv"])
+
+    # prioritise cleaned version of these files
+    file_clean = glob.glob("*{}_cleaned.csv".format(file_end))
+    file_clean.sort()
+
+    for file_clean in file_clean:
+        for file in files:
+            if file[0:-4] == file_clean[0:-12]:
+                pos = files.index(file)
+                replaced = files.pop(pos)
+                files.insert(pos, file_clean)
+
+    return file_clean, files
+
+
 def extract_tracks_from_fld(folder, file_ending):
     """Asks you for a folder path which is the fish roi, find all csv files in the folder which have the
     "file_ending". Will exclude all files with "exclude". Replaces tracks with "Range" and "Cleaned"
@@ -49,22 +70,7 @@ def extract_tracks_from_fld(folder, file_ending):
     """
     track_full = np.empty([0, 4])
 
-    os.chdir(folder)
-    all_files = glob.glob("*{}*.csv".format(file_ending))
-
-    # remove files with  certain tags
-    files = remove_tags(all_files, ["exclude", "meta.csv", "als.csv"])
-
-    # prioritise cleaned version of these files
-    files_cleaned = glob.glob("*{}_cleaned.csv".format(file_ending))
-    files_cleaned.sort()
-
-    for file_cleaned in files_cleaned:
-        for file in files:
-            if file[0:-4] == file_cleaned[0:-12]:
-                pos = files.index(file)
-                replaced = files.pop(pos)
-                files.insert(pos, file_cleaned)
+    file_cleaned, files = get_latest_tracks(folder, file_ending)
 
     # prioritise range version of these files
     files_split = glob.glob("*Range*_.csv")
