@@ -170,17 +170,18 @@ if __name__ == '__main__':
     vid_folder_name = os.path.split(vid_folder_path)[1]
     video_name = os.path.split(video_path)[1]
 
-    # find current path
+    # find current track path
     track_path = video_path[0:-4] + ".csv"
     if not os.path.isfile(track_path):
         track_path = []
         # movie has been retracked, so pick the right csv
         _, all_files = get_latest_tracks(vid_folder_path, video_path[-9:-4])
         for file in all_files:
-            print(file)
-            if video_name[0:-4] in file:
-                track_path = file
-                print("Using retracked csv  {}".format(track_path))
+            if ("Range" not in file) & (video_name[0:-4] in file):
+                track_path = os.path.join(vid_folder_path, file)
+            elif ("Range" in file) & (video_name[0:-4] in file):
+                print("Careful, ignoring the spilt csv {}".format(track_path))
+        print("Using retracked csv {}".format(track_path))
     if not track_path:
         print("Can't find right track! - add issue to github")
 
@@ -227,8 +228,7 @@ if __name__ == '__main__':
         os.chdir(vid_folder_path)
 
         # load original track (need timestamps)
-        orig_file = glob.glob("*{}.csv".format(video_name[0:-4]))
-        na, track_single_orig = load_track(os.path.join(vid_folder_path, orig_file[0]))
+        na, track_single_orig = load_track(track_path)
 
         split_range = ([0, split_s], [split_e, track_single_orig.shape[0]])
         backgrounds = []
@@ -276,27 +276,44 @@ if __name__ == '__main__':
         # track the next video (as median will be messed up if it's a background problem.
         # find next movie path
         next_movie_num = str(int(video_name.split("_")[1]) + 1)
-        next_movie_name = glob.glob("*_{}_*.mp4".format(next_movie_num))[0]
-        next_movie_path = os.path.join(vid_folder_path, next_movie_name)
-        tracker(next_movie_path, backgrounds[1], rois, threshold=thresh, display=False, area_size=area_s)
-        # find newly made csv and rename it so it will be used by the loading script.
-        next_csv_name = glob.glob("*{}*_{}_*.csv".format(next_movie_num, date))[0]
-        os.rename(os.path.join(vid_folder_path, next_csv_name), next_movie_path[0:-4] + "_cleaned.csv")
-        # load csv file and replace timestamps
-        _, track_single_retracked = load_track(next_movie_path[0:-4] + "_cleaned.csv")
-        _, track_single_orig2 = load_track(next_movie_path[0:-4] + ".csv")
-        track_single_retracked[:, 0] = track_single_orig2[:, 0]
-        # # save over
-        resave_path = next_movie_path[0:-4] + "_cleaned.csv"
-        os.makedirs(os.path.dirname(resave_path), exist_ok=True)
-        np.savetxt(resave_path, track_single_retracked, delimiter=",")
+        find_next_movie = glob.glob("*{}_roi*.mp4".format(next_movie_num))
+        if find_next_movie:
+            next_movie_name = find_next_movie[0]
+
+            # movie has been retracked, so pick the right csv
+            files_c, all_files = get_latest_tracks(vid_folder_path, next_movie_name[:-4])
+
+            if len(all_files) > 1:
+                print("not retracking {} as there's already multiple track types.".format(next_movie_name))
+            else:
+                next_movie_path = os.path.join(vid_folder_path, next_movie_name)
+                tracker(next_movie_path, backgrounds[1], rois, threshold=thresh, display=False, area_size=area_s)
+
+                # find newly made csv and rename it so it will be used by the loading script.
+                date = datetime.datetime.now().strftime("%Y%m%d")
+                _, new_csv_name = get_latest_tracks(vid_folder_path, next_movie_name[0:-4] + '*' + date)
+                # os.rename(os.path.join(vid_folder_path, new_csv_name), next_movie_path[0:-4] + "_cleaned.csv")
+
+                # load old and new csv file and replace timestamps
+                _, track_single_retracked = load_track(new_csv_name[0])
+                _, track_single_orig2 = load_track(all_files[0])
+                track_single_retracked[:, 0] = track_single_orig2[:, 0]
+
+                # add exclude tag to the former csv
+                os.rename(os.path.join(vid_folder_path, all_files[0]),
+                          os.path.join(vid_folder_path, all_files[0][0:-4] + "_exclude.csv"))
+
+                # # save over
+                resave_path = os.path.join(vid_folder_path, new_csv_name[0])
+                os.makedirs(os.path.dirname(resave_path), exist_ok=True)
+                np.savetxt(resave_path, track_single_retracked, delimiter=",")
+        else:
+            print("didn't track next movie as couldn't find it (last  movie?)")
 
     else:
         # load track and mark the excluded part (keeps copy of the track as it saves out a "cleaned" version which is
         # prioritised), later '-1' are replaced by nans (after nans from non tracking are interpolated)
-        os.chdir(vid_folder_path)
-        orig_file = glob.glob("*{}.csv".format(video_name[0:-4]))
-        na, track_single = load_track(os.path.join(vid_folder_path, orig_file[0]))
+        na, track_single = load_track(track_path)
         track_single_cleaned = copy.copy(track_single)
         track_single_cleaned[split_s:split_e, 1:4] = -1
 

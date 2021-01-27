@@ -42,15 +42,15 @@ def remove_tags(input_files, remove=["exclude", "meta.csv", "als.csv"]):
     return files
 
 
-def get_latest_tracks(folder_path, file_end):
+def get_latest_tracks(folder_path, file_pattern):
     os.chdir(folder_path)
-    all_files = glob.glob("*{}*.csv".format(file_end))
+    all_files = glob.glob("*{}*.csv".format(file_pattern))
 
     # remove files with  certain tags
     files = remove_tags(all_files, ["exclude", "meta.csv", "als.csv"])
 
     # prioritise cleaned version of these files
-    file_clean = glob.glob("*{}_cleaned.csv".format(file_end))
+    file_clean = glob.glob("*{}_cleaned.csv".format(file_pattern))
     file_clean.sort()
 
     for file_clean in file_clean:
