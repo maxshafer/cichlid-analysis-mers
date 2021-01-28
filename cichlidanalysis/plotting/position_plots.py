@@ -6,53 +6,19 @@ import seaborn as sns
 # from sklearn.linear_model import LinearRegression
 
 
-def spd_vs_y(meta, fish_tracks, fish_tracks_30m, fish_IDs, rootdir):
+def spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir):
     # speed vs Y position, for each fish, for combine fish of species, separated between day and night
-    # there's a lot of working and testing around in this, improve in future
 
     for idx, species in enumerate(meta.loc["species"].unique()):
         # vector for combining all fish of species x
-        vp_sp, vp_sp_30m = [], []
-        sf_sp, sf_sp_30m = [], []
-        vp_sp_day, vp_sp_30m_day = [], []
-        sf_sp_day, sf_sp_30m_day = [], []
-        vp_sp_night, vp_sp_30m_night = [], []
-        sf_sp_night, sf_sp_30m_night = [], []
+        vp_sp_30m, sf_sp_30m = [], []
+        vp_sp_30m_day, sf_sp_30m_day = [], []
+        vp_sp_30m_night, sf_sp_30m_night = [], []
 
         for fish in fish_IDs:
-            # # full time resolution
-            # vertical_pos = fish_tracks[fish_tracks.FishID == fish].y_nt
-            # vertical_pos -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            # vertical_pos /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
-            # # flip Y axis
-            # vertical_pos = abs(1 - vertical_pos)
-            # speed_fish = fish_tracks[fish_tracks.FishID == fish].speed_mm
-            # full_data = ~np.isnan(vertical_pos) & ~np.isnan(speed_fish)
-            #
-            # vp = vertical_pos[full_data]
-            # sf = speed_fish[full_data]
-            #
-            # # down sample data as sns too slow to properly plot all data
-            # vp_ds = vp[::100]
-            # sf_ds = sf[::100]
-            #
-            # vp_sp = np.concatenate([vp_sp, vp_ds])
-            # sf_sp = np.concatenate([sf_sp, sf_ds])
-
-            # fig4 = plt.figure(figsize=(4, 4))
-            # sns.kdeplot(sf_ds, vp_ds, cmap="Reds", fill=True, levels=20)
-            # plt.xlim([0, 150])
-            # plt.ylim([0, 1])
-            # plt.title(fish, fontsize=8)
-
             # 30min binned time resolution
-            vertical_pos_30m = fish_tracks_30m[fish_tracks_30m.FishID == fish].y_nt
-            # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
-            vertical_pos_30m -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            vertical_pos_30m /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
+            vertical_pos_30m = fish_tracks_30m[fish_tracks_30m.FishID == fish].vertical_pos
 
-            # flip Y axis
-            vertical_pos_30m = abs(1 - vertical_pos_30m)
             speed_fish_30m = fish_tracks_30m[fish_tracks_30m.FishID == fish].speed_mm
             full_data_30m = ~np.isnan(vertical_pos_30m) & ~np.isnan(speed_fish_30m)
 
@@ -62,137 +28,31 @@ def spd_vs_y(meta, fish_tracks, fish_tracks_30m, fish_IDs, rootdir):
             vp_sp_30m = np.concatenate([vp_sp_30m, vp_30m])
             sf_sp_30m = np.concatenate([sf_sp_30m, sf_30m])
 
-            # # seems too slow to properly plot all data
-            # fig4 = plt.figure(figsize=(4, 4))
-            # sns.kdeplot(sf_30m, vp_30m, cmap="Blues", fill=True, levels=20)
-            # plt.plot(sf_30m, vp_30m, linestyle='', marker='o', markersize=0.3, color='r')
-            # plt.xlim([0, 60])
-            # plt.ylim([0, 1])
-            # plt.title(fish, fontsize=8)
-
-            # # calculate simple linear regression
-            # vp_30m = vp_30m.values.reshape(-1, 1)
-            # model = LinearRegression().fit(vp_30m, sf_30m)
-            # r_sq = model.score(vp_30m, sf_30m)
-            # y = np.linspace(0, 1, 11)
-            # x = y * model.coef_ + model.intercept_
-            # plt.plot(x, y, 'k')
-
-            # # full time resolution
-            # vertical_pos_night = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'night')].y_nt
-            # # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
-            # vertical_pos_night -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            # vertical_pos_night /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
-            #
-            # # flip Y axis
-            # vertical_pos_night = abs(1 - vertical_pos_night)
-            # speed_fish_night = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'night')].speed_mm
-            # full_data = ~np.isnan(vertical_pos_night) & ~np.isnan(speed_fish_night)
-            #
-            # # down sample data as sns too slow to properly plot all data
-            # vp_night = vertical_pos_night[full_data][::100]
-            # sf_night = speed_fish_night[full_data][::100]
-            #
-            # vp_sp_night = np.concatenate([vp_sp_night, vp_night])
-            # sf_sp_night = np.concatenate([sf_sp_night, sf_night])
-            #
-            # vertical_pos_day = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'day')].y_nt
-            # # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
-            # vertical_pos_day -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            # vertical_pos_day /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
-            #
-            # # flip Y axis
-            # vertical_pos_day = abs(1 - vertical_pos_day)
-            # speed_fish_day = fish_tracks[(fish_tracks.FishID == fish) & (fish_tracks.daynight == 'day')].speed_mm
-            # full_data = ~np.isnan(vertical_pos_day) & ~np.isnan(speed_fish_day)
-            #
-            # # down sample data as sns too slow to properly plot all data
-            # vp_day = vertical_pos_day[full_data][::100]
-            # sf_day = speed_fish_day[full_data][::100]
-            #
-            # vp_sp_day = np.concatenate([vp_sp_day, vp_day])
-            # sf_sp_day = np.concatenate([sf_sp_day, sf_day])
-
             # #### 30min binned time resolution ##### #
+            # get vertical position for day and night for fish
             vertical_pos_30m_day = fish_tracks_30m[(fish_tracks_30m.FishID == fish) &
-                                                   (fish_tracks_30m.daynight == 'day')].y_nt
-            # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
-            vertical_pos_30m_day -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            vertical_pos_30m_day /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
+                                                   (fish_tracks_30m.daynight == 'd')].vertical_pos
 
-            # flip Y axis
-            vertical_pos_30m_day = abs(1 - vertical_pos_30m_day)
             speed_fish_30m_day = fish_tracks_30m[(fish_tracks_30m.FishID == fish) &
-                                                 (fish_tracks_30m.daynight == 'day')].speed_mm
+                                                 (fish_tracks_30m.daynight == 'd')].speed_mm
             full_data_30m_day = ~np.isnan(vertical_pos_30m_day) & ~np.isnan(speed_fish_30m_day)
 
             vp_sp_30m_day = np.concatenate([vp_sp_30m_day, vertical_pos_30m_day[full_data_30m_day]])
             sf_sp_30m_day = np.concatenate([sf_sp_30m_day, speed_fish_30m_day[full_data_30m_day]])
 
-
             vertical_pos_30m_night = fish_tracks_30m[(fish_tracks_30m.FishID == fish) &
-                                                     (fish_tracks_30m.daynight == 'night')].y_nt
-            # use fish_tracks[fish_tracks.FishID == fish].y_nt so that it iss scaled on the same area
-            vertical_pos_30m_night -= fish_tracks[fish_tracks.FishID == fish].y_nt.min()
-            vertical_pos_30m_night /= fish_tracks[fish_tracks.FishID == fish].y_nt.max()
+                                                     (fish_tracks_30m.daynight == 'n')].vertical_pos
 
-            # flip Y axis
-            vertical_pos_30m_night = abs(1 - vertical_pos_30m_night)
             speed_fish_30m_night = fish_tracks_30m[(fish_tracks_30m.FishID == fish) &
-                                                   (fish_tracks_30m.daynight == 'night')].speed_mm
+                                                   (fish_tracks_30m.daynight == 'n')].speed_mm
             full_data_30m_night = ~np.isnan(vertical_pos_30m_night) & ~np.isnan(speed_fish_30m_night)
 
             vp_sp_30m_night = np.concatenate([vp_sp_30m_night, vertical_pos_30m_night[full_data_30m_night]])
             sf_sp_30m_night = np.concatenate([sf_sp_30m_night, speed_fish_30m_night[full_data_30m_night]])
 
-
-        # fig4 = plt.figure(figsize=(4, 4))
-        # sns.kdeplot(sf_sp, vp_sp, cmap="Reds", fill=True, levels=20)
-        # plt.xlim([0, 150])
-        # plt.ylim([0, 1])
-        # plt.title(species, fontsize=8)
-        # fig4.savefig(os.path.join(rootdir, "spd_vs_y_all.png"))
-
-        # # for full days, 30min
-        # fig5 = plt.figure(figsize=(4, 4))
-        # sns.kdeplot(sf_sp_30m, vp_sp_30m, cmap="Blues", fill=True, levels=20)
-        # plt.plot(sf_sp_30m, vp_sp_30m, linestyle='', marker='o', markersize=0.3, color='r')
-        # plt.xlim([0, 60])
-        # plt.ylim([0, 1])
-        # plt.title(species, fontsize=8)
-        # fig5.savefig(os.path.join(rootdir, "spd_vs_y_30min.png"))
-
-        # # for day and night all
-        # fig2, ax2 = plt.subplots(1, 2)
-        # sns.kdeplot(sf_sp_day, vp_sp_day, cmap="Reds", fill=True, levels=20, ax=ax2[0])
-        # sns.kdeplot(sf_sp_night, vp_sp_night, cmap="Reds", fill=True, levels=20, ax=ax2[1])
-        # ax2[0].title.set_text('Day')
-        # ax2[1].title.set_text('Night')
-        # for i in np.arange(ax2.shape[0]):
-        #     ax2[i].set_xlim([0, 150])
-        #     ax2[i].set_ylim([0, 1])
-        # fig2.suptitle(species)
-        # fig2.savefig(os.path.join(rootdir, "spd_vs_y_all_day_vs_night.png"))
-
-        # # for day and night all and then 30m
-        # fig2, ax2 = plt.subplots(1, 2)
-        # sns.kdeplot(sf_sp_30m_day, vp_sp_30m_day, cmap="Blues", fill=True, levels=20, ax=ax2[0])
-        # ax2[0].plot(sf_sp_30m_day, vp_sp_30m_day, linestyle='', marker='o', markersize=0.3, color='r')
-        # sns.kdeplot(sf_sp_30m_night, vp_sp_30m_night, cmap="Blues", fill=True, levels=20, ax=ax2[1])
-        # ax2[1].plot(sf_sp_30m_night, vp_sp_30m_night, linestyle='', marker='o', markersize=0.3, color='r')
-        # ax2[0].title.set_text('Day')
-        # ax2[1].title.set_text('Night')
-        # for i in np.arange(ax2.shape[0]):
-        #     ax2[i].set_xlim([0, 60])
-        #     ax2[i].set_ylim([0, 1])
-        # fig2.suptitle(species)
-        # fig2.savefig(os.path.join(rootdir, "spd_vs_y_30min.png"))
-
-        # for day and night all and then 30m
+        # for day and night for 30m data
         fig2, ax2 = plt.subplots(1, 1)
-        # sns.kdeplot(sf_sp_30m_day, vp_sp_30m_day, cmap="Reds", fill=True, levels=20, ax=ax2, alpha=0.5)
         ax2.plot(sf_sp_30m_day, vp_sp_30m_day, linestyle='', marker='o', markersize=1, color='r', alpha=0.25, label='Day')
-        # sns.kdeplot(sf_sp_30m_night, vp_sp_30m_night, cmap="Blues", fill=True, levels=20, ax=ax2, alpha=0.5)
         ax2.plot(sf_sp_30m_night, vp_sp_30m_night, linestyle='', marker='o', markersize=1, color='b', alpha=0.25, label='Night')
         ax2.set_xlim([0, 60])
         ax2.set_ylim([0, 1])
@@ -202,21 +62,130 @@ def spd_vs_y(meta, fish_tracks, fish_tracks_30m, fish_IDs, rootdir):
         fig2.suptitle(species)
         fig2.savefig(os.path.join(rootdir, "spd_vs_y_30min_DN.png"))
 
-        # #### plotting normalised by row speed vs y position row. ####
-        # xedges = np.arange(0, 1.1, 0.1)
-        # yedges = np.arange(0, 70, 5)
-        # H_day, _, _ = np.histogram2d(vp_sp_day, sf_sp_day, bins=(xedges, yedges))
-        # H_norm_rows_day = H_day / H_day.max(axis=1, keepdims=True)
-        #
-        # H_night, _, _ = np.histogram2d(vp_sp_night, sf_sp_night, bins=(xedges, yedges))
-        # H_norm_rows_night = H_night / H_night.max(axis=1, keepdims=True)
-        #
-        # fig2, ax2 = plt.subplots(2, 2)
-        # ax2[0, 0].pcolormesh(H_day)
-        # ax2[0, 1].pcolormesh(H_night)
-        # ax2[1, 0].pcolormesh(H_norm_rows_day)
-        # ax2[1, 1].pcolormesh(H_norm_rows_night)
-        #
-        # ax2[0, 0].title.set_text('Day')
-        # ax2[0, 1].title.set_text('Night')
-        # fig2.suptitle(species)
+
+# # split data into day and night
+# position_night_x = horizontal_pos.iloc[np.where(change_times_s[0] > tv_24h_sec)[0], ]
+# position_night_x = horizontal_pos.iloc[np.where(tv_24h_sec[0:-1] > change_times_s[3])[0], ]
+#
+# position_night_y = vertical_pos.iloc[np.where(change_times_s[0] > tv_24h_sec)[0], ]
+# position_night_y = vertical_pos.iloc[np.where(tv_24h_sec[0:-1] > change_times_s[3])[0], ]
+#
+# position_day_x = horizontal_pos.iloc[np.where((change_times_s[0] < tv_24h_sec[0:-1]) &
+#                                               (tv_24h_sec[0:-1] < change_times_s[3]))[0], ]
+# position_day_y = vertical_pos.iloc[np.where((change_times_s[0] < tv_24h_sec[0:-1]) &
+#                                             (tv_24h_sec[0:-1] < change_times_s[3]))[0], ]
+#
+# # need to clean up data between fish, either use the vertical_pos/ horizontal_pos, or scale by x/ylim for x_nt, y_nt
+# individuals = True
+# fig1, ax1 = plt.subplots(2, len(meta.loc["species"].unique()))
+# for idx, species in enumerate(meta.loc["species"].unique()):
+#     position_day_x_sub = position_day_x.loc[:, (meta.loc["species"] == species)].to_numpy()
+#     position_day_y_sub = position_day_y.loc[:, (meta.loc["species"] == species)].to_numpy()
+#     position_night_x_sub = position_night_x.loc[:, (meta.loc["species"] == species)].to_numpy()
+#     position_night_y_sub = position_night_y.loc[:, (meta.loc["species"] == species)].to_numpy()
+#
+#     if individuals:
+#         fig2, ax2 = plt.subplots(2,  position_day_x_sub.shape[1])
+#         fig2.suptitle("Individual fish averages for {}".format(species))
+#         for individ in np.arange(0, position_day_x_sub.shape[1]):
+#             position_day_xy, xedges_day, yedges_day, _ = plt.hist2d(position_day_x_sub[:, individ],
+#                                                                     position_day_y_sub[:, individ],
+#                                                                     bins=[3, 10], cmap='inferno', range=[[0, 1], [0, 1]])
+#             position_night_xy, xedges_night, yedges_night, _ = plt.hist2d(
+#                 position_night_x_sub[:, individ],
+#                 position_night_y_sub[:, individ],
+#                 bins=[3, 10], cmap='inferno', range=[[0, 1], [0, 1]])
+#
+#             # ax2[0, individ].set_title(individ)
+#             ax2[0, individ].imshow(position_day_xy.T)
+#             ax2[0, individ].invert_yaxis()
+#             ax2[0, individ].get_xaxis().set_ticks([])
+#             ax2[0, individ].get_yaxis().set_ticks([])
+#             ax2[1, individ].clear()
+#             ax2[1, individ].imshow(position_night_xy.T)
+#             ax2[1, individ].get_xaxis().set_ticks([])
+#             ax2[1, individ].get_yaxis().set_ticks([])
+#             ax2[1, individ].invert_yaxis()
+#             if individ == 0:
+#                 ax2[0, individ].set_ylabel("Day")
+#                 ax2[1, individ].set_ylabel("Night")
+#         plt.savefig(os.path.join(rootdir, "xy_ave_DN_individuals_{0}.png".format(species_f.replace(' ', '-'))))
+#
+#     else:
+#     # reshape all the data
+#         position_day_x_sub = np.reshape(position_day_x_sub, position_day_x_sub.shape[0] * position_day_x_sub.shape[1])
+#         position_day_y_sub = np.reshape(position_day_y_sub, position_day_y_sub.shape[0] * position_day_y_sub.shape[1])
+#         position_night_x_sub = np.reshape(position_night_x_sub, position_night_x_sub.shape[0] * position_night_x_sub.shape[1])
+#         position_night_y_sub = np.reshape(position_night_y_sub, position_night_y_sub.shape[0] * position_night_y_sub.shape[1])
+#
+#     # Creating bins
+#     x_min = 0
+#     x_max = np.nanmax(position_day_x_sub)
+#
+#     y_min = 0
+#     y_max = np.nanmax(position_day_y_sub)
+#
+#     x_bins = np.linspace(x_min, x_max, 4)
+#     y_bins = np.linspace(y_min, y_max, 11)
+#
+#     fig3 = plt.figure(figsize=(4, 4))
+#     position_day_xy, xedges_day, yedges_day, _ = plt.hist2d(position_day_x_sub[~np.isnan(position_day_x_sub)],
+#                                                             position_day_y_sub[~np.isnan(position_day_y_sub)],
+#                      cmap='inferno', bins=[x_bins, y_bins])
+#     plt.close(fig3)
+#
+#     # need to properly normalise by counts! To get frequency!!!!!!!!
+#     position_day_xy = (position_day_xy / sum(sum(position_day_xy)))*100
+#     fig3 = plt.figure(figsize=(4, 4))
+#     plt.imshow(position_day_xy.T, cmap='inferno', vmin=0, vmax=25)
+#     plt.title("Day")
+#     cbar = plt.colorbar(label="% occupancy")
+#     plt.gca().invert_yaxis()
+#     plt.gca().set_xticks([])
+#     plt.gca().set_yticks([])
+#     plt.savefig(os.path.join(rootdir, "xy_ave_Day_{0}.png".format(species_f.replace(' ', '-'))))
+#
+#     fig4 = plt.figure(figsize=(4, 4))
+#     position_night_xy, xedges_night, yedges_night, _ = plt.hist2d(position_night_x_sub[~np.isnan(position_night_x_sub)],
+#                                                                   position_night_y_sub[~np.isnan(position_night_y_sub)],
+#                     bins=[3, 10], cmap='inferno')
+#     plt.close(fig4)
+#
+#     position_night_xy = (position_night_xy / sum(sum(position_night_xy)))*100
+#     fig4 = plt.figure(figsize=(4, 4))
+#     plt.imshow(position_night_xy.T, cmap='inferno', vmin=0, vmax=25)
+#     plt.title("Night")
+#     cbar = plt.colorbar(label="% occupancy")
+#     plt.gca().invert_yaxis()
+#     plt.gca().set_xticks([])
+#     plt.gca().set_yticks([])
+#     plt.savefig(os.path.join(rootdir, "xy_ave_Night_{0}.png".format(species_f.replace(' ', '-'))))
+#
+#     # find better way to deal with lack of second dimension when only one species
+#     if len(meta.loc["species"].unique()) == 1:
+#         ax1[0].set_title(species)
+#         ax1[0].set_ylabel("Day")
+#         ax1[0].imshow(position_day_xy.T, cmap='inferno')
+#         ax1[0].invert_yaxis()
+#         ax1[0].get_xaxis().set_ticks([])
+#         ax1[0].get_yaxis().set_ticks([])
+#         ax1[1].clear()
+#         ax1[1].imshow(position_night_xy.T, cmap='inferno')
+#         ax1[1].get_xaxis().set_ticks([])
+#         ax1[1].get_yaxis().set_ticks([])
+#         ax1[1].invert_yaxis()
+#         ax1[1].set_ylabel("Night")
+#     else:
+#         ax1[0, idx].title(species)
+#         ax1[0, idx].set_ylabel("Day")
+#         ax1[0, idx].imshow(position_day_xy.T)
+#         ax1[0, idx].invert_yaxis()
+#         ax1[0, idx].get_xaxis().set_ticks([])
+#         ax1[0, idx].get_yaxis().set_ticks([])
+#         ax1[1, idx].clear()
+#         ax1[1, idx].imshow(position_night_xy.T)
+#         ax1[1, idx].get_xaxis().set_ticks([])
+#         ax1[1, idx].get_yaxis().set_ticks([])
+#         ax1[1, idx].invert_yaxis()
+#         ax1[1, idx].set_ylabel("Night")
+# fig1.savefig(os.path.join(rootdir, "xy_ave_DN_all.png"))
