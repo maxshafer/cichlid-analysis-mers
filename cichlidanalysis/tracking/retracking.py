@@ -10,7 +10,7 @@ import glob
 
 from tkinter.filedialog import askdirectory, askopenfilename
 from tkinter import Tk
-import cv2
+import cv2.cv2 as cv2
 
 from cichlidanalysis.tracking.rois import define_roi_still
 from cichlidanalysis.tracking.offline_tracker import tracker

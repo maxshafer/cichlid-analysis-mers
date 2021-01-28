@@ -12,7 +12,7 @@ import os
 import sys
 import glob
 
-import cv2
+import cv2.cv2 as cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -146,7 +146,7 @@ playing = 1
 
 while 1:
     # show frame, break the loop if no frame is found
-    curr_frame = video.get(cv2.CAP_PROP_POS_FRAMES) -1
+    curr_frame = video.get(cv2.CAP_PROP_POS_FRAMES) - 1
 
     if ret:
         try:
@@ -180,7 +180,6 @@ while 1:
 
         cv2.rectangle(frameDelta, start_point, end_point, 220, 2)
         cv2.imshow("Background subtraction of {}".format(video_name), frameDelta)
-
 
     ax.clear()
     dummy = np.zeros([int(max_sp), 400, 3]).astype(np.uint8)

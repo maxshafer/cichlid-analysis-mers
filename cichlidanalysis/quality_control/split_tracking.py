@@ -11,7 +11,7 @@ import copy
 import sys
 import datetime
 
-import cv2
+import cv2.cv2 as cv2
 import numpy as np
 
 from cichlidanalysis.io.meta import load_yaml, extract_meta

@@ -4,7 +4,7 @@ from tkinter import Tk
 from tkinter.filedialog import askopenfilename
 
 import matplotlib.pyplot as plt
-import cv2
+import cv2.cv2 as cv2
 
 from cichlidanalysis.tracking.backgrounds import background_vid
 
