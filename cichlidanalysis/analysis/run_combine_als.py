@@ -26,7 +26,7 @@ from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import add_col, threshold_data
-from cichlidanalysis.plotting.position_plots import spd_vs_y
+from cichlidanalysis.plotting.position_plots import spd_vs_y #, plot_position_maps
 # from cichlidanalysis.analysis.bouts import find_bouts
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
@@ -57,7 +57,7 @@ remove = ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity']
 for remove_name in remove:
     if remove_name in fish_tracks.columns:
         fish_tracks = fish_tracks.drop(remove_name, axis=1)
-        print("removed {}".format(remove_name))
+        print("old track, removed {}".format(remove_name))
 
 # get each fish ID
 fish_IDs = fish_tracks['FishID'].unique()
@@ -65,17 +65,9 @@ fish_IDs = fish_tracks['FishID'].unique()
 # get timings
 fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, day_ns, day_s,\
     change_times_d, change_times_m = load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
-change_times_unit = [7.5*2, 8*2, 19*2, 19.5*2]
+change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
+# change_times_unit = [7.5*2, 8*2, 19*2, 19.5*2]
 
-# # if from 7am - 7pm # need  better way to deal with this change!
-# if statement for date (then add 30min to times stamps? as some fish will have this and others won't
-# change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
-# change_times_s = [i - 1800 for i in change_times_s]
-# change_times_h = [i - 0.5 for i in change_times_h]
-# change_times_d = [i - .5/24 for i in change_times_d]
-
-# # convert tv into datetime and add as new column
-# fish_tracks['ts'] = pd.to_datetime(fish_tracks['tv_ns'], unit='ns')
 
 # add new column with Day or Night
 t0 = time.time()
@@ -111,8 +103,10 @@ vertical_pos = abs(1 - vertical_pos)
 
 # put this data back into fish_tracks
 fish_tracks['vertical_pos'] = np.nan
+fish_tracks['horizontal_pos'] = np.nan
 for fish in fish_IDs:
     fish_tracks.loc[fish_tracks.FishID == fish, 'vertical_pos'] = vertical_pos.loc[:, fish]
+    fish_tracks.loc[fish_tracks.FishID == fish, 'horizontal_pos'] = horizontal_pos.loc[:, fish]
 
 # data gets heavy so remove what is not necessary
 remove = ['y_nt', 'x_nt', 'tv_ns']
@@ -194,8 +188,8 @@ for species_f in all_species:
     plt.savefig(os.path.join(rootdir, "speed_30min_ave_ave-stdev{0}.png".format(species_f.replace(' ', '-'))))
 
 
-##### x,y position (binned day/night, and average day/night) #####
-
+# ##### x,y position (binned day/night, and average day/night) #####
+# plot_position_maps(meta, fish_tracks, fish_tracks_30m, rootdir, species_f)
 
 
 # speed vs Y position, for each fish, for combine fish of species, separated between day and night

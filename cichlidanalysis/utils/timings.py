@@ -11,6 +11,20 @@ def infer_tv(fps, filechunk):
 
 def output_timings():
     # set sunrise, day, sunset, night times (ns, s, m, h)
+    change_times_s = [7*60*60, 7*60*60 + 30*60, 18*60*60 + 30*60, 19*60*60]
+    change_times_ns = [i * 10**9 for i in change_times_s]
+    change_times_m = [i / 60 for i in change_times_s]
+    change_times_h = [i / 60 / 60 for i in change_times_s]
+    change_times_d = [i / 24 for i in change_times_h]
+
+    # set day in ns
+    day_ns = 24 * 60 * 60 * 10**9
+    day_s = 24 * 60 * 60
+    return change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d
+
+
+def output_timings_730():
+    # set sunrise, day, sunset, night times (ns, s, m, h)
     change_times_s = [7*60*60 + 30*60, 8*60*60, 19*60*60, 19*60*60 + 30*60]
     change_times_ns = [i * 10**9 for i in change_times_s]
     change_times_m = [i / 60 for i in change_times_s]

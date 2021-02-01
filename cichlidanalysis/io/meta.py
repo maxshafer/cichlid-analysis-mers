@@ -78,3 +78,14 @@ def add_meta_from_name(df_i: pd.core.frame.DataFrame, row_name: str):
         print("can't retrieve that value, only these are possible:")
         for key in ID_pos.keys():
             print(key)
+
+
+def check_fish_species(fishid, species_name):
+    ''' takes a list of fish_IDs and a species name, and checks to see if the fish_ID is of that species.
+    Returns list of the fish_IDs which are of that species'''
+    fish_of_species = []
+    species_name = species_name.replace(' ', '-')
+    for fish_n in fishid:
+        if fish_n.split("_")[3] == species_name:
+            fish_of_species.append(fish_n)
+    return fish_of_species

@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from cichlidanalysis.io.meta import load_yaml
-from cichlidanalysis.io.tracks import extract_tracks_from_fld
+from cichlidanalysis.io.tracks import extract_tracks_from_fld, adjust_old_time_ns
 from cichlidanalysis.utils.timings import output_timings
 from cichlidanalysis.analysis.processing import int_nan_streches, remove_high_spd_xy, smooth_speed, neg_values
 from cichlidanalysis.plotting.single_plots import filled_plot, plot_hist_2, image_minmax, sec_axis_h
@@ -33,9 +33,11 @@ def full_analysis(rootdir):
         roi_n = fish_ID.split("_")[2][1]
 
     file_ending = roi_n
-    # file_ending = "Thresh_35_Area_100_roi-0"
     # load tracks
     track_full, speed_full = extract_tracks_from_fld(rootdir, file_ending)
+
+    # for old recordings update time (subtract 30min)
+    track_full[:, 0] = adjust_old_time_ns(fish_ID, track_full[:, 0])
 
     # get starting time of video
     os.chdir(rootdir)
@@ -130,7 +132,7 @@ def full_analysis(rootdir):
     tv_night = np.append(tv_night, tv_24h_sec[np.where(change_times_s[0] > tv_24h_sec)])
     tv_night = np.append(tv_night, tv[np.where(tv_24h_sec[0:-1] > change_times_s[3])])
 
-    speed_sm_night = np.append(speed_sm_night, speed_sm[np.where(change_times_s[0] > tv_24h_sec), 0])
+    speed_sm_night = np.append(speed_sm_night, speed_sm[np.where(change_times_s[0] > tv_24h_sec[0:-1]), 0])
     speed_sm_night = np.append(speed_sm_night, speed_sm[np.where(tv_24h_sec[0:-1] > change_times_s[3]), 0])
 
     tv_day = np.empty([0, 0])

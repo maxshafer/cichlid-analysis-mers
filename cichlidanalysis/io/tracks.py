@@ -1,9 +1,11 @@
 import glob
 import os
 import copy
+import datetime
 
 import numpy as np
 import pandas as pd
+
 
 def load_track(csv_file_path):
     """Takes file path, loads  the csv track, computes speed from this, returns  both
@@ -97,9 +99,13 @@ def extract_tracks_from_fld(folder, file_ending):
                 movies_with_range.append(select_with_movie_num.pop(select_with_movie_num.index(file_with_movie_num)))
         movies_with_range.sort()
 
+        #but also remove the ones with "exclude" tag
+        select_with_movie_num = remove_tags(select_with_movie_num, ["exclude"])
+
         if len(select_with_movie_num) >1:
             print("two  options for replacement for split movie... exiting")
             return False
+
         replacing_movie_idx = files.index(select_with_movie_num[0])
         files.pop(replacing_movie_idx)
         for inserting in movies_with_range:
@@ -124,11 +130,39 @@ def extract_tracks_from_fld(folder, file_ending):
     return track_full, speed_full
 
 
+def adjust_old_time_ns(recname, timevector_ns):
+    """ some older recordings use 7:30-19:30 light  instead of 7-19 light, subtract 30min from timestamps"""
+    thirty_min_ns = 30*60*1000000000
+    # finding old recordings
+    if int(recname[4:12]) < 20201127:
+        adjusted_time_ns = timevector_ns - thirty_min_ns
+        print("old recording from before 20201127 so adjusting time from 7.30am to 7am")
+    else:
+        adjusted_time_ns = timevector_ns
+
+    return adjusted_time_ns
+
+
+def adjust_old_time(recname, timestamps):
+    """ some older recordings use 7:30-19:30 light  instead of 7-19 light, subtract 30min from timestamps"""
+    thirty_minutes = datetime.timedelta(minutes=30)
+
+    # finding old recordings
+    if int(recname[4:12]) < 20201127:
+        adjusted_timestamps = timestamps - thirty_minutes
+        print("old recording from before 20201127 so adjusting time from 7.30am to 7am")
+    else:
+        adjusted_timestamps = timestamps
+
+    return adjusted_timestamps
+
+
 def load_als_files(folder):
     os.chdir(folder)
     files = glob.glob("*als.csv")
     files.sort()
     first_done = 0
+
 
     for file in files:
         if first_done:
@@ -138,7 +172,7 @@ def load_als_files(folder):
             data_s['FishID'] = file[0:-8]
             # data_s['species'] = file[0:-8].split("_")[3]
             # data_s['sex'] = file[0:-8].split("_")[4]
-            data_s['ts'] = pd.to_datetime(data_s['tv_ns'], unit='ns')
+            data_s['ts'] = adjust_old_time(file, pd.to_datetime(data_s['tv_ns'], unit='ns'))
             data = pd.concat([data, data_s])
 
         else:
@@ -150,7 +184,8 @@ def load_als_files(folder):
             data['FishID'] = file[0:-8]
             # data['species'] = file[0:-8].split("_")[3]
             # data['sex'] = file[0:-8].split("_")[4]
-            data['ts'] = pd.to_datetime(data['tv_ns'], unit='ns')
+
+            data['ts'] = adjust_old_time(file, pd.to_datetime(data['tv_ns'], unit='ns'))
             first_done = 1
 
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
