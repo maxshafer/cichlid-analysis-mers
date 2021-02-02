@@ -102,7 +102,7 @@ def extract_tracks_from_fld(folder, file_ending):
         #but also remove the ones with "exclude" tag
         select_with_movie_num = remove_tags(select_with_movie_num, ["exclude"])
 
-        if len(select_with_movie_num) >1:
+        if len(select_with_movie_num) > 1:
             print("two  options for replacement for split movie... exiting")
             return False
 
