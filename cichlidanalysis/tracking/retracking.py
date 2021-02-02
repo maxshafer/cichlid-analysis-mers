@@ -114,31 +114,33 @@ if __name__ == '__main__':
                     exit()
 
             # ##  Define video rois ##
-            # allow user to pick the background image which to set the roi with
-            root = Tk()
-            root.withdraw()
-            root.update()
-            background_file = askopenfilename(title="Select background", filetypes=(("image files", "*.png"),))
-            root.destroy()
-            background_full = cv2.imread(background_file)
-
-            # crop background to roi
+            # load recording roi
             rec_rois = load_yaml(cam_dir, "roi_file")
             curr_roi = rec_rois["roi_" + str(fish_data['roi'][1:])]
 
-            # have issue where roi can go over and then cropping the right background is an issue, rare case
-            if curr_roi[1] + curr_roi[3] > background_full.shape[0]:
-                print("something off with roi/background size... readjusting")
-                off_by_on_y = background_full.shape[0] - (curr_roi[1] + curr_roi[3])
-                curr_roi = (curr_roi[0], curr_roi[1] + off_by_on_y, curr_roi[2], curr_roi[3])
-
-            background_crop = background_full[curr_roi[1]:curr_roi[1] + curr_roi[3], curr_roi[0]:curr_roi[0] +
-                                                                                                 curr_roi[2]]
-            if background_crop.ndim == 3:
-                background_crop = cv2.cvtColor(background_crop, cv2.COLOR_BGR2GRAY)
-
+            # load video roi (if previously defined) or if not, then pick background and define a new ROI
             vid_rois = load_yaml(vid_dir, "roi_file")
             if not vid_rois:
+                # allow user to pick the background image which to set the roi with
+                root = Tk()
+                root.withdraw()
+                root.update()
+                background_file = askopenfilename(title="Select background", filetypes=(("image files", "*.png"),))
+                root.destroy()
+                background_full = cv2.imread(background_file)
+
+                # crop background to roi
+                # have issue where roi can go over and then cropping the right background is an issue, rare case
+                if curr_roi[1] + curr_roi[3] > background_full.shape[0]:
+                    print("something off with roi/background size... readjusting")
+                    off_by_on_y = background_full.shape[0] - (curr_roi[1] + curr_roi[3])
+                    curr_roi = (curr_roi[0], curr_roi[1] + off_by_on_y, curr_roi[2], curr_roi[3])
+
+                background_crop = background_full[curr_roi[1]:curr_roi[1] + curr_roi[3], curr_roi[0]:curr_roi[0] +
+                                                                                                     curr_roi[2]]
+                if background_crop.ndim == 3:
+                    background_crop = cv2.cvtColor(background_crop, cv2.COLOR_BGR2GRAY)
+
                 define_roi_still(background_crop, vid_dir)
                 vid_rois = load_yaml(vid_dir, "roi_file")
 
