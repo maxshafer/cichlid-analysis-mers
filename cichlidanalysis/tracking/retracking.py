@@ -19,7 +19,6 @@ from cichlidanalysis.tracking.backgrounds import background_vid, update_backgrou
 from cichlidanalysis.io.meta import extract_meta, load_yaml
 from cichlidanalysis.io.tracks import remove_tags
 
-
 if __name__ == '__main__':
     background_update = 'm'
     while background_update not in {'y', 'n'}:
@@ -40,7 +39,7 @@ if __name__ == '__main__':
             root.withdraw()
             root.update()
             video_file_back = askopenfilename(title="Select movie file",
-                                         filetypes=(("mp4 files", "*.mp4"), ("all files", "*.*")))
+                                              filetypes=(("mp4 files", "*.mp4"), ("all files", "*.*")))
             root.destroy()
 
             # percentile = input("Run with which percentile? 90 is default")
@@ -110,13 +109,19 @@ if __name__ == '__main__':
         if track_roi == 'y':
             if track_all == 'n':
                 roi_on_one = input("You are now changing the ROI for  only one video, this  is not recommended!\n "
-                      "y to continue, n to  stop: \n")
+                                   "y to continue, n to  stop: \n")
                 if roi_on_one == 'n':
                     exit()
 
-            # Define video rois
-            os.chdir(cam_dir)
-            background_full = cv2.imread(backgrounds[0])
+            # ##  Define video rois ##
+            # allow user to pick the background image which to set the roi with
+            root = Tk()
+            root.withdraw()
+            root.update()
+            background_file = askopenfilename(title="Select background", filetypes=(("image files", "*.png"),))
+            root.destroy()
+            background_full = cv2.imread(background_file)
+
             # crop background to roi
             rec_rois = load_yaml(cam_dir, "roi_file")
             curr_roi = rec_rois["roi_" + str(fish_data['roi'][1:])]
