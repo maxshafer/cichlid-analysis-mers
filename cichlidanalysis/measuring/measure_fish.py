@@ -3,16 +3,14 @@
 # it will then ask you to draw the length of the fish 3 times.
 # It will take the average length and add this to the meta file
 import os
-import glob
-import sys
-from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter.filedialog import askopenfilename
 from tkinter import *
 
-import cv2
+import cv2.cv2 as cv2
 import numpy as np
 import yaml
 
-from cichlidanalysis.io.meta import load_yaml
+from cichlidanalysis.io.meta import load_yaml, add_sex
 from cichlidanalysis.measuring.measure_units import measuring
 
 # function called by trackbar, sets the next frame to be read
@@ -30,6 +28,7 @@ def main():
     root.destroy()
 
     parts = os.path.split(filepath)
+    add_sex(parts[0])
     meta = load_yaml(parts[0], "meta_data")
 
     # check if fish has already been measured or not

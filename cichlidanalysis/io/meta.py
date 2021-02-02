@@ -89,3 +89,23 @@ def check_fish_species(fishid, species_name):
         if fish_n.split("_")[3] == species_name:
             fish_of_species.append(fish_n)
     return fish_of_species
+
+
+def add_sex(path):
+    """ takes path for meta data, loads it, checks the current sex and lets you decide if you'd like to change it.
+    Saves the meta  file back """
+    meta = load_yaml(path, "meta_data")
+
+    change_sex = 'y'
+    while change_sex not in {'m', 'f', 'u', 'n'}:
+        change_sex = input("Current sex of fish is -{}-.Change sex of fish? m/f/u or n to leave as is: \n".
+                           format(meta["sex"]))
+
+    if change_sex == 'n':
+        print("leaving sex as is")
+    else:
+        meta["sex"] = change_sex
+
+        with open(os.path.join(path, "meta_data.yaml"), "w") as file:
+            yaml.dump(meta, file)
+    return
