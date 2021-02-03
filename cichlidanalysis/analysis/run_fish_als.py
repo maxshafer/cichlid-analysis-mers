@@ -333,8 +333,16 @@ def full_analysis(rootdir):
     meta_df = pd.DataFrame(track_meta, columns=['ID', 'species', 'sex', 'fish_length_mm', 'mm_per_pixel'], index=[0])
     meta_df.to_csv(os.path.join(rootdir, "{0}_meta.csv".format(fish_ID)))
 
-    # need to choose the 3 days... or start from midnight (so they all start at the same time?).
-    midnight = np.max(np.where(tv < day_ns))
+    # start from midnight (so they all start at the same time) - need to adjust "middnight" depending on if ts were
+    # adjusted for 30min shift (all recordings before 20201127).
+    if int(fish_ID[4:12]) < 20201127:
+        thirty_min_ns = 30 * 60 * 1000000000
+        adjusted_day_ns = day_ns - thirty_min_ns
+        print("old recording from before 20201127 so adjusting back time before saving out als")
+    else:
+        adjusted_day_ns = day_ns
+
+    midnight = np.max(np.where(tv < adjusted_day_ns))
 
     track_als = np.vstack((tv[midnight:-1], speed_sm_mm_ps[midnight:, 0], x_nt[midnight:-1], y_nt[midnight:-1]))
 
