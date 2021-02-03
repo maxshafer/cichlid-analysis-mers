@@ -26,7 +26,7 @@ from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import add_col, threshold_data
-from cichlidanalysis.plotting.position_plots import spd_vs_y #, plot_position_maps
+from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 # from cichlidanalysis.analysis.bouts import find_bouts
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
@@ -184,8 +184,7 @@ for species_f in all_species:
 
 
 # ##### x,y position (binned day/night, and average day/night) #####
-# plot_position_maps(meta, fish_tracks, fish_tracks_30m, rootdir, species_f)
-
+plot_position_maps(meta, fish_tracks, rootdir)
 
 # speed vs Y position, for each fish, for combine fish of species, separated between day and night
 spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
