@@ -34,10 +34,6 @@ from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individual
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-# useful
-# data.columns
-# making a pandas dataframe with tv_i (from middnight until 7days), x, y, speed_sm, FISH-ID, species, sex, fish_mm
-
 # pick folder
 # Allows user to select top directory and load all als files here
 root = Tk()
@@ -66,7 +62,6 @@ fish_IDs = fish_tracks['FishID'].unique()
 fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, day_ns, day_s,\
     change_times_d, change_times_m = load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
 change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
-# change_times_unit = [7.5*2, 8*2, 19*2, 19.5*2]
 
 
 # add new column with Day or Night
@@ -209,12 +204,13 @@ spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
 #   BS - mean, stdev, median
 #   30min bins of each data
 
+column_names = ['spd_mean_d', 'spd_mean_n', 'spd_std_d', 'spd_std_n', 'spd_median_d', 'spd_median_n', 'move_mean_d',
+                'move_mean_n', 'move_std_d', 'move_std_n', 'move_median_d', 'move_median_n', 'y_mean_d', 'y_mean_n',
+                'y_std_d', 'y_std_n', 'y_median_d', 'y_median_n', 'fish_length_mm']
 
 for species in all_species:
-    df = pd.DataFrame([],  columns=['spd_mean_d', 'spd_mean_n', 'spd_std_d', 'spd_std_n', 'spd_median_d',
-                                    'spd_median_n', 'move_mean_d', 'move_mean_n', 'move_std_d', 'move_std_n',
-                                    'move_median_d', 'move_median_n', 'y_mean_d', 'y_mean_n', 'y_std_d', 'y_std_n',
-                                    'y_median_d', 'y_median_n'])
+    df = pd.DataFrame([],  columns=column_names)
+
     for fish in fish_IDs:
         fish_v_d = fish_tracks.loc[(fish_tracks.FishID == fish) & (fish_tracks.daynight == "d"),
                                             ["speed_mm", "movement", "vertical_pos"]]
@@ -225,28 +221,12 @@ for species in all_species:
                               fish_v_d.median()[0], fish_v_n.median()[0], fish_v_d.mean()[1], fish_v_n.mean()[1],
                               fish_v_d.std()[1], fish_v_n.std()[1], fish_v_d.median()[1], fish_v_n.median()[1],
                               fish_v_d.mean()[2], fish_v_n.mean()[2], fish_v_d.std()[2], fish_v_n.std()[2],
-                              fish_v_d.median()[2], fish_v_n.median()[2]]], index=[fish],
-                            columns=['spd_mean_d', 'spd_mean_n', 'spd_std_d', 'spd_std_n', 'spd_median_d',
-                                                 'spd_median_n', 'move_mean_d', 'move_mean_n', 'move_std_d',
-                                                 'move_std_n', 'move_median_d', 'move_median_n', 'y_mean_d', 'y_mean_n',
-                                                 'y_std_d', 'y_std_n', 'y_median_d', 'y_median_n'])
+                              fish_v_d.median()[2], fish_v_n.median()[2]], metat.loc[fish, 'fish_length_mm']],
+                            index=[fish], columns= column_names)
         df_f = df_f.round(4)
         df = pd.concat([df, df_f])
 
     df.to_csv(os.path.join(rootdir, "{}_als_fv.csv".format(species)))
 
-
-
-# # group by
-# plt.plot(fish_tracks.groupby["species"])
-# fish_tracks_30m.groupby('species')['speed_mm'].plot(kind='line', x='ts', y='speed_mm')
-# fish_tracks_30m.groupby('species').plot(kind='line', x='ts', y='speed_mm')
-#
-# date_form = DateFormatter("%H")
-# ax = sns.lineplot(data=fish_tracks_30m, x='ts', y='speed_mm', hue='FishID')
-# ax.xaxis.set_major_locator(MultipleLocator(0.2))
-# ax.xaxis.set_major_formatter(date_form)
-# fill_plot(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
-#
-# fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts
-
+# save out 30m data (all adjusted to 7am-7pm)
+fish_tracks_30m.to_csv(os.path.join(rootdir, "{}_als_30m.csv".format(species)))
