@@ -1,9 +1,13 @@
 import os
+import glob
+import copy
 
 import cv2.cv2 as cv2
 import numpy as np
+from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter import Tk
 
-from cichlidanalysis.io.tracks import load_track
+from cichlidanalysis.io.tracks import load_track, remove_tags
 
 
 def threshold_select(video_path, median_full, rois):
@@ -103,15 +107,19 @@ def threshold_select(video_path, median_full, rois):
 def exclude_tag_csv(orig_csv_path_i):
     # check if old path exists
     if os.path.isfile(orig_csv_path_i):
-        # make new path name
-        tagged_path = orig_csv_path_i[0:-4] + "_exclude.csv"
-
-        # check if it already exists
-        if os.path.isfile(tagged_path):
-            print("there's already a file by that name, can't tag file")
+        if orig_csv_path_i[-12:] == "_exclude.csv":
+            print("there's already a exclude tag on this file: {}".format(orig_csv_path_i))
             return
         else:
-            os.rename(orig_csv_path_i, tagged_path)
+            # make new path name
+            tagged_path = orig_csv_path_i[0:-4] + "_exclude.csv"
+
+            # check if it already exists
+            if os.path.isfile(tagged_path):
+                print("there's already a file by that name, can't tag file")
+                return
+            else:
+                os.rename(orig_csv_path_i, tagged_path)
     else:
         print("no file found - check path name")
 
@@ -121,11 +129,15 @@ def copy_timestamps(orig_csv_path_i, new_csv_path_i):
     # load csv file and replace timestamps
     _, track_single_orig = load_track(orig_csv_path_i)
     _, track_single_retracked = load_track(new_csv_path_i)
-    track_single_retracked[:, 0] = track_single_orig[:, 0]
 
-    # save over
-    os.makedirs(os.path.dirname(new_csv_path_i), exist_ok=True)
-    np.savetxt(new_csv_path_i, track_single_retracked, delimiter=",")
+    if track_single_retracked[0, 0] == 0:
+        track_single_retracked[:, 0] = track_single_orig[:, 0]
+
+        # save over
+        os.makedirs(os.path.dirname(new_csv_path_i), exist_ok=True)
+        np.savetxt(new_csv_path_i, track_single_retracked, delimiter=",")
+    else:
+        print("Timestamps already copied")
 
 
 def update_csvs(orig_csv_path, new_csv_path):
@@ -145,3 +157,74 @@ def update_csvs(orig_csv_path, new_csv_path):
         copy_timestamps(orig_csv_path, new_csv_path)
         # add "exclude" tag to old csv track file
         exclude_tag_csv(orig_csv_path)
+
+
+def correct_tags(retracking_date, vid_directory):
+    """ find cases where a movie has multiple csv files, add exclude tag to the ones from not today (date in file
+    names), exclude any old tracks, check if timestamps have been replaced.
+
+    :param retracking_date: "%Y%m%d"
+    :param vid_directory: path of a recording
+    :return:
+    """
+
+    os.chdir(vid_directory)
+    video_files = glob.glob("*.mp4")
+    video_files.sort()
+
+    # find all csvs
+    all_files = glob.glob("*.csv")
+    all_files.sort()
+    all_files = remove_tags(all_files, remove=["meta.csv", "als.csv"])
+
+    # find csvs with retracking date (which are the recent ones)
+    new_files = glob.glob("*_{}_*.csv".format(retracking_date))
+    new_files.sort()
+
+    if len(new_files) == 0:
+        print("no new csv files found with this date - double check date")
+        return
+
+    old_files = [file_a for file_a in all_files if file_a not in new_files]
+
+    # ## find split tracks and replace with excluded old track ##
+    splits = []
+    for track in old_files:
+        if "_Range" in track:
+            splits.append(track)
+
+    # find original tracks for each movie as these have the timestamps
+    orig_tracks = copy.copy(old_files)
+    orig_tracks = remove_tags(orig_tracks, remove=["meta.csv", "als.csv", "_Range", "cleaned"])
+    orig_tracks.sort()
+
+    # add old timestamps to newly re-tracked data
+    for orig_n, orig_file in enumerate(orig_tracks):
+        for new_f in new_files:
+            if orig_file[0:18] == new_f[0:18]:
+                print("updating timestamps of {} and adding exclude tag to {}".format(new_f, orig_file))
+                update_csvs(os.path.join(vid_directory, orig_file), os.path.join(vid_directory, new_f))
+
+    old_files_excluding_orig = [file_a for file_a in old_files if file_a not in orig_tracks]
+
+    # add exclude tag to the old files (excluding orig - which were already "exlcuded" in last lines:
+    for file in old_files_excluding_orig:
+        exclude_tag_csv(os.path.join(vid_directory, file))
+
+
+if __name__ == '__main__':
+
+    correct_new_tracks = 'm'
+    while correct_new_tracks not in {'y', 'n'}:
+        correct_new_tracks = input("Correct new tracks? y/n: \n")
+
+    if correct_new_tracks == 'y':
+        date_tag = input("What is the date tag for the new tracks? YYYYMMDD: \n")
+        # Allows a user to select top directory
+        root = Tk()
+        root.withdraw()
+        root.update()
+        rootdir = askdirectory(parent=root, title="Select video folder (which has the movies and tracks)")
+        root.destroy()
+
+        correct_tags(date_tag, rootdir)

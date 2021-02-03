@@ -7,7 +7,6 @@
 import datetime
 import os
 import glob
-import copy
 
 from tkinter.filedialog import askdirectory, askopenfilename
 from tkinter import Tk
@@ -15,7 +14,7 @@ import cv2.cv2 as cv2
 
 from cichlidanalysis.tracking.rois import define_roi_still
 from cichlidanalysis.tracking.offline_tracker import tracker
-from cichlidanalysis.tracking.helpers import update_csvs, exclude_tag_csv
+from cichlidanalysis.tracking.helpers import correct_tags
 from cichlidanalysis.tracking.backgrounds import background_vid, update_background
 from cichlidanalysis.io.meta import extract_meta, load_yaml
 from cichlidanalysis.io.tracks import remove_tags
@@ -165,78 +164,4 @@ if __name__ == '__main__':
         # names) and replace timestamps.
 
         date = datetime.datetime.now().strftime("%Y%m%d")
-        os.chdir(vid_dir)
-
-        # find all csvs
-        all_files = glob.glob("*.csv".format(date))
-        all_files.sort()
-
-        # find csvs with today's date (which are the recent ones)
-        new_files = glob.glob("*_{}_*.csv".format(date))
-        new_files.sort()
-
-        remove = ["exclude", "meta.csv", "als.csv"]
-
-        select_files = []
-        for file_a in all_files:
-            counting = 0
-            for tag in remove:
-                if tag in file_a:
-                    counting += 1
-            if counting == 0:
-                select_files.append(file_a)
-
-        old_files = [file_a for file_a in select_files if file_a not in new_files]
-
-        # find old_files which fit with the video_files (the movies being re-tracked)
-        retracked = []
-        for video in video_files:
-            for old_f in old_files:
-                if video[0:18] == old_f[0:18]:
-                    retracked.append(old_f)
-
-        # ## find split tracks and replace with excluded old track ##
-        splits = []
-        for track in retracked:
-            if "_Range" in track:
-                splits.append(track)
-
-        # get movie numbers which have had spilt replace and remove the "range" files in retracked
-        movie_nums = []
-        for spiltting in splits:
-            movie_nums.append(spiltting.split("_")[1])
-
-            # remove from retracked
-            retracked.pop(retracked.index(spiltting))
-
-        # need to extract the movie name which was spilt (but ignore the new version) and add it to retracked
-        for movie in set(movie_nums):
-            all_with_movie_num = glob.glob("*_{}_*.csv".format(movie))
-            select_with_movie_num = copy.copy(all_with_movie_num)
-            movies_with_range = []
-            for file_with_movie_num in all_with_movie_num:
-                if file_with_movie_num.find("Range") > -1:
-                    movies_with_range.append(
-                        select_with_movie_num.pop(select_with_movie_num.index(file_with_movie_num)))
-            movies_with_range.sort()
-
-            # remove the new movie from the list
-            new_movie = []
-            for movie_num_track in select_with_movie_num:
-                for new_f in new_files:
-                    if movie_num_track == new_f:
-                        new_movie.append(movie_num_track)
-
-            select_with_movie_num.pop(select_with_movie_num.index(new_movie[0]))
-            retracked = retracked + select_with_movie_num
-        retracked.sort()
-
-        # add exclude tag to the old spilt files:
-        for file in splits:
-            exclude_tag_csv(os.path.join(vid_dir, file))
-
-        for retrack_n, retracked_file in enumerate(retracked):
-            for new_f in new_files:
-                if retracked_file[0:18] == new_f[0:18]:
-                    print("updating timestamps of {} and adding exclude tag to {}".format(new_f, retracked_file))
-                    update_csvs(os.path.join(vid_dir, retracked_file), os.path.join(vid_dir, new_f))
+        correct_tags(date, vid_dir)
