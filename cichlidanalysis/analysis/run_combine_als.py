@@ -220,8 +220,8 @@ for species in all_species:
                               fish_v_d.median()[0], fish_v_n.median()[0], fish_v_d.mean()[1], fish_v_n.mean()[1],
                               fish_v_d.std()[1], fish_v_n.std()[1], fish_v_d.median()[1], fish_v_n.median()[1],
                               fish_v_d.mean()[2], fish_v_n.mean()[2], fish_v_d.std()[2], fish_v_n.std()[2],
-                              fish_v_d.median()[2], fish_v_n.median()[2]], metat.loc[fish, 'fish_length_mm']],
-                            index=[fish], columns= column_names)
+                              fish_v_d.median()[2], fish_v_n.median()[2], metat.loc[fish, 'fish_length_mm']]],
+                            index=[fish], columns=column_names)
         df_f = df_f.round(4)
         df = pd.concat([df, df_f])
 

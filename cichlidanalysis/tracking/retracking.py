@@ -145,7 +145,10 @@ if __name__ == '__main__':
                 vid_rois = load_yaml(vid_dir, "roi_file")
 
             for idx, val in enumerate(video_files):
-                background_full = cv2.imread(backgrounds[idx], 0)
+                movie_n = val.split("_")[1]
+                background_of_movie = [i for i in backgrounds if i.split("_")[1] == movie_n]
+                print("tracking with background {}".format(background_of_movie))
+                background_full = cv2.imread(background_of_movie[0], 0)
                 background_crop = background_full[curr_roi[1]:curr_roi[1] + curr_roi[3], curr_roi[0]:curr_roi[0] +
                                                                                                      curr_roi[2]]
                 tracker(os.path.join(vid_dir, val), background_crop, vid_rois, threshold=35, display=False,
@@ -157,7 +160,11 @@ if __name__ == '__main__':
             rois = {'roi_0': (0, 0, width_trim, height_trim)}
 
             for idx, val in enumerate(video_files):
-                background = cv2.imread(backgrounds[idx], 0)
+                movie_n = val.split("_")[1]
+                background_of_movie = [i for i in backgrounds if i.split("_")[1] == movie_n]
+                print("tracking with background {}".format(background_of_movie))
+                background = cv2.imread(background_of_movie[0], 0)
+
                 tracker(os.path.join(vid_dir, val), background, rois, threshold=35, display=False, area_size=100)
 
         # find cases where a movie has multiple csv files, add exclude tag to the ones from not today (date in file
