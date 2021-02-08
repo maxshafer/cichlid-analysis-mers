@@ -18,9 +18,6 @@ import time
 
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.ticker import (MultipleLocator)
-import seaborn as sns
 
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
@@ -30,6 +27,7 @@ from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 # from cichlidanalysis.analysis.bouts import find_bouts
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
+from cichlidanalysis.plotting.daily_plots import plot_daily
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -124,63 +122,30 @@ fish_tracks_30m['daynight'] = "d"
 fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m < change_times_m[0], 'daynight'] = "n"
 fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight'] = "n"
 
+
+# ### Behavioural state - calculated from Movement ###
+
+
+
+
+# ### plotting ### #
+
 # speed_mm (30m bins) for each fish (individual lines)
 plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 
 # speed_mm (30m bins) for each species (mean  +- std)
 plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
+
 # movement for each fish (individual lines)
 plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
+
 # movement (30m bins) for each species (mean  +- std)
 plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
-##### get daily average #####
 
-# make a new col where the daily timestamp is (no year/ month/ day)
-for species_f in all_species:
-    spd = fish_tracks_30m[fish_tracks_30m.species == species_f][['speed_mm', 'FishID', 'ts']]
-    sp_spd = spd.pivot(columns='FishID', values='speed_mm', index='ts')
-    # get time of day so that the same tod for each fish can be averaged
-    sp_spd['time_of_day'] = sp_spd.apply(lambda row: str(row.name)[11:16], axis=1)
-    sp_spd_ave = sp_spd.groupby('time_of_day').mean()
-    sp_spd_ave_std = sp_spd_ave.std(axis=1)
-
-    # speed_mm (30m bins daily average) for each fish (individual lines)
-    plt.figure(figsize=(6, 4))
-    # ax = sns.lineplot(data=sp_spd_ave)
-    for cols in np.arange(0, sp_spd_ave.columns.shape[0]):
-        ax = sns.lineplot(x=sp_spd_ave.index, y=(sp_spd_ave).iloc[:, cols])
-    ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[2], change_times_unit[3], color='wheat', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[3], 24*2, color='lightblue', alpha=0.5,linewidth=0)
-    ax.set_ylim([0, 60])
-    ax.set_xlim([0, 24*2])
-    plt.xlabel("Time (h:m)")
-    plt.ylabel("Speed (mm/s)")
-    ax.xaxis.set_major_locator(MultipleLocator(6))
-    plt.title(species_f)
-    plt.savefig(os.path.join(rootdir, "speed_30min_ave_individual{0}.png".format(species_f.replace(' ', '-'))))
-
-    # speed_mm (30m bins daily average) for each fish (mean  +- std)
-    plt.figure(figsize=(6, 4))
-    sp_spd_ave_ave = sp_spd_ave.mean(axis=1)
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(sp_spd_ave_ave))
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(sp_spd_ave_ave + sp_spd_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(sp_spd_ave_ave - sp_spd_ave_std), color='lightgrey')
-
-    ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[2], change_times_unit[3], color='wheat', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[3], 24*2, color='lightblue', alpha=0.5,linewidth=0)
-    ax.set_ylim([0, 60])
-    ax.set_xlim([0, 24 * 2])
-    plt.xlabel("Time (h:m)")
-    plt.ylabel("Speed (mm/s)")
-    ax.xaxis.set_major_locator(MultipleLocator(6))
-    plt.title(species_f)
-    plt.savefig(os.path.join(rootdir, "speed_30min_ave_ave-stdev{0}.png".format(species_f.replace(' ', '-'))))
+# get daily average
+plot_daily(fish_tracks_30m, change_times_unit, rootdir)
 
 
 # ##### x,y position (binned day/night, and average day/night) #####
@@ -188,11 +153,6 @@ plot_position_maps(meta, fish_tracks, rootdir)
 
 # speed vs Y position, for each fish, for combine fish of species, separated between day and night
 spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
-
-
-# #### Behavioural state - calculated from Movement ####
-
-
 
 
 
