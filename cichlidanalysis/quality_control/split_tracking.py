@@ -188,6 +188,7 @@ if __name__ == '__main__':
     displacement_internal, track_single = load_track(track_path)
     meta = load_yaml(vid_folder_path, "meta_data")
     rois = load_yaml(cam_folder_path, "roi_file")
+    new_roi = load_yaml(vid_folder_path, "roi_file")
     config = load_yaml(cam_folder_path, "config")
     fish_data = extract_meta(vid_folder_name)
 
@@ -237,14 +238,19 @@ if __name__ == '__main__':
 
         # retrack part of the movie with the correct background. Will also need to use the second background for the
         # movie afterwards making roi for full video
-        vid_rois = load_yaml(cam_folder_path, "roi_file")
-        width_trim, height_trim = vid_rois['roi_{}'.format(fish_data['roi'][-1])][2:4]
-        rois = {'roi_0': (0, 0, width_trim, height_trim)}
+        if new_roi:
+            # get the new roi coordinates
+            track_rois = {'roi_0': new_roi['roi_0']}
+            print("using the new roi")
+        else:
+            # get the old roi coordinates and reset for the video (so start x,y = 0,0
+            width_trim, height_trim = rois['roi_{}'.format(fish_data['roi'][-1])][2:4]
+            track_rois = {'roi_0': (0, 0, width_trim, height_trim)}
 
         for idx, curr_background in enumerate(backgrounds):
             area_s = 100
             thresh = 35
-            tracker(video_path, curr_background, rois, threshold=thresh, display=False, area_size=area_s,
+            tracker(video_path, curr_background, track_rois, threshold=thresh, display=False, area_size=area_s,
                     split_range=split_range[idx])
 
             # add in the right timepoints (of a primary track - not a full retrack)
@@ -287,7 +293,7 @@ if __name__ == '__main__':
                 print("not retracking {} as there's already multiple track types.".format(next_movie_name))
             else:
                 next_movie_path = os.path.join(vid_folder_path, next_movie_name)
-                tracker(next_movie_path, backgrounds[1], rois, threshold=thresh, display=False, area_size=area_s)
+                tracker(next_movie_path, backgrounds[1], track_rois, threshold=thresh, display=False, area_size=area_s)
 
                 # find newly made csv and rename it so it will be used by the loading script.
                 date = datetime.datetime.now().strftime("%Y%m%d")
