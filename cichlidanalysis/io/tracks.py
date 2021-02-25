@@ -157,12 +157,11 @@ def adjust_old_time(recname, timestamps):
     return adjusted_timestamps
 
 
-def load_als_files(folder):
+def load_als_files(folder, suffix="*als.csv"):
     os.chdir(folder)
-    files = glob.glob("*als.csv")
+    files = glob.glob(suffix)
     files.sort()
     first_done = 0
-
 
     for file in files:
         if first_done:
@@ -193,6 +192,32 @@ def load_als_files(folder):
     # also change how the csv is saved in run_fish_als.py
 
     print("All als.csv files loaded")
+    return data
+
+
+def load_ds_als_files(folder, suffix="*als.csv"):
+    os.chdir(folder)
+    files = glob.glob(suffix)
+    files.sort()
+    first_done = 0
+
+    for file in files:
+        if first_done:
+            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
+            print("loaded file {}".format(file))
+            data = pd.concat([data, data_s])
+
+        else:
+            # initiate data frames for each of the fish, beside the time series,
+            data = pd.read_csv(os.path.join(folder, file), sep=',')
+            print("loaded file {}".format(file))
+            first_done = 1
+
+    # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
+    data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
+    # also change how the csv is saved in run_fish_als.py
+
+    print("All down sampled als.csv files loaded")
     return data
 
 
