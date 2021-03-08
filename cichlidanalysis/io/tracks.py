@@ -221,6 +221,32 @@ def load_ds_als_files(folder, suffix="*als.csv"):
     return data
 
 
+def load_feature_vectors(folder, suffix="*als_fv.csv"):
+    os.chdir(folder)
+    files = glob.glob(suffix)
+    files.sort()
+    first_done = 0
+
+    for file in files:
+        if first_done:
+            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
+            print("loaded file {}".format(file))
+            data = pd.concat([data, data_s])
+
+        else:
+            # initiate data frames for each of the fish, beside the time series,
+            data = pd.read_csv(os.path.join(folder, file), sep=',')
+            print("loaded file {}".format(file))
+            first_done = 1
+
+    data = data.rename(columns={"Unnamed: 0": "fish_ID"})
+    data = data.reset_index()
+    data = data.drop(columns=['index'])
+
+    print("All down sampled als.csv files loaded")
+    return data
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

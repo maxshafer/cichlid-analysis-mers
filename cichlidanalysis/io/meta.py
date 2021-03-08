@@ -29,14 +29,6 @@ def extract_meta(rec_name):
     return fish_data
 
 
-def extract_meta(rec_name):
-    id_pos = {'date': 0, 'camera': 1, 'roi': 2, 'species': 3, 'sex': 4}
-    fish_data = {}
-    for ID in id_pos:
-        fish_data[ID] = rec_name.split("_")[id_pos[ID]]
-    return fish_data
-
-
 def load_meta_files(folder):
     os.chdir(folder)
     files = glob.glob("*meta.csv")

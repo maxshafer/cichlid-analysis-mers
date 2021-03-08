@@ -188,6 +188,16 @@ def add_col(df, col_str, fish_IDs_i, meta_i):
         print("column {} doesn't exist in meta".format(col_str))
 
 
+def feature_daily(averages_feature):
+    """ Calculates the  daily average, note must be organised with datetime ass index and columns as different
+    fish/species"""
+
+    # get time of day so that the same time of day for each fish can be averaged
+    averages_feature['time_of_day'] = averages_feature.apply(lambda row: str(row.name)[11:16], axis=1)
+    aves_ave_feature = averages_feature.groupby('time_of_day').mean()
+    return aves_ave_feature
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

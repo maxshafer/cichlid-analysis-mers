@@ -146,17 +146,14 @@ plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 # speed_mm (30m bins) for each species (mean  +- std)
 plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
-
 # movement for each fish (individual lines)
 plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 
 # movement (30m bins) for each species (mean  +- std)
 plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
-
 # get daily average
 plot_daily(fish_tracks_30m, change_times_unit, rootdir)
-
 
 # ##### x,y position (binned day/night, and average day/night) #####
 plot_position_maps(meta, fish_tracks, rootdir)
