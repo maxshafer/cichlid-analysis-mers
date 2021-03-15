@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
             for idx, val in enumerate(video_files):
                 movie_n = val.split("_")[1]
-                background_of_movie = [i for i in backgrounds if i.split("_")[1] == movie_n]
+                background_of_movie = [i for i in backgrounds if (i.split('/')[-1]).split("_")[1] == movie_n]
                 print("tracking with background {}".format(background_of_movie))
                 background = cv2.imread(background_of_movie[0], 0)
 
