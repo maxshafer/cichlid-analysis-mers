@@ -28,7 +28,7 @@ from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
 from cichlidanalysis.plotting.daily_plots import plot_daily
-# from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play
+from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -129,12 +129,12 @@ fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight
 
 
 # # ### Behavioural state - calculated from Movement ###
-# time_window_s = 10
-# fraction_threshold = 0.2
-#
-# testing1 = bout_play(fish_tracks, metat)
-#
-# testing = define_bs(fish_tracks, rootdir, time_window_s, fraction_threshold)
+time_window_s = 10
+fraction_threshold = 0.2
+
+testing1 = bout_play(fish_tracks, metat)
+
+testing = define_bs(fish_tracks, rootdir, time_window_s, fraction_threshold)
 
 
 
