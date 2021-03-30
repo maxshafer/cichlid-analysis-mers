@@ -1,3 +1,5 @@
+import copy
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,140 +13,8 @@ from cichlidanalysis.analysis.bouts import find_bouts
 from cichlidanalysis.analysis.processing import smooth_speed
 
 
-def define_bs(fish_tracks_i, rootdir, time_window_s, fraction_threshold=0.10):
-    time_window_s = 60
-    fraction_threshold
-
-    fish_tracks_i["behav_state"] = ((fish_tracks_i.movement.rolling(
-        10 * time_window_s).mean()) > fraction_threshold) * 1
-
-    fig1 = plt.subplot()
-    plt.fill_between(np.arange(0, len(fish_tracks_i.behav_state * 45)), fish_tracks_i.behav_state * 45, alpha=0.5,
-                     color='green')
-    plt.plot(fish_tracks_i.speed_mm)
-    plt.plot(fish_tracks_i.movement * 40)
-
-    plt.plot(fish_tracks_i.behav_state * 45)
-
-    fish_tracks_30m = fish_tracks_i.groupby('FishID').resample('30T', on='ts').mean()
-    fig2 = plt.subplot()
-    plt.plot(fish_tracks_30m.speed_mm.to_numpy())
-    plt.plot(fish_tracks_30m.movement.to_numpy() * 40)
-    plt.plot(fish_tracks_30m.behav_state.to_numpy() * 45)
-
-    print("defining bs")
-
-
 def norm_hist(input_d):
-    input_d_norm = input_d / sum(input_d)
-    return input_d_norm
-
-
-def kmeans_cluster(input_pd_df, cluster_number=15):
-    """ Input pandas
-
-    :param input_pd_series: a pd.series of data points to cluster - note will drop any NaNs later
-    :param cluster_number: number of clusterss to try kmeans with
-    :return:
-    """
-    kmeans_list = []
-    clusters = np.arange(1, cluster_number)
-    # cluster_variation = np.zeros(max(clusters))
-    cluster_interia = np.zeros(max(clusters))
-    for iteration in clusters:
-        kmeans_list.append(
-            KMeans(n_clusters=iteration, random_state=0).fit(input_pd_df.dropna().to_numpy().reshape(-1, input_pd_df.shape[1])))
-        # variation = 0
-        # for cluster_n in np.arange(0, iteration):
-        #     variation = variation + (
-        #                 kmeans_list[iteration - 1].cluster_centers_[cluster_n] - input_pd_series.dropna().
-        #                 iloc[kmeans_list[iteration - 1].labels_ == cluster_n]).var()
-        # # cluster_variation[iteration - 1] = variation
-        cluster_interia[iteration - 1] = kmeans_list[iteration - 1].inertia_
-
-    kl = KneeLocator(clusters, max(cluster_interia) - cluster_interia, curve="concave", direction="increasing")
-    # kl.plot_knee()
-    print(kl.elbow)
-
-    for ii in np.arange(0, input_pd_df.shape[1], 1):
-    # for ii in [0]:
-        fig3, ax3 = plt.subplots()
-        if ii < 2:
-            bin_n = np.arange(0, 150, 1)
-        else:
-            bin_n = np.arange(0, 1.1, 0.1)
-
-        for i in np.arange(0, kl.elbow):
-            plt.hist(input_pd_df.dropna().iloc[kmeans_list[kl.elbow - 1].labels_ == i, ii], bins=bin_n, alpha=0.5,
-                     label=i)
-        ax3.set_xlabel(input_pd_df.columns[0])
-        ax3.legend()
-
-    return kl, kmeans_list[kl.elbow], kmeans_list
-
-
-def cluster_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T',
-                                                '2T', '5T', '10T', '15T', '20T']):
-    bin_boxes = np.arange(0, 150, 1)
-    fishes = fish_tracks_i.FishID.unique()[:]
-    all_counts_combined_norm = np.zeros([len(bin_boxes)-1, len(resample_units), len(fishes)])
-
-    for fish_n, fish in enumerate(fishes):
-        fish_tracks_s = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['speed_mm', 'ts']]
-        fish_tracks_v = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_position', 'ts']]
-        counts_combined = np.zeros([len(resample_units), len(bin_boxes)-1])
-        counts_combined_std = np.zeros([len(resample_units), len(bin_boxes) - 1])
-
-        for resample_n, resample_unit in enumerate(resample_units):
-            # resample data
-            fish_tracks_b = fish_tracks_s.resample(resample_unit, on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
-            fish_tracks_std = fish_tracks_s.resample(resample_unit, on='ts').std().rename(columns={'speed_mm': 'spd_std'})
-            fish_tracks_v_mean = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
-                resample_unit, on='ts').mean().rename(columns={'vertical_pos': 'vp_mean'})
-            fish_tracks_v_std = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
-                resample_unit, on='ts').std().rename(columns={'vertical_pos': 'vp_std'})
-
-            fish_tracks_ds = pd.concat([fish_tracks_b, fish_tracks_std, fish_tracks_v_mean, fish_tracks_v_std], axis=1)
-
-            print(resample_unit)
-            kimport pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.gridspec as grid_spec
-import matplotlib.cm as cm
-import scipy.signal as signal
-from sklearn.cluster import KMeans
-from kneed import KneeLocator
-
-from cichlidanalysis.analysis.bouts import find_bouts
-from cichlidanalysis.analysis.processing import smooth_speed
-
-
-def define_bs(fish_tracks_i, rootdir, time_window_s, fraction_threshold=0.10):
-    time_window_s = 60
-    fraction_threshold
-
-    fish_tracks_i["behav_state"] = ((fish_tracks_i.movement.rolling(
-        10 * time_window_s).mean()) > fraction_threshold) * 1
-
-    fig1 = plt.subplot()
-    plt.fill_between(np.arange(0, len(fish_tracks_i.behav_state * 45)), fish_tracks_i.behav_state * 45, alpha=0.5,
-                     color='green')
-    plt.plot(fish_tracks_i.speed_mm)
-    plt.plot(fish_tracks_i.movement * 40)
-
-    plt.plot(fish_tracks_i.behav_state * 45)
-
-    fish_tracks_30m = fish_tracks_i.groupby('FishID').resample('30T', on='ts').mean()
-    fig2 = plt.subplot()
-    plt.plot(fish_tracks_30m.speed_mm.to_numpy())
-    plt.plot(fish_tracks_30m.movement.to_numpy() * 40)
-    plt.plot(fish_tracks_30m.behav_state.to_numpy() * 45)
-
-    print("defining bs")
-
-
-def norm_hist(input_d):
+    """ Normalise input by total number e.g. fraction"""
     input_d_norm = input_d / sum(input_d)
     return input_d_norm
 
@@ -166,79 +36,230 @@ def standardise_cols(input_pd_df):
     return output_pd_df
 
 
-def kmeans_cluster(input_pd_df, cluster_number=15):
-    """ Input pandas
+# def cluster_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T',
+#                                                 '2T', '5T', '10T', '15T', '20T']):
+#     """ What does this do?"""
+#     bin_boxes = np.arange(0, 150, 1)
+#     fishes = fish_tracks_i.FishID.unique()[:]
+#     all_counts_combined_norm = np.zeros([len(bin_boxes)-1, len(resample_units), len(fishes)])
+#
+#     for fish_n, fish in enumerate(fishes):
+#         fish_tracks_s = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['speed_mm', 'ts']]
+#         fish_tracks_v = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_position', 'ts']]
+#         counts_combined = np.zeros([len(resample_units), len(bin_boxes)-1])
+#         counts_combined_std = np.zeros([len(resample_units), len(bin_boxes) - 1])
+#
+#         for resample_n, resample_unit in enumerate(resample_units):
+#             # resample data
+#             fish_tracks_b = fish_tracks_s.resample(resample_unit, on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
+#             fish_tracks_std = fish_tracks_s.resample(resample_unit, on='ts').std().rename(columns={'speed_mm': 'spd_std'})
+#             fish_tracks_v_mean = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
+#                 resample_unit, on='ts').mean().rename(columns={'vertical_pos': 'vp_mean'})
+#             fish_tracks_v_std = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
+#                 resample_unit, on='ts').std().rename(columns={'vertical_pos': 'vp_std'})
+#
+#             fish_tracks_ds = pd.concat([fish_tracks_b, fish_tracks_std, fish_tracks_v_mean, fish_tracks_v_std], axis=1)
+#
+#             print(resample_unit)
 
-    :param input_pd_series: a pd.series of data points to cluster - note will drop any NaNs later
-    :param cluster_number: number of clusterss to try kmeans with
+
+def define_bs(fish_tracks_i, rootdir, time_window_s, fraction_threshold=0.10):
+    """ Defines behavioural state by thresholding on a window
+
+    :param fish_tracks_i:
+    :param rootdir:
+    :param time_window_s:
+    :param fraction_threshold:
+    :return:
+    """
+    time_window_s = 60
+    fraction_threshold
+
+    fish_tracks_i["behav_state"] = ((fish_tracks_i.movement.rolling(
+        10 * time_window_s).mean()) > fraction_threshold) * 1
+
+    fig1 = plt.subplot()
+    plt.fill_between(np.arange(0, len(fish_tracks_i.behav_state * 45)), fish_tracks_i.behav_state * 45, alpha=0.5,
+                     color='green')
+    plt.plot(fish_tracks_i.speed_mm)
+    plt.plot(fish_tracks_i.movement * 40)
+
+    plt.plot(fish_tracks_i.behav_state * 45)
+
+    fish_tracks_30m = fish_tracks_i.groupby('FishID').resample('30T', on='ts').mean()
+    fig2 = plt.subplot()
+    plt.plot(fish_tracks_30m.speed_mm.to_numpy())
+    plt.plot(fish_tracks_30m.movement.to_numpy() * 40)
+    plt.plot(fish_tracks_30m.behav_state.to_numpy() * 45)
+
+    print("defining bs")
+
+
+def kmeans_cluster(input_pd_df, resample_unit_i, cluster_number=6):
+    """ Clusters behaviour by z-scored values of all input columns and uses kmeans cluster on up to cluster_number
+    clussters. Uses inertia and KneeLocator to find the knee to deeterminee how many clusters to use.
+
+    :param input_pd_series: a pd.series of data points to cluster - note will drop any NaNs
+    :param resample_unit_i: time unit of resampling
+    :param cluster_number: number of clusters to try kmeans with
     :return:
     """
     input_df_zscore = standardise_cols(input_pd_df)
     kmeans_list = []
-    clusters = np.arange(1, cluster_number)
-    # cluster_variation = np.zeros(max(clusters))
+    clusters = np.arange(1, cluster_number+1)
     cluster_interia = np.zeros(max(clusters))
     for iteration in clusters:
-        kmeans_list.append(
-            KMeans(n_clusters=iteration, random_state=0).fit(input_df_zscore.dropna().to_numpy().reshape(-1, input_df_zscore.shape[1])))
-        # variation = 0
-        # for cluster_n in np.arange(0, iteration):
-        #     variation = variation + (
-        #                 kmeans_list[iteration - 1].cluster_centers_[cluster_n] - input_pd_series.dropna().
-        #                 iloc[kmeans_list[iteration - 1].labels_ == cluster_n]).var()
-        # # cluster_variation[iteration - 1] = variation
+        kmeans_list.append(KMeans(n_clusters=iteration, random_state=0, algorithm='full').fit(input_df_zscore.dropna().to_numpy().reshape
+                                                                            (-1, input_df_zscore.shape[1])))
         cluster_interia[iteration - 1] = kmeans_list[iteration - 1].inertia_
 
     kl = KneeLocator(clusters, max(cluster_interia) - cluster_interia, curve="concave", direction="increasing")
     # kl.plot_knee()
     print(kl.elbow)
 
-    # for ii in np.arange(0, input_pd_df.shape[1], 1):
-    for ii in [0]:
-        fig3, ax3 = plt.subplots()
+    # if one of the clusters is less than 1% of the total state space, assume it is spurious data and use one
+    # less cluster
+    occurances, spurious = check_cluster_size(kmeans_list[kl.elbow - 1])
+    smaller_cluster = 1
+    while spurious:
+        print("Found spurious  cluster, reducing cluster number by 1")
+        smaller_cluster = smaller_cluster + 1
+        occurances, spurious = check_cluster_size(kmeans_list[kl.elbow - smaller_cluster])
+
+    print((kl.elbow + 1) - smaller_cluster)
+
+    colors = [cm.Blues, cm.Reds, cm.Greens, cm.Oranges, cm.Purples]
+    fig3, ax3 = plt.subplots(1, 2)
+    for ii in [0, 1]:
         if ii < 2:
             bin_n = np.arange(0, 150, 1)
         else:
             bin_n = np.arange(0, 1.1, 0.1)
 
-        for i in np.arange(0, kl.elbow):
-            plt.hist(input_df_zscore.dropna().iloc[kmeans_list[kl.elbow - 1].labels_ == i, ii], bins=bin_n, alpha=0.5,
-                     label=i)
-        ax3.set_xlabel(input_df_zscore.columns[0])
-        ax3.legend()
+        for i in np.arange(0, (kl.elbow + 1) - smaller_cluster):
+            ax3[ii].hist(input_pd_df.dropna().iloc[kmeans_list[kl.elbow - smaller_cluster].labels_ == i, ii], bins=bin_n,
+                     alpha=0.5, color=colors[i](0.5), label=i)
+        ax3[ii].set_xlabel(input_pd_df.columns[ii])
+        ax3[ii].legend()
+        ax3[ii].set_title(resample_unit_i)
 
-    return kl, kmeans_list[kl.elbow], kl.elbow, kmeans_list
+    fig4, ax4 = plt.subplots()
+    hist_bins = np.arange(0, 150, 1)
+    D_mean_std = np.zeros((hist_bins.shape[0]-1, hist_bins.shape[0]-1, (kl.elbow + 1) - smaller_cluster))
+    for i in np.arange(0, (kl.elbow + 1) - smaller_cluster):
+        output, _, _, _ = plt.hist2d(input_pd_df.dropna().iloc[kmeans_list[kl.elbow -
+                                                smaller_cluster].labels_ == i, 0],input_pd_df.dropna().iloc[kmeans_list
+                                                [kl.elbow - smaller_cluster].labels_ == i, 1],
+                                                bins=[hist_bins, hist_bins], cmap=colors[i])
+        D_mean_std[:, :, i] = output
+    plt.close(fig4)
+
+    D_mean_std_nan = copy.copy(D_mean_std)
+    D_mean_std_nan[D_mean_std == 0] = np.nan
+
+    fig5, ax5 = plt.subplots()
+    for i in np.arange(0, (kl.elbow + 1) - smaller_cluster):
+        my_cmap = copy.copy(colors[i])
+        # my_cmap.set_under('w', alpha=0)
+        # ax5.imshow(D_mean_std[:, :, i], cmap=my_cmap, clim=[0.1, np.percentile(D_mean_std[D_mean_std > 0], 90)],
+        #            alpha=0.5)
+        ax5.pcolormesh(D_mean_std_nan[:, :, i], cmap=my_cmap, vmin=0.1, vmax=np.percentile(D_mean_std[D_mean_std > 0], 90),
+                       alpha=1, edgecolors='none')
+    ax5.set_xlabel(input_pd_df.columns[0])
+    ax5.set_ylabel(input_pd_df.columns[1])
+
+    # D_mean_std_nan_binary = copy.copy(D_mean_std_nan)
+    # D_mean_std_nan_binary[D_mean_std_nan > 0] = 1
+    # fig5, ax5 = plt.subplots()
+    # for i in np.arange(0, (kl.elbow + 1) - smaller_cluster):
+    #     my_cmap = copy.copy(colors[i])
+    #     ax5.pcolormesh(D_mean_std_nan_binary[:, :, i], cmap=my_cmap, vmin=0.1, vmax=1, alpha=0.5, edgecolors='none')
+    # ax5.set_xlabel(input_pd_df.columns[0])
+    # ax5.set_ylabel(input_pd_df.columns[1])
+    # ax5.set_title(resample_unit_i)
+
+    return kl, kmeans_list[kl.elbow - smaller_cluster], kl.elbow + 1 - smaller_cluster, kmeans_list
+
+
+def check_cluster_size(kmeans_knee_i):
+    """
+    Check if there is a spurious state  by finding fractions of each state
+    :param kmeans_knee_i:
+    :return:
+    """
+    occurrences = np.zeros(kmeans_knee_i.n_clusters)
+    for cluster in np.arange(0, kmeans_knee_i.n_clusters):
+        occurrences[cluster] = np.count_nonzero(kmeans_knee_i.labels_ == cluster)
+
+    # find fractions
+    occurrences = occurrences/sum(occurrences)
+
+    return occurrences, max(occurrences < 0.01)
 
 
 def clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S',
                                                      '1T', '2T', '5T', '10T', '15T', '20T']):
-    bin_boxes = np.arange(0, 150, 1)
+    """
+
+    :param fish_tracks_i:
+    :param resample_units:
+    :return:
+    """
+    resample_units = ['15S']
+
+    # bin_boxes = np.arange(0, 150, 1)
     fishes = fish_tracks_i.FishID.unique()[:]
 
     for fish_n, fish in enumerate(fishes):
         fish_tracks_s = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['speed_mm', 'ts']]
         cluster_list = np.zeros([len(resample_units)])
+        # std_mean = np.zeros([len(resample_units)])
+        # std_std = np.zeros([len(resample_units)])
 
+        # fig1, ax1 = plt.subplots()
+        fig2, ax2 = plt.subplots()
+        # fig3, ax3 = plt.subplots()
+        bin_n = np.arange(0, 150, 1)
         for resample_n, resample_unit in enumerate(resample_units):
-            # resample data
-            fish_tracks_b = fish_tracks_s.resample(resample_unit, on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
-            fish_tracks_std = fish_tracks_s.resample(resample_unit, on='ts').std().rename(columns={'speed_mm': 'spd_std'})
-            fish_tracks_v_mean = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
-                resample_unit, on='ts').mean().rename(columns={'vertical_pos': 'vp_mean'})
-            fish_tracks_v_std = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
-                resample_unit, on='ts').std().rename(columns={'vertical_pos': 'vp_std'})
+            # resample data to get mean and std for speed and vertical position
+            fish_tracks_spd_mean = fish_tracks_s.resample(resample_unit,
+                                                          on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
+            fish_tracks_std = fish_tracks_s.resample(resample_unit,
+                                                     on='ts').std().rename(columns={'speed_mm': 'spd_std'})
+            # fish_tracks_v_mean = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
+            #     resample_unit, on='ts').mean().rename(columns={'vertical_pos': 'vp_mean'})
+            # fish_tracks_v_std = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
+            #     resample_unit, on='ts').std().rename(columns={'vertical_pos': 'vp_std'})
+            #
+            # fish_tracks_ds = pd.concat([fish_tracks_spd_mean, fish_tracks_std, fish_tracks_v_mean, fish_tracks_v_std],
+            #                            axis=1)
 
-            fish_tracks_ds = pd.concat([fish_tracks_b, fish_tracks_std, fish_tracks_v_mean, fish_tracks_v_std], axis=1)
+            fish_tracks_ds = pd.concat([fish_tracks_spd_mean, fish_tracks_std], axis=1)
 
             print(resample_unit)
-            kl, _, best_cluster, _ = kmeans_cluster(fish_tracks_ds, cluster_number=15)
+            kl, kmeans, best_cluster, _ = kmeans_cluster(fish_tracks_ds, resample_unit, cluster_number=6)
             cluster_list[resample_n] = best_cluster
 
+            # fish_tracks_std_hist, _, _ = ax1.hist(fish_tracks_std.dropna(), bins=bin_n, color='red')
+            # std_mean[resample_n] = fish_tracks_std.mean()
+            # std_std[resample_n] = fish_tracks_std.std()
+            # ax2.plot(norm_hist(fish_tracks_std_hist).cumsum(), label=resample_unit)
+            # ax3.plot(norm_hist(fish_tracks_std_hist), label=resample_unit)
+        ax2.legend()
+
+        # fig1, ax1 = plt.subplots()
+        # ax1.plot(std_mean, 'b')
+        # ax1.plot(std_std, 'Orange')
 
 
 def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T',
                                                 '2T', '5T', '10T', '15T', '20T']):
-    # resample_units = ['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T', '2T', '5T', '10T', '15T', '20T']
+    """
+
+    :param fish_tracks_i:
+    :param resample_units:
+    :return:
+    """
     bin_boxes = np.arange(0, 150, 1)
     fishes = fish_tracks_i.FishID.unique()[:]
     all_counts_combined_norm = np.zeros([len(bin_boxes)-1, len(resample_units), len(fishes)])
@@ -414,8 +435,6 @@ def set_bs_thresh(fish_tracks_i_fish, fish_tracks_unit, thresholds):
     plt.plot(fish_tracks_i_fish.ts, fish_tracks_i_fish.speed_mm, color='b')
     plt.fill_between(fish_tracks_b.ts, fish_tracks_b.behav_state * 45, alpha=0.5, color='green')
     plt.plot(fish_tracks_b.ts, fish_tracks_b.speed_mm, color='k')
-
-
 
 
 def finding_thresholds(spd_hist):
@@ -683,7 +702,6 @@ def bout_play(fish_tracks_i, metat):
         ax2[1].legend()
         # plt.title("Movement bouts for {}".format(fish))
 
-
         fig2, ax2 = plt.subplots(2, 1)
         ax2[0].plot(bins[0:-1] / 10, np.cumsum(total_time_active_f_d_norm), color='red', label='Day')
         ax2[0].plot(bins[0:-1] / 10, np.cumsum(total_time_active_f_n_norm), color='blueviolet', label='Night')
@@ -717,7 +735,7 @@ def bout_play(fish_tracks_i, metat):
         ax2[1].legend()
         fig2.suptitle("Cumulative movement bouts for {}".format(fish), fontsize=8)
 
-l, kmeans_list[kl.elbow], kmeans_list = kmeans_cluster(fish_tracks_ds, cluster_number=15)
+# l, kmeans_list[kl.elbow], kmeans_list = kmeans_cluster(fish_tracks_ds, cluster_number=15)
 
 
 

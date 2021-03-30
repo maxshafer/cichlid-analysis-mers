@@ -28,7 +28,7 @@ from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
 from cichlidanalysis.plotting.daily_plots import plot_daily
-from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play
+from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play, clustering_states
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -76,6 +76,7 @@ print("time to add time_of_day tracks {}".format(t3-t2))
 fish_tracks['daynight'] = "d"
 fish_tracks.loc[fish_tracks.time_of_day_m < change_times_m[0], 'daynight'] = "n"
 fish_tracks.loc[fish_tracks.time_of_day_m > change_times_m[3], 'daynight'] = "n"
+print("added night and day column")
 
 #### Movement moving/not-moving use 0.25bl threshold ####
 fish_tracks['movement'] = np.nan
@@ -105,6 +106,7 @@ fish_tracks['horizontal_pos'] = np.nan
 for fish in fish_IDs:
     fish_tracks.loc[fish_tracks.FishID == fish, 'vertical_pos'] = vertical_pos.loc[:, fish]
     fish_tracks.loc[fish_tracks.FishID == fish, 'horizontal_pos'] = horizontal_pos.loc[:, fish]
+print("added vertical and horizontal position columns")
 
 # data gets heavy so remove what is not necessary
 remove = ['y_nt', 'x_nt', 'tv_ns']
@@ -116,6 +118,7 @@ for remove_name in remove:
 # resample data
 fish_tracks_30m = fish_tracks.groupby('FishID').resample('30T', on='ts').mean()
 fish_tracks_30m.reset_index(inplace=True)
+print("calculated resampled 30min data")
 
 # add back 'species', 'sex'
 # for col_name in ['species', 'sex', 'fish_length_mm']:
@@ -126,11 +129,13 @@ all_species = fish_tracks_30m['species'].unique()
 fish_tracks_30m['daynight'] = "d"
 fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m < change_times_m[0], 'daynight'] = "n"
 fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight'] = "n"
-
+print("Finished adding 30min species and daynight")
 
 # # ### Behavioural state - calculated from Movement ###
 time_window_s = 10
 fraction_threshold = 0.2
+
+clustering_states(fish_tracks, resample_units=['1S', '2S', '3S', '5S', '10S', '20S', '30S', '45S', '1T', '2T', '5T'])
 
 testing1 = bout_play(fish_tracks, metat)
 
