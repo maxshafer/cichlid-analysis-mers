@@ -36,33 +36,6 @@ def standardise_cols(input_pd_df):
     return output_pd_df
 
 
-# def cluster_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T',
-#                                                 '2T', '5T', '10T', '15T', '20T']):
-#     """ What does this do?"""
-#     bin_boxes = np.arange(0, 150, 1)
-#     fishes = fish_tracks_i.FishID.unique()[:]
-#     all_counts_combined_norm = np.zeros([len(bin_boxes)-1, len(resample_units), len(fishes)])
-#
-#     for fish_n, fish in enumerate(fishes):
-#         fish_tracks_s = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['speed_mm', 'ts']]
-#         fish_tracks_v = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_position', 'ts']]
-#         counts_combined = np.zeros([len(resample_units), len(bin_boxes)-1])
-#         counts_combined_std = np.zeros([len(resample_units), len(bin_boxes) - 1])
-#
-#         for resample_n, resample_unit in enumerate(resample_units):
-#             # resample data
-#             fish_tracks_b = fish_tracks_s.resample(resample_unit, on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
-#             fish_tracks_std = fish_tracks_s.resample(resample_unit, on='ts').std().rename(columns={'speed_mm': 'spd_std'})
-#             fish_tracks_v_mean = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
-#                 resample_unit, on='ts').mean().rename(columns={'vertical_pos': 'vp_mean'})
-#             fish_tracks_v_std = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
-#                 resample_unit, on='ts').std().rename(columns={'vertical_pos': 'vp_std'})
-#
-#             fish_tracks_ds = pd.concat([fish_tracks_b, fish_tracks_std, fish_tracks_v_mean, fish_tracks_v_std], axis=1)
-#
-#             print(resample_unit)
-
-
 def define_bs(fish_tracks_i, rootdir, time_window_s, fraction_threshold=0.10):
     """ Defines behavioural state by thresholding on a window
 
@@ -119,12 +92,12 @@ def kmeans_cluster(input_pd_df, resample_unit_i, cluster_number=6):
 
     # if one of the clusters is less than 1% of the total state space, assume it is spurious data and use one
     # less cluster
-    occurances, spurious = check_cluster_size(kmeans_list[kl.elbow - 1])
+    occurrences, spurious = check_cluster_size(kmeans_list[kl.elbow - 1])
     smaller_cluster = 1
     while spurious:
         print("Found spurious  cluster, reducing cluster number by 1")
         smaller_cluster = smaller_cluster + 1
-        occurances, spurious = check_cluster_size(kmeans_list[kl.elbow - smaller_cluster])
+        occurrences, spurious = check_cluster_size(kmeans_list[kl.elbow - smaller_cluster])
 
     print((kl.elbow + 1) - smaller_cluster)
 
@@ -160,23 +133,10 @@ def kmeans_cluster(input_pd_df, resample_unit_i, cluster_number=6):
     fig5, ax5 = plt.subplots()
     for i in np.arange(0, (kl.elbow + 1) - smaller_cluster):
         my_cmap = copy.copy(colors[i])
-        # my_cmap.set_under('w', alpha=0)
-        # ax5.imshow(D_mean_std[:, :, i], cmap=my_cmap, clim=[0.1, np.percentile(D_mean_std[D_mean_std > 0], 90)],
-        #            alpha=0.5)
         ax5.pcolormesh(D_mean_std_nan[:, :, i], cmap=my_cmap, vmin=0.1, vmax=np.percentile(D_mean_std[D_mean_std > 0], 90),
                        alpha=1, edgecolors='none')
     ax5.set_xlabel(input_pd_df.columns[0])
     ax5.set_ylabel(input_pd_df.columns[1])
-
-    # D_mean_std_nan_binary = copy.copy(D_mean_std_nan)
-    # D_mean_std_nan_binary[D_mean_std_nan > 0] = 1
-    # fig5, ax5 = plt.subplots()
-    # for i in np.arange(0, (kl.elbow + 1) - smaller_cluster):
-    #     my_cmap = copy.copy(colors[i])
-    #     ax5.pcolormesh(D_mean_std_nan_binary[:, :, i], cmap=my_cmap, vmin=0.1, vmax=1, alpha=0.5, edgecolors='none')
-    # ax5.set_xlabel(input_pd_df.columns[0])
-    # ax5.set_ylabel(input_pd_df.columns[1])
-    # ax5.set_title(resample_unit_i)
 
     return kl, kmeans_list[kl.elbow - smaller_cluster], kl.elbow + 1 - smaller_cluster, kmeans_list
 
@@ -197,42 +157,27 @@ def check_cluster_size(kmeans_knee_i):
     return occurrences, max(occurrences < 0.01)
 
 
-def clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S',
-                                                     '1T', '2T', '5T', '10T', '15T', '20T']):
-    """
+def testing_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S',
+                                                             '45S', '1T', '2T', '5T', '10T', '15T', '20T']):
+    """Resamples and then does k-means clustering on the speed_mm mean and std. loops for each resampling unit and  fish
 
-    :param fish_tracks_i:
-    :param resample_units:
+    :param fish_tracks_i: fish tracks
+    :param resample_units: resmapling units to test
     :return:
     """
-    resample_units = ['15S']
-
-    # bin_boxes = np.arange(0, 150, 1)
     fishes = fish_tracks_i.FishID.unique()[:]
 
     for fish_n, fish in enumerate(fishes):
         fish_tracks_s = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['speed_mm', 'ts']]
         cluster_list = np.zeros([len(resample_units)])
-        # std_mean = np.zeros([len(resample_units)])
-        # std_std = np.zeros([len(resample_units)])
 
-        # fig1, ax1 = plt.subplots()
         fig2, ax2 = plt.subplots()
-        # fig3, ax3 = plt.subplots()
-        bin_n = np.arange(0, 150, 1)
         for resample_n, resample_unit in enumerate(resample_units):
             # resample data to get mean and std for speed and vertical position
             fish_tracks_spd_mean = fish_tracks_s.resample(resample_unit,
                                                           on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
             fish_tracks_std = fish_tracks_s.resample(resample_unit,
                                                      on='ts').std().rename(columns={'speed_mm': 'spd_std'})
-            # fish_tracks_v_mean = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
-            #     resample_unit, on='ts').mean().rename(columns={'vertical_pos': 'vp_mean'})
-            # fish_tracks_v_std = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['vertical_pos', 'ts']].resample(
-            #     resample_unit, on='ts').std().rename(columns={'vertical_pos': 'vp_std'})
-            #
-            # fish_tracks_ds = pd.concat([fish_tracks_spd_mean, fish_tracks_std, fish_tracks_v_mean, fish_tracks_v_std],
-            #                            axis=1)
 
             fish_tracks_ds = pd.concat([fish_tracks_spd_mean, fish_tracks_std], axis=1)
 
@@ -240,16 +185,66 @@ def clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S
             kl, kmeans, best_cluster, _ = kmeans_cluster(fish_tracks_ds, resample_unit, cluster_number=6)
             cluster_list[resample_n] = best_cluster
 
-            # fish_tracks_std_hist, _, _ = ax1.hist(fish_tracks_std.dropna(), bins=bin_n, color='red')
-            # std_mean[resample_n] = fish_tracks_std.mean()
-            # std_std[resample_n] = fish_tracks_std.std()
-            # ax2.plot(norm_hist(fish_tracks_std_hist).cumsum(), label=resample_unit)
-            # ax3.plot(norm_hist(fish_tracks_std_hist), label=resample_unit)
         ax2.legend()
 
-        # fig1, ax1 = plt.subplots()
-        # ax1.plot(std_mean, 'b')
-        # ax1.plot(std_std, 'Orange')
+
+def clustering_states(fish_tracks_i, resample_unit=['15S']):
+    """ Resamples and then does k-means clustering on the speed_mm mean and std.
+
+    :param fish_tracks_i: fish tracks
+    :param resample_unit: resampling unit
+    :return: fish_tracks_15s: fish_tracks_i resampled with clustering
+    """
+
+    fishes = fish_tracks_i.FishID.unique()[:]
+    first = True
+
+    for fish_n, fish in enumerate(fishes):
+        # get resampled data of fish
+        fish_tracks_rs = fish_tracks_i.loc[fish_tracks_i.FishID == fish, :].resample(resample_unit, on='ts').mean()
+        fish_tracks_rs["FishID"] = fish
+
+        # get spd mean and std for cluster calculation
+        fish_tracks_spd_mean = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['speed_mm', 'ts']].\
+            resample(resample_unit, on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
+        fish_tracks_std = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['speed_mm', 'ts']].resample(resample_unit,
+                                                            on='ts').std().rename(columns={'speed_mm': 'spd_std'})
+
+        # concatenate
+        fish_tracks_ds = pd.concat([fish_tracks_spd_mean, fish_tracks_std], axis=1)
+
+        # cluster data
+        _, kmeans_clustering, _, _ = kmeans_cluster(fish_tracks_ds, resample_unit, cluster_number=6)
+
+        fish_tracks_rs['cluster'] = np.NaN
+
+        # need to put NaNs back in
+        # get position of NaNs in original data
+        fish_tracks_rs.reset_index(level=0, inplace=True)
+        nan_position = fish_tracks_rs.index[np.isnan(fish_tracks_rs.speed_mm)].tolist()
+        # fish_tracks_rs.set_index('ts')
+
+        labels = copy.copy(kmeans_clustering.labels_).astype('float64')
+
+        # insert NaNs (adds before so pushes things back as it should)
+        for insertion_n, insertion_index in enumerate(nan_position):
+            labels = np.insert(labels, insertion_index, np.NaN)
+
+        # add cluster to fish_data (renames clusters so that cluster 0 has the lowest speed)
+        spd_centre = kmeans_clustering.cluster_centers_[:, 0]
+        ordering = np.argsort(spd_centre)
+        for cluster in np.arange(0, kmeans_clustering.n_clusters):
+            print("adding in clusters (reordering so cluster 0 has lowest speed")
+            fish_tracks_rs.loc[labels == cluster, 'cluster'] = ordering[cluster]
+
+        if first:
+            fish_tracks_15s = copy.copy(fish_tracks_rs)
+            first = False
+        else:
+            fish_tracks_15s = pd.concat([fish_tracks_15s, copy.copy(fish_tracks_rs)], ignore_index=True)
+
+    fish_tracks_15s.reset_index(level=0, inplace=True)
+    return fish_tracks_15s
 
 
 def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T',

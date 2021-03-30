@@ -135,7 +135,7 @@ print("Finished adding 30min species and daynight")
 time_window_s = 10
 fraction_threshold = 0.2
 
-clustering_states(fish_tracks, resample_units=['1S', '2S', '3S', '5S', '10S', '20S', '30S', '45S', '1T', '2T', '5T'])
+fish_tracks_15s = clustering_states(fish_tracks, resample_units=['15S'])
 
 testing1 = bout_play(fish_tracks, metat)
 

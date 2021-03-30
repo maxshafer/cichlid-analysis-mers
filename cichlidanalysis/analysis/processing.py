@@ -177,6 +177,14 @@ def threshold_data(speed, threshold):
 
 
 def add_col(df, col_str, fish_IDs_i, meta_i):
+    """
+
+    :param df: fish_tracks
+    :param col_str: column to add back e.g. "species"
+    :param fish_IDs_i:
+    :param meta_i:
+    :return:
+    """
     if col_str in meta_i.index:
         if col_str not in df.columns:
             df[col_str] = 'blank'
