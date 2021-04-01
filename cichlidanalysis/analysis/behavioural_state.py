@@ -1,4 +1,5 @@
 import copy
+import os
 
 import pandas as pd
 import numpy as np
@@ -8,9 +9,13 @@ import matplotlib.cm as cm
 import scipy.signal as signal
 from sklearn.cluster import KMeans
 from kneed import KneeLocator
+from matplotlib.dates import DateFormatter
+from matplotlib.ticker import (MultipleLocator)
+import seaborn as sns
 
 from cichlidanalysis.analysis.bouts import find_bouts
-from cichlidanalysis.analysis.processing import smooth_speed
+from cichlidanalysis.analysis.processing import smooth_speed, add_col
+from cichlidanalysis.plotting.speed_plots import fill_plot_ts
 
 
 def norm_hist(input_d):
@@ -188,7 +193,7 @@ def testing_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '
         ax2.legend()
 
 
-def clustering_states(fish_tracks_i, resample_unit=['15S']):
+def clustering_states(fish_tracks_i, meta, resample_unit=['15S']):
     """ Resamples and then does k-means clustering on the speed_mm mean and std.
 
     :param fish_tracks_i: fish tracks
@@ -243,8 +248,84 @@ def clustering_states(fish_tracks_i, resample_unit=['15S']):
         else:
             fish_tracks_15s = pd.concat([fish_tracks_15s, copy.copy(fish_tracks_rs)], ignore_index=True)
 
-    fish_tracks_15s.reset_index(level=0, inplace=True)
+    # fish_tracks_15s.reset_index(level=0, inplace=True)
+
+    for col_name in ['species']:
+        add_col(fish_tracks_15s, col_name, fishes, meta)
+
     return fish_tracks_15s
+
+
+def plt_clusters(fish_tracks_in, change_times_d, rootdir, meta):
+    """ Takes fish_tracks with clusters, resamples to 30min to plot
+
+    :param fish_tracks_in: clustered data
+    :param change_times_d:
+    :param rootdir: path for saving
+    :param meta: file with meta data
+    :return:
+    """
+
+    # get each fish ID
+    fish_IDs = fish_tracks_in['FishID'].unique()
+
+    # for each fish, group by cluster and resample, this allows us to get the counts for each cluster type
+    first = True
+    for fish in fish_IDs:
+        df = fish_tracks_in.loc[fish_tracks_in.FishID == fish, :].set_index('ts').groupby('cluster').resample('30T').size()
+
+        # weridly sometimes get pd.series and sometimes pd.df this deals with it
+        if isinstance(df, pd.Series):
+              df = df.unstack(0, fill_value=0)
+        elif isinstance(df, pd.DataFrame):
+            df = df.T
+
+        df['FishID'] = fish
+
+        # add the fishes back together
+        if first:
+            fish_tracks_30m = copy.copy(df)
+            first = False
+        else:
+            fish_tracks_30m = pd.concat([fish_tracks_30m, copy.copy(df)], ignore_index=False)
+
+    fish_tracks_30m = fish_tracks_30m.reset_index().rename(columns={'index': 'ts'})
+
+    for col_name in ['species']:
+        add_col(fish_tracks_30m, col_name, fish_IDs, meta)
+
+    cluster_names = ['zero', 'one', 'two', 'three', 'four']
+    clusters = fish_tracks_30m.columns.drop(['ts', 'FishID', 'species'])
+    for i in clusters:
+        fish_tracks_30m = fish_tracks_30m.rename(columns={i: cluster_names[int(i)]})
+    clusters = fish_tracks_30m.columns.drop(['ts', 'FishID', 'species'])
+
+    # find total time points for each resampled bin
+    fish_tracks_30m["total"] = 0
+    next_cluster = 0
+    while next_cluster < clusters.shape[0]:
+        fish_tracks_30m["total"] = fish_tracks_30m["total"] + fish_tracks_30m.fillna(0)[clusters[next_cluster]]
+        next_cluster = next_cluster + 1
+
+    # make cluster counts normalised to total number of timepoints
+    for clust in clusters:
+        fish_tracks_30m[clust] = fish_tracks_30m[clust]/fish_tracks_30m["total"]
+
+    # get each species
+    all_species = fish_tracks_30m['species'].unique()
+
+    date_form = DateFormatter("%H")
+    for species_f in all_species:
+        plt.figure(figsize=(10, 4))
+        ax = sns.lineplot(data=fish_tracks_30m[fish_tracks_30m.species == species_f], x='ts', y='one', hue='FishID')
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
+        ax.set_ylim([0, 1])
+        plt.xlabel("Time (h)")
+        plt.ylabel("Speed (mm/s)")
+        plt.title(species_f)
+        # plt.savefig(os.path.join(rootdir, "speed_30min_individual{0}.png".format(species_f.replace(' ', '-'))))
 
 
 def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T',

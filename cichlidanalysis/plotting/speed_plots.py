@@ -69,7 +69,7 @@ def plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d):
 
 
 def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling, change_times_datetime_i, rootdir):
-    """  Plot ridge plot of each species from a dsown sampled fish_tracks pandas structure
+    """  Plot ridge plot of each species from a down sampled fish_tracks pandas structure
 
     :param fish_tracks_ds_i:
     :param feature:
@@ -121,17 +121,6 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
         days_to_plot = (date_time_obj[-1] - date_time_obj[0]).days + 1
 
         for day_n in range(days_to_plot):
-            # ax_objs[-1].axvspan(dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S')+timedelta(days=day_n),
-            #                     change_times_datetime[0]+timedelta(days=day_n), color='lightblue',
-            #                     alpha=0.5, linewidth=0)
-            # ax_objs[-1].axvspan(change_times_datetime[0]+timedelta(days=day_n),
-            #                     change_times_datetime[1]+timedelta(days=day_n),  color='wheat',
-            #                     alpha=0.5, linewidth=0)
-            # ax_objs[-1].axvspan(change_times_datetime[2]+timedelta(days=day_n), change_times_datetime[3]+timedelta
-            # (days=day_n), color='wheat', alpha=0.5, linewidth=0)
-            # ax_objs[-1].axvspan(change_times_datetime[3]+timedelta(days=day_n), change_times_datetime[4]+timedelta
-            # (days=day_n), color='lightblue', alpha=0.5, linewidth=0)
-
             ax_objs[-1].fill_between([dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S')+timedelta(days=day_n),
                                       change_times_datetime_i[0]+timedelta(days=day_n)], [span_max, span_max], 0,
                                      color='lightblue', alpha=0.5, linewidth=0, zorder=1)
