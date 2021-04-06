@@ -256,13 +256,11 @@ def clustering_states(fish_tracks_i, meta, resample_unit=['15S']):
     return fish_tracks_15s
 
 
-def plt_clusters(fish_tracks_in, change_times_d, rootdir, meta):
-    """ Takes fish_tracks with clusters, resamples to 30min to plot
+def add_clustering_to_30m(fish_tracks_in, fish_tracks_30m):
+    """ Adds clustering data from fish_tracks_in to fish_tracks_30m
 
-    :param fish_tracks_in: clustered data
-    :param change_times_d:
-    :param rootdir: path for saving
-    :param meta: file with meta data
+    :param fish_tracks_in:
+    :param fish_tracks_30m:
     :return:
     """
 
@@ -274,7 +272,7 @@ def plt_clusters(fish_tracks_in, change_times_d, rootdir, meta):
     for fish in fish_IDs:
         df = fish_tracks_in.loc[fish_tracks_in.FishID == fish, :].set_index('ts').groupby('cluster').resample('30T').size()
 
-        # weridly sometimes get pd.series and sometimes pd.df this deals with it
+        # weirdly sometimes get pd.series and sometimes pd.df this deals with it
         if isinstance(df, pd.Series):
               df = df.unstack(0, fill_value=0)
         elif isinstance(df, pd.DataFrame):
@@ -284,35 +282,59 @@ def plt_clusters(fish_tracks_in, change_times_d, rootdir, meta):
 
         # add the fishes back together
         if first:
-            fish_tracks_30m = copy.copy(df)
+            fish_tracks_30m_c = copy.copy(df)
             first = False
         else:
-            fish_tracks_30m = pd.concat([fish_tracks_30m, copy.copy(df)], ignore_index=False)
+            fish_tracks_30m_c = pd.concat([fish_tracks_30m_c, copy.copy(df)], ignore_index=False)
 
-    fish_tracks_30m = fish_tracks_30m.reset_index().rename(columns={'index': 'ts'})
+    fish_tracks_30m_c = fish_tracks_30m_c.reset_index().rename(columns={'index': 'ts'})
 
-    for col_name in ['species']:
-        add_col(fish_tracks_30m, col_name, fish_IDs, meta)
+    # for col_name in ['species']:
+    #     add_col(fish_tracks_30m_c, col_name, fish_IDs, meta)
 
     cluster_names = ['zero', 'one', 'two', 'three', 'four']
-    clusters = fish_tracks_30m.columns.drop(['ts', 'FishID', 'species'])
+    clusters = fish_tracks_30m_c.columns.drop(['ts', 'FishID'])
     for i in clusters:
-        fish_tracks_30m = fish_tracks_30m.rename(columns={i: cluster_names[int(i)]})
-    clusters = fish_tracks_30m.columns.drop(['ts', 'FishID', 'species'])
+        fish_tracks_30m_c = fish_tracks_30m_c.rename(columns={i: cluster_names[int(i)]})
+    clusters = fish_tracks_30m_c.columns.drop(['ts', 'FishID'])
 
     # find total time points for each resampled bin
-    fish_tracks_30m["total"] = 0
+    fish_tracks_30m_c["total"] = 0
     next_cluster = 0
     while next_cluster < clusters.shape[0]:
-        fish_tracks_30m["total"] = fish_tracks_30m["total"] + fish_tracks_30m.fillna(0)[clusters[next_cluster]]
+        fish_tracks_30m_c["total"] = fish_tracks_30m_c["total"] + fish_tracks_30m_c.fillna(0)[clusters[next_cluster]]
         next_cluster = next_cluster + 1
 
     # make cluster counts normalised to total number of timepoints
     for clust in clusters:
-        fish_tracks_30m[clust] = fish_tracks_30m[clust]/fish_tracks_30m["total"]
+        fish_tracks_30m_c[clust] = fish_tracks_30m_c[clust]/fish_tracks_30m_c["total"]
+
+    print(fish_tracks_30m.shape)
+    print(fish_tracks_30m_c.shape)
+
+    merged_fish_tracks_30m = pd.merge(fish_tracks_30m, fish_tracks_30m_c, how='inner', on=["ts", "FishID"], indicator=True)
+
+    # checks
+    if not (merged_fish_tracks_30m._merge.unique() == 'both')[0]:
+        print("somehow merging did not work as have exclusive rows!")
+        return False
+    else:
+        merged_fish_tracks_30m = merged_fish_tracks_30m.drop(columns="_merge")
+        return merged_fish_tracks_30m
+
+
+def plt_clusters(fish_tracks_in, change_times_d, rootdir, meta):
+    """ Takes fish_tracks with clusters, resamples to 30min to plot
+
+    :param fish_tracks_in: clustered data
+    :param change_times_d:
+    :param rootdir: path for saving
+    :param meta: file with meta data
+    :return:
+    """
 
     # get each species
-    all_species = fish_tracks_30m['species'].unique()
+    all_species = fish_tracks_in['species'].unique()
 
     date_form = DateFormatter("%H")
     for species_f in all_species:
@@ -326,6 +348,22 @@ def plt_clusters(fish_tracks_in, change_times_d, rootdir, meta):
         plt.ylabel("Speed (mm/s)")
         plt.title(species_f)
         # plt.savefig(os.path.join(rootdir, "speed_30min_individual{0}.png".format(species_f.replace(' ', '-'))))
+
+
+def plt_move_bs(merged_fish_tracks_30m):
+    fishes = merged_fish_tracks_30m.FishID.unique()[:]
+    for fish in fishes:
+        fig1 = plt.subplot()
+        plt.plot(np.arange(0, 100000, 1), fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'speed_mm'][100000:200000])
+        plt.fill_between(np.arange(0, len(fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'movement'][100000:200000] *
+                                          45)), fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'movement']
+        [100000:200000] * 45, alpha=0.5, color='green')
+        plt.plot([0, 100000], [metat.loc[fish, 'fish_length_mm']*0.25, metat.loc[fish, 'fish_length_mm']*0.25], 'k')
+        plt.fill_between(np.arange(0, len(fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'behav_state'][100000:200000]
+                                          * 55)), fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'behav_state']
+        [100000:200000] * 45, alpha=0.5, color='orange')
+        plt.xlabel("frame #")
+        plt.ylabel("Speed mm/s")
 
 
 def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T',
