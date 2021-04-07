@@ -28,7 +28,8 @@ from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
 from cichlidanalysis.plotting.daily_plots import plot_daily
-from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play, clustering_states
+from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play, clustering_states, add_clustering_to_30m, \
+    add_clustering,plt_move_bs
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -135,9 +136,14 @@ print("Finished adding 30min species and daynight")
 time_window_s = 10
 fraction_threshold = 0.2
 
-fish_tracks_15s = clustering_states(fish_tracks, meta, resample_units=['15S'])
+# cluster and add data to the 30min fish_tracks
+fish_tracks_15s = clustering_states(fish_tracks, meta, '15S')
+fish_tracks_30m = add_clustering_to_30m(fish_tracks_15s, fish_tracks_30m)
+fish_tracks_ = add_clustering(fish_tracks_15s, fish_tracks)
 
-testing1 = bout_play(fish_tracks, metat)
+plt_move_bs(fish_tracks_, metat)
+
+testing1 = bout_play(fish_tracks, metat, fish_tracks_30m)
 
 testing = define_bs(fish_tracks, rootdir, time_window_s, fraction_threshold)
 
