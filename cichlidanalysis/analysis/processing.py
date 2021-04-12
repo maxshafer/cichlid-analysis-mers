@@ -222,6 +222,21 @@ def standardise_cols(input_pd_df):
 
     return output_pd_df
 
+
+def remove_cols(fish_tracks_i, remove):
+    """ removing cols from fish_tracks
+
+    :param fish_tracks_i: fish_tracks
+    :param remove: list of ccolumn names to remove
+    :return: fish_tracks
+    """
+    for remove_name in remove:
+        if remove_name in fish_tracks_i.columns:
+            fish_tracks_i = fish_tracks_i.drop(remove_name, axis=1)
+            print("old track, removed {}".format(remove_name))
+    return fish_tracks_i
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

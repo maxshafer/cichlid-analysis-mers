@@ -95,8 +95,8 @@ def define_bs(fish_tracks_i, change_times_d, time_window_s=15, fraction_threshol
     :return:
     """
 
-    fish_tracks_i["behave"] = ((fish_tracks_i.groupby("FishID").movement.rolling(10 * time_window_s).mean()) >
-                               fraction_threshold)*1
+    fish_tracks_i["behave"] = ((fish_tracks_i.groupby("FishID")['movement'].transform(lambda s: s.rolling(10 *
+                              time_window_s).mean())) > fraction_threshold) * 1
     # fish_tracks_i["behave"] = ((fish_tracks_i.movement.rolling(10 * time_window_s).mean()) > fraction_threshold) * 1
 
     # fig1 = plt.subplots()

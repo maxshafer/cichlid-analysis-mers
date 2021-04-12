@@ -23,7 +23,7 @@ import datetime as dt
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.analysis.processing import add_col, threshold_data
+from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
 from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
@@ -47,18 +47,13 @@ fish_tracks = load_als_files(rootdir)
 t1 = time.time()
 print("time to load tracks {}".format(t1-t0))
 
-# drop any time points < dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S') (since some are adjusted)
 fish_tracks = fish_tracks.drop(fish_tracks[fish_tracks.ts < dt.datetime.strptime("1970-1-2 00:00:00",
                                                                                  '%Y-%m-%d %H:%M:%S')].index)
 fish_tracks.reset_index()
 
 meta = load_meta_files(rootdir)
 metat = meta.transpose()
-remove = ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity']
-for remove_name in remove:
-    if remove_name in fish_tracks.columns:
-        fish_tracks = fish_tracks.drop(remove_name, axis=1)
-        print("old track, removed {}".format(remove_name))
+fish_tracks = remove_cols(fish_tracks, ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity'])
 
 # get each fish ID
 fish_IDs = fish_tracks['FishID'].unique()
@@ -79,17 +74,17 @@ fish_tracks.loc[fish_tracks.time_of_day_m < change_times_m[0], 'daynight'] = "n"
 fish_tracks.loc[fish_tracks.time_of_day_m > change_times_m[3], 'daynight'] = "n"
 print("added night and day column")
 
-#### Movement moving/not-moving use 0.25bl threshold ####
+#### Movement moving/not-moving use 15mm/s threshold ####
+move_thresh = 15
 fish_tracks['movement'] = np.nan
 for fish in fish_IDs:
-    # threshold the speed_mm with 0.25 of the body length of the fish
-    fish_tracks.loc[(fish_tracks.FishID == fish), 'movement'] = \
-        threshold_data(fish_tracks.loc[(fish_tracks.FishID == fish), "speed_mm"], metat.loc[fish, 'fish_length_mm']*0.25)
-
+    # threshold the speed_mm with 15mm/s
+    fish_tracks.loc[(fish_tracks.FishID == fish), 'movement'] = threshold_data(fish_tracks.loc[(fish_tracks.FishID ==
+                                                            fish), "speed_mm"], move_thresh)
 fish_tracks.info()
 
 ##### x,y position (binned day/night, and average day/night) #####
-# resample data
+# normalising positional data
 horizontal_pos = fish_tracks.pivot(columns="FishID", values="x_nt")
 vertical_pos = fish_tracks.pivot(columns="FishID", values="y_nt")
 
@@ -110,11 +105,7 @@ for fish in fish_IDs:
 print("added vertical and horizontal position columns")
 
 # data gets heavy so remove what is not necessary
-remove = ['y_nt', 'x_nt', 'tv_ns']
-for remove_name in remove:
-    if remove_name in fish_tracks.columns:
-        fish_tracks = fish_tracks.drop(remove_name, axis=1)
-        print("removed {}".format(remove_name))
+fish_tracks = remove_cols(fish_tracks, ['y_nt', 'x_nt', 'tv_ns'])
 
 # resample data
 fish_tracks_30m = fish_tracks.groupby('FishID').resample('30T', on='ts').mean()
@@ -134,43 +125,39 @@ print("Finished adding 30min species and daynight")
 
 # # ### Behavioural state - calculated from Movement ###
 time_window_s = 60
-fraction_threshold = 0.2
+fraction_threshold = 0.05
 
 # define behave states
-fish_tracks_b = define_bs(fish_tracks, change_times_d, time_window_s, fraction_threshold)
+fish_tracks = define_bs(fish_tracks, change_times_d, time_window_s, fraction_threshold)
 
-# cluster and add data to the 30min fish_tracks
-fish_tracks_15s = clustering_states(fish_tracks, meta, '5S')
-fish_tracks_15s = clustering_states(fish_tracks, meta, '30S')
-fish_tracks_15s = clustering_states(fish_tracks, meta, '60S')
-fish_tracks_15s = clustering_states(fish_tracks, meta, '15S')
+# # cluster and add data to the 30min fish_tracks
+# fish_tracks_15s = clustering_states(fish_tracks, meta, '15S')
+#
+# fish_tracks_30m = add_clustering_to_30m(fish_tracks_15s, fish_tracks_30m)
+# fish_tracks_ = add_clustering(fish_tracks_15s, fish_tracks)
+#
+# # define long states
+# fish_tracks__ = define_long_states(fish_tracks, change_times_d, time_window_s=[5, 15, 30, 120])
+# fish_tracks_30m_ = fish_tracks__.resample('30T', on='ts').mean()
 
-fish_tracks_30m = add_clustering_to_30m(fish_tracks_15s, fish_tracks_30m)
-fish_tracks_ = add_clustering(fish_tracks_15s, fish_tracks)
-
-# define long states
-fish_tracks__ = define_long_states(fish_tracks, change_times_d, time_window_s=[5, 15, 30, 120])
-fish_tracks_30m_ = fish_tracks__.resample('30T', on='ts').mean()
-
-import matplotlib.pyplot as plt
-from matplotlib.dates import DateFormatter
-from matplotlib.ticker import (MultipleLocator)
-from cichlidanalysis.plotting.speed_plots import fill_plot_ts
-
-fig1, ax = plt.subplots(1, 1, figsize=(10, 4))
-date_form = DateFormatter("%H")
-ax.plot(fish_tracks_30m.ts, fish_tracks_30m.speed_mm)
-ax.xaxis.set_major_locator(MultipleLocator(0.5))
-ax.xaxis.set_major_formatter(date_form)
-fill_plot_ts(ax, change_times_d, fish_tracks_30m.ts)
-ax.set_xlabel("Time (h)")
-ax.set_ylabel("Speed_mm")
-ax.set_ylim([0, 1])
-ax.set_title("Rest calculated from different lengths")
+# import matplotlib.pyplot as plt
+# from matplotlib.dates import DateFormatter
+# from matplotlib.ticker import (MultipleLocator)
+# from cichlidanalysis.plotting.speed_plots import fill_plot_ts
+#
+# fig1, ax = plt.subplots(1, 1, figsize=(10, 4))
+# date_form = DateFormatter("%H")
+# ax.plot(fish_tracks_30m.ts, fish_tracks_30m.speed_mm)
+# ax.xaxis.set_major_locator(MultipleLocator(0.5))
+# ax.xaxis.set_major_formatter(date_form)
+# fill_plot_ts(ax, change_times_d, fish_tracks_30m.ts)
+# ax.set_xlabel("Time (h)")
+# ax.set_ylabel("Speed_mm")
+# ax.set_ylim([0, 1])
+# ax.set_title("Rest calculated from different lengths")
 
 
-
-plt_move_bs(fish_tracks_, metat)
+plt_move_bs(fish_tracks, metat)
 
 testing1 = bout_play(fish_tracks, metat, fish_tracks_30m)
 
@@ -207,7 +194,9 @@ spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
 # version 1: Day/Night for: speed -  mean, stdev, median; y position - mean, stdev, median;
 # FM - mean, stdev, median;
 # to add later:
+#   movement immobile/mobile bout lengths, distributions, max speed
 #   BS - mean, stdev, median
+#   BS rest/active bout lengths, distributions, max speed
 #   30min bins of each data
 
 column_names = ['spd_mean_d', 'spd_mean_n', 'spd_std_d', 'spd_std_n', 'spd_median_d', 'spd_median_n', 'move_mean_d',
