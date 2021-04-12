@@ -28,8 +28,8 @@ from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
 from cichlidanalysis.plotting.daily_plots import plot_daily
-from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play, clustering_states, add_clustering_to_30m, \
-    add_clustering,plt_move_bs
+from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play, define_long_states, plt_move_bs
+from cichlidanalysis.analysis.bs_clustering import add_clustering_to_30m, add_clustering, clustering_states
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -133,13 +133,42 @@ fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight
 print("Finished adding 30min species and daynight")
 
 # # ### Behavioural state - calculated from Movement ###
-time_window_s = 10
+time_window_s = 60
 fraction_threshold = 0.2
 
+# define behave states
+fish_tracks_b = define_bs(fish_tracks, change_times_d, time_window_s, fraction_threshold)
+
 # cluster and add data to the 30min fish_tracks
+fish_tracks_15s = clustering_states(fish_tracks, meta, '5S')
+fish_tracks_15s = clustering_states(fish_tracks, meta, '30S')
+fish_tracks_15s = clustering_states(fish_tracks, meta, '60S')
 fish_tracks_15s = clustering_states(fish_tracks, meta, '15S')
+
 fish_tracks_30m = add_clustering_to_30m(fish_tracks_15s, fish_tracks_30m)
 fish_tracks_ = add_clustering(fish_tracks_15s, fish_tracks)
+
+# define long states
+fish_tracks__ = define_long_states(fish_tracks, change_times_d, time_window_s=[5, 15, 30, 120])
+fish_tracks_30m_ = fish_tracks__.resample('30T', on='ts').mean()
+
+import matplotlib.pyplot as plt
+from matplotlib.dates import DateFormatter
+from matplotlib.ticker import (MultipleLocator)
+from cichlidanalysis.plotting.speed_plots import fill_plot_ts
+
+fig1, ax = plt.subplots(1, 1, figsize=(10, 4))
+date_form = DateFormatter("%H")
+ax.plot(fish_tracks_30m.ts, fish_tracks_30m.speed_mm)
+ax.xaxis.set_major_locator(MultipleLocator(0.5))
+ax.xaxis.set_major_formatter(date_form)
+fill_plot_ts(ax, change_times_d, fish_tracks_30m.ts)
+ax.set_xlabel("Time (h)")
+ax.set_ylabel("Speed_mm")
+ax.set_ylim([0, 1])
+ax.set_title("Rest calculated from different lengths")
+
+
 
 plt_move_bs(fish_tracks_, metat)
 

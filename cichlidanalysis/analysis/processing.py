@@ -206,6 +206,22 @@ def feature_daily(averages_feature):
     return aves_ave_feature
 
 
+def standardise_cols(input_pd_df):
+    """ Calculate z-scores for every column"""
+
+    first = 1
+    cols = input_pd_df.columns
+    for col in cols:
+        col_zscore = col + '_zscore'
+        if first:
+            output_pd_df = ((input_pd_df[col] - input_pd_df[col].mean()) / input_pd_df[col].std()).to_frame().\
+                rename(columns={'spd_mean': col_zscore})
+            first = 0
+        else:
+            output_pd_df[col_zscore] = (input_pd_df[col] - input_pd_df[col].mean()) / input_pd_df[col].std()
+
+    return output_pd_df
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

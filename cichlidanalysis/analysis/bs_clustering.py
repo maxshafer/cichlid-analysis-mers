@@ -10,16 +10,16 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (MultipleLocator)
 import seaborn as sns
 
-from cichlidanalysis.analysis.processing import add_col
+from cichlidanalysis.analysis.processing import add_col, standardise_cols
 from cichlidanalysis.plotting.speed_plots import fill_plot_ts
-from cichlidanalysis.analysis.behavioural_state import standardise_cols
 
 # functions for clustering speed mean + std data into different behavioural states
 
 
-def kmeans_cluster(input_pd_df, resample_unit_i, cluster_number=6):
+def kmeans_cluster(input_pd_df, resample_unit_i, cluster_number=15):
     """ Clusters behaviour by z-scored values of all input columns and uses kmeans cluster on up to cluster_number
-    clusters. Uses inertia and KneeLocator to find the knee to determinee how many clusters to use.
+    clusters. Uses inertia and KneeLocator to find the knee to determine how many clusters to use. Note that number
+    of starting clusters affects the Kneelocator.
 
     :param input_pd_series: a pd.series of data points to cluster - note will drop any NaNs
     :param resample_unit_i: time unit of resampling
@@ -86,6 +86,7 @@ def kmeans_cluster(input_pd_df, resample_unit_i, cluster_number=6):
                        alpha=1, edgecolors='none')
     ax5.set_xlabel(input_pd_df.columns[0])
     ax5.set_ylabel(input_pd_df.columns[1])
+    ax5.set_title(resample_unit_i)
 
     return kl, kmeans_list[kl.elbow - smaller_cluster], kl.elbow + 1 - smaller_cluster, kmeans_list
 
@@ -122,7 +123,7 @@ def testing_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '
 
         fig2, ax2 = plt.subplots()
         for resample_n, resample_unit in enumerate(resample_units):
-            # resample data to get mean and std for speed and vertical position
+            # resample data to get mean and std for speed
             fish_tracks_spd_mean = fish_tracks_s.resample(resample_unit,
                                                           on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
             fish_tracks_std = fish_tracks_s.resample(resample_unit,
