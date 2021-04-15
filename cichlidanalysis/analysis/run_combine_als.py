@@ -28,8 +28,9 @@ from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
 from cichlidanalysis.plotting.daily_plots import plot_daily
-from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play, define_long_states, plt_move_bs
+from cichlidanalysis.analysis.behavioural_state import define_rest, bout_play, define_long_states, plt_move_bs
 from cichlidanalysis.analysis.bs_clustering import add_clustering_to_30m, add_clustering, clustering_states
+from cichlidanalysis.plotting.rest_plots import plot_rest_ind, plot_rest_mstd
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -74,16 +75,21 @@ fish_tracks.loc[fish_tracks.time_of_day_m < change_times_m[0], 'daynight'] = "n"
 fish_tracks.loc[fish_tracks.time_of_day_m > change_times_m[3], 'daynight'] = "n"
 print("added night and day column")
 
-#### Movement moving/not-moving use 15mm/s threshold ####
+# ### Movement moving/not-moving use 15mm/s threshold ####
 move_thresh = 15
 fish_tracks['movement'] = np.nan
 for fish in fish_IDs:
     # threshold the speed_mm with 15mm/s
     fish_tracks.loc[(fish_tracks.FishID == fish), 'movement'] = threshold_data(fish_tracks.loc[(fish_tracks.FishID ==
                                                             fish), "speed_mm"], move_thresh)
-fish_tracks.info()
 
-##### x,y position (binned day/night, and average day/night) #####
+# ### Behavioural state - calculated from Movement ###
+time_window_s = 60
+fraction_threshold = 0.05
+# define behave states
+fish_tracks = define_rest(fish_tracks, time_window_s, fraction_threshold)
+
+# #### x,y position (binned day/night, and average day/night) #####
 # normalising positional data
 horizontal_pos = fish_tracks.pivot(columns="FishID", values="x_nt")
 vertical_pos = fish_tracks.pivot(columns="FishID", values="y_nt")
@@ -123,46 +129,8 @@ fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m < change_times_m[0], 'daynight
 fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight'] = "n"
 print("Finished adding 30min species and daynight")
 
-# # ### Behavioural state - calculated from Movement ###
-time_window_s = 60
-fraction_threshold = 0.05
-
-# define behave states
-fish_tracks = define_bs(fish_tracks, change_times_d, time_window_s, fraction_threshold)
-
-# # cluster and add data to the 30min fish_tracks
-# fish_tracks_15s = clustering_states(fish_tracks, meta, '15S')
-#
-# fish_tracks_30m = add_clustering_to_30m(fish_tracks_15s, fish_tracks_30m)
-# fish_tracks_ = add_clustering(fish_tracks_15s, fish_tracks)
-#
-# # define long states
-# fish_tracks__ = define_long_states(fish_tracks, change_times_d, time_window_s=[5, 15, 30, 120])
-# fish_tracks_30m_ = fish_tracks__.resample('30T', on='ts').mean()
-
-# import matplotlib.pyplot as plt
-# from matplotlib.dates import DateFormatter
-# from matplotlib.ticker import (MultipleLocator)
-# from cichlidanalysis.plotting.speed_plots import fill_plot_ts
-#
-# fig1, ax = plt.subplots(1, 1, figsize=(10, 4))
-# date_form = DateFormatter("%H")
-# ax.plot(fish_tracks_30m.ts, fish_tracks_30m.speed_mm)
-# ax.xaxis.set_major_locator(MultipleLocator(0.5))
-# ax.xaxis.set_major_formatter(date_form)
-# fill_plot_ts(ax, change_times_d, fish_tracks_30m.ts)
-# ax.set_xlabel("Time (h)")
-# ax.set_ylabel("Speed_mm")
-# ax.set_ylim([0, 1])
-# ax.set_title("Rest calculated from different lengths")
-
-
-plt_move_bs(fish_tracks, metat)
 
 testing1 = bout_play(fish_tracks, metat, fish_tracks_30m)
-
-testing = define_bs(fish_tracks, rootdir, time_window_s, fraction_threshold)
-
 
 
 # ### plotting ### #
@@ -174,10 +142,10 @@ plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
 # movement for each fish (individual lines)
-plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
+plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d, move_thresh)
 
 # movement (30m bins) for each species (mean  +- std)
-plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
+plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d, move_thresh)
 
 # get daily average
 plot_daily(fish_tracks_30m, change_times_unit, rootdir)
@@ -188,6 +156,11 @@ plot_position_maps(meta, fish_tracks, rootdir)
 # speed vs Y position, for each fish, for combine fish of species, separated between day and night
 spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
 
+# rest (30m bins) for each fish (individual lines)
+plot_rest_ind(rootdir, fish_tracks_30m, change_times_d, fraction_threshold, time_window_s, "30m")
+
+# rest (30m bins) for each species (mean  +- std)
+plot_rest_mstd(rootdir, fish_tracks_30m, change_times_d, "30m")
 
 
 # feature vector: for each fish readout vector of feature values

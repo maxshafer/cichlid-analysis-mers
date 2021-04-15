@@ -34,6 +34,8 @@ def plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d):
         plt.xlabel("Time (h)")
         plt.ylabel("Speed (mm/s)")
         plt.title(species_f)
+        plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0., prop={'size': 6})
+        plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "speed_30min_individual{0}.png".format(species_f.replace(' ', '-'))))
 
 
@@ -65,6 +67,7 @@ def plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d):
         plt.xlabel("Time (h)")
         plt.ylabel("Speed (mm/s)")
         plt.title(species_f)
+        plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev{0}.png".format(species_f.replace(' ', '-'))))
 
 

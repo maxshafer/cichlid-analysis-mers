@@ -235,10 +235,10 @@ def full_analysis(rootdir):
             np.logical_and((x_nt - xmin) >= previous_x_bin * x_bin_size, (x_nt - xmin) <= x_bin * x_bin_size))] = x_bin
         previous_x_bin = copy.copy(x_bin)
 
-    thresh = 0.25
+    move_thresh = 15
 
     # Bin thresholded data (10fps = seconds, 60 seconds = min e.g. 10*60*10 = 10min bins
-    fraction_active = (speed_sm_tbl_ps > thresh) * 1
+    fraction_active = (speed_sm_mm_ps > move_thresh) * 1
     super_threshold_indices_bin = smooth_speed(fraction_active, 10 * 60 * min_bins)
 
     # filled plot in s
@@ -249,7 +249,7 @@ def full_analysis(rootdir):
     sec_axis_h(ax1, start_total_sec)
     plt.xlabel("Time (h)")
     plt.ylabel("Fraction active in {} min sliding windows".format(min_bins))
-    plt.title("Fraction_active_{}_thresh_{}_bodylengths".format(meta["species"], thresh))
+    plt.title("Fraction_active_{}_thresh_{}_mmps".format(meta["species"], move_thresh))
     plt.savefig(os.path.join(rootdir, "{0}_wake_{1}_spt.png".format(fish_ID, meta["species"].replace(' ', '-'))))
 
     # win_size = fps * sec/min * mins (was 30*60)heatm

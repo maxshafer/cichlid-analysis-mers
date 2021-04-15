@@ -9,7 +9,7 @@ from cichlidanalysis.plotting.single_plots import fill_plot_ts
 
 
 # movement (30m bins) for each fish (individual lines)
-def plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d):
+def plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d, move_thresh):
     # get each species
     all_species = fish_tracks_30m['species'].unique()
     # get each fish ID
@@ -27,11 +27,12 @@ def plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d):
         plt.xlabel("Time (h)")
         plt.ylabel("Fraction moving")
         plt.title(species_f)
-        plt.savefig(os.path.join(rootdir, "fraction_moving_30min_individual{0}.png".format(species_f.replace(' ', '-'))))
+        plt.savefig(os.path.join(rootdir, "fraction_moving_30min_move_thresh-{}_individual{0}.png".format(move_thresh,
+                                          species_f.replace(' ', '-'))))
 
 
 # movement (30m bins) for each species (mean  +- std)
-def plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d):
+def plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d, move_thresh):
     # get each species
     all_species = fish_tracks_30m['species'].unique()
     # get each fish ID
@@ -58,4 +59,5 @@ def plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d):
         plt.xlabel("Time (h)")
         plt.ylabel("Fraction movement")
         plt.title(species_f)
-        plt.savefig(os.path.join(rootdir, "fraction_movement_30min_m-stdev{0}.png".format(species_f.replace(' ', '-'))))
+        plt.savefig(os.path.join(rootdir, "fraction_movement_30min_move_thresh-{}_m-stdev{0}.png".format(move_thresh,
+                                          species_f.replace(' ', '-'))))

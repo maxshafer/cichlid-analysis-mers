@@ -237,6 +237,12 @@ def remove_cols(fish_tracks_i, remove):
     return fish_tracks_i
 
 
+def norm_hist(input_d):
+    """ Normalise input by total number e.g. fraction"""
+    input_d_norm = input_d / sum(input_d)
+    return input_d_norm
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

@@ -131,6 +131,33 @@ def find_bouts(speed, threshold):
            inactive_indices
 
 
+def find_bouts_input(fish_tracks, measure="movement"):
+    """ Finds active and quiescent bouts, including where they start, how long they are etc
+    :param speed (smoothed)
+    :param threshold: speed threshold to determine active/quiescent
+    :return: active_bout_lengths, active_bout_end_t, active_bout_start_t, quiescent_bout_lengths, quiescent_bout_end_t,
+           quiescent_bout_start_t, active_bout_max
+
+    assume no NaNs??
+    """
+    # improvements to do: deal with nans in the middle of data
+    # one way to do that would be to break apart blocks at NaNs. So there would be a loop to add in uninterrupted blocks
+    # need to keep track and accumulate blocks in same category (e.g. night)
+
+    # for active
+    active_bout_start, active_bout_end, active_bout_lengths = find_bout_start_ends(active_indices)
+    active_speed, active_bout_max = bout_speeds(active_indices, speed)
+
+    # for inactive
+    inactive_bout_start, inactive_bout_end, inactive_bout_lengths = find_bout_start_ends(inactive_indices)
+    inactive_speed, inactive_bout_max = bout_speeds(inactive_indices, speed)
+
+    return active_bout_lengths, active_bout_end, active_bout_start, inactive_bout_lengths, inactive_bout_end, \
+           inactive_bout_start, active_speed, active_bout_max, active_indices, inactive_speed, inactive_bout_max, \
+           inactive_indices
+
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
