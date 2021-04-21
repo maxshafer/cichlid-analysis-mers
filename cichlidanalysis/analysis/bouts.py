@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from cichlidanalysis.analysis.processing import threshold_data
 
@@ -44,6 +45,39 @@ def find_bout_start_ends(bout_array):
         bout_lengths = bout_end_t - bout_start_t
 
         return bout_start_t, bout_end_t, bout_lengths
+
+
+def find_bout_start_ends_inclusive(bout_array):
+    """ Takes a np.array of zeros and ones and determines the start/stop of the one streches. Assumes no NaNs.
+    Includes streches which are at the edge
+
+    :param bout_array:
+    :return: bout_start, bout_end
+    """
+    # test that the  array has no NaNs
+    if max(np.isnan(bout_array)):
+        print("NaN in bout_array therefore cannot run bout_speeds")
+        return False
+    else:
+        # determine bout starts and finishes
+        changes = np.diff(bout_array, axis=0)
+
+        # added 1 to active_bout_start as otherwise it is the last timepoint that was below the threshold.
+        # Also did it to ends so a peak of one timepoint would have a length of 1.
+        bout_start = (np.asarray(np.where(changes == 1)) + 1)[0]
+        bout_end = (np.asarray(np.where(changes == -1)) + 1)[0]
+
+        # determine if array ends with a bout
+        if bout_array[-1] == 1:
+            # if so  add in a end
+            bout_end = np.concatenate((bout_end, np.array([len(bout_array)])), axis=0)
+
+        # determine if array started with a bout
+        if bout_array[0] == 1:
+            # first bout is ongoing, add first bout as it is incomplete
+            bout_start = np.concatenate((np.array([0]), bout_start), axis=0)
+
+        return bout_start, bout_end
 
 
 def bout_speeds(bout_array, speed):
@@ -131,31 +165,122 @@ def find_bouts(speed, threshold):
            inactive_indices
 
 
-def find_bouts_input(fish_tracks, measure="movement"):
-    """ Finds active and quiescent bouts, including where they start, how long they are etc
-    :param speed (smoothed)
-    :param threshold: speed threshold to determine active/quiescent
-    :return: active_bout_lengths, active_bout_end_t, active_bout_start_t, quiescent_bout_lengths, quiescent_bout_end_t,
-           quiescent_bout_start_t, active_bout_max
+def find_bout_start_ends_pd(bout_array):
+    """ Takes a np.array of zeros and ones and determines the start/stop of the one streches. Assumes no NaNs.
 
-    assume no NaNs??
+    :param bout_array:
+    :return: bout_start_t, bout_end_t
     """
-    # improvements to do: deal with nans in the middle of data
-    # one way to do that would be to break apart blocks at NaNs. So there would be a loop to add in uninterrupted blocks
-    # need to keep track and accumulate blocks in same category (e.g. night)
+    # test that the  array has no NaNs
+    if max(np.isnan(bout_array)):
+        print("NaN in bout_array therefore cannot run bout_speeds")
+        return False
+    else:
+        # determine bout starts and finishes
+        changes = np.diff(bout_array, axis=0)
 
-    # for active
-    active_bout_start, active_bout_end, active_bout_lengths = find_bout_start_ends(active_indices)
-    active_speed, active_bout_max = bout_speeds(active_indices, speed)
+        # added 1 to active_bout_start as otherwise it is the last timepoint that was below the threshold.
+        # Also did it to ends so a peak of one timepoint would have a length of 1.
+        bout_start = np.asarray(np.where(changes == 1)) + 1
+        bout_end = np.asarray(np.where(changes == -1)) + 1
 
-    # for inactive
-    inactive_bout_start, inactive_bout_end, inactive_bout_lengths = find_bout_start_ends(inactive_indices)
-    inactive_speed, inactive_bout_max = bout_speeds(inactive_indices, speed)
+        # determine if array started with a bout
+        if bout_array[0] == 1:
+            # first bout is ongoing, remove first bout as it is incomplete
+            bout_start_t = bout_start[0, ]
+            bout_end_t = bout_end[0, 1:]
+        else:
+            # take all starts (and ends)
+            bout_start_t = bout_start[0, ]
+            bout_end_t = bout_end[0, ]
 
-    return active_bout_lengths, active_bout_end, active_bout_start, inactive_bout_lengths, inactive_bout_end, \
-           inactive_bout_start, active_speed, active_bout_max, active_indices, inactive_speed, inactive_bout_max, \
-           inactive_indices
+        # remove incomplete bouts (e.g. those that do not end), in this case there will be one less end than start
+        if bout_start_t.shape != bout_end_t.shape:
+            if bout_start_t.shape > bout_end_t.shape:
+                bout_start_t = bout_start_t[0:-1]
+            else:
+                print("something weird with number of bouts?")
+                return False
 
+        # determine active inter-bout interval
+        bout_lengths = bout_end_t - bout_start_t
+
+        return bout_start_t, bout_end_t, bout_lengths
+
+
+def find_bouts_input(fish_tracks_i, change_times_m,  measure='rest'):
+    """ Finds active and inactive bouts, including where they start, how long they are etc
+    :param fish_tracks_i:
+    :param measure: what to measure in the fish_tracks
+    :return: fish_bouts: a dataframe with time stamps of start and ends of "1" or "True" bouts in the given data.
+    """
+    fishes = fish_tracks_i['FishID'].unique()
+    first = True
+
+    for fish in fishes:
+        all_bout_starts = pd.Series()
+        all_bout_ends = pd.Series()
+
+        # get individual fish
+        fish_tracks_f = fish_tracks_i[fish_tracks_i.FishID == fish][['ts', measure]]
+
+        # check if there are NaNs
+        if np.max(np.isnan(fish_tracks_f.iloc[:, 1])):
+            # break up NaN stretches
+            non_nan_array = abs(((np.isnan(fish_tracks_f.iloc[:, 1])) * 1)-1)
+            non_nan_array = non_nan_array.to_numpy()
+            data_start, data_end = find_bout_start_ends_inclusive(non_nan_array)
+        else:
+            data_start, data_end = [0], [len(fish_tracks_f)]
+
+        for strech_n in np.arange(0, len(data_start)):
+            # calulate data stretches starts and ends
+            data_stretch = fish_tracks_f.iloc[data_start[strech_n]:data_end[strech_n], 1]
+            data_stetch_ts = fish_tracks_f.iloc[data_start[strech_n]:data_end[strech_n], 0]
+            bout_start, bout_end, _ = find_bout_start_ends(data_stretch.to_numpy())
+            # add the time stamps of found starts and ends to pd.Series
+            all_bout_starts = pd.concat([all_bout_starts.reset_index(drop=True), data_stetch_ts.iloc[bout_start].
+                                        reset_index(drop=True)])
+            all_bout_ends = pd.concat([all_bout_ends.reset_index(drop=True), data_stetch_ts.iloc[bout_end].
+                                      reset_index(drop=True)])
+
+        # import matplotlib.pyplot as plt
+        # plt.plot(fish_tracks_f.iloc[data_start[strech_n]:data_end[strech_n], 0], data_stretch)
+        # plt.scatter(all_bout_starts, np.zeros([1, len(all_bout_starts)]), color='r')
+        # plt.scatter(all_bout_ends, np.zeros([1, len(all_bout_starts)]), color='b')
+
+        #  make fish_bouts df
+        fish_bouts_i = pd.concat([all_bout_starts, all_bout_ends], axis=1)
+        fish_bouts_i.columns = ['bout_start', 'bout_end']
+        fish_bouts_i['FishID'] = fish
+
+        # combine with the other fish
+        if first:
+            fish_bouts = fish_bouts_i
+            first = False
+        else:
+            fish_bouts = pd.concat([fish_bouts, fish_bouts_i], axis=0)
+
+    fish_bouts = fish_bouts.reset_index(drop=True)
+
+    # find bout lengths for measure and nonmeasure
+    fish_bouts[measure + '_length'] = fish_bouts['bout_end'] - fish_bouts['bout_start']
+    fish_bouts['non' + measure + '_length'] = np.nan
+    fish_bouts['non' + measure + '_length'] = fish_bouts.iloc[1:, fish_bouts.columns == 'bout_start']['bout_start'].\
+    reset_index(drop=True) - fish_bouts.iloc[0:-1, fish_bouts.columns == 'bout_end']['bout_end'].reset_index(drop=True)
+
+    # add new column with Day or Night
+    fish_bouts['time_of_day_m'] = fish_bouts.bout_start.apply(lambda row: int(str(row)[11:16][:-3]) * 60 +
+                                                                          int(str(row)[11:16][-2:]))
+
+    fish_bouts['daynight'] = "d"
+    fish_bouts.loc[fish_bouts.time_of_day_m < change_times_m[0], 'daynight'] = "n"
+    fish_bouts.loc[fish_bouts.time_of_day_m > change_times_m[3], 'daynight'] = "n"
+
+    fish_bouts["bout_start"].groupby(fish_bouts["bout_start"].dt.hour).count().plot(kind="bar")
+    fish_bouts.loc[fish_bouts['FishID'] == fish, "bout_start"].groupby(fish_bouts["bout_start"].dt.hour).count().plot(kind="bar")
+
+    return fish_bouts
 
 
 if __name__ == "__main__":
