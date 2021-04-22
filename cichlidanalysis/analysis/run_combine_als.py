@@ -15,6 +15,7 @@ from tkinter import *
 import os
 import warnings
 import time
+import copy
 
 import pandas as pd
 import numpy as np
@@ -23,14 +24,13 @@ import datetime as dt
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
+from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols, add_daytime
 from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd, \
     plot_bout_lengths_dn_move
 from cichlidanalysis.plotting.daily_plots import plot_daily
-from cichlidanalysis.analysis.behavioural_state import define_rest, bout_play, plt_move_bs
-from cichlidanalysis.analysis.bs_clustering import add_clustering_to_30m, add_clustering, clustering_states
+from cichlidanalysis.analysis.behavioural_state import define_rest
 from cichlidanalysis.plotting.rest_plots import plot_rest_ind, plot_rest_mstd, plot_rest_bout_lengths_dn
 from cichlidanalysis.analysis.bouts import find_bouts_input
 
@@ -211,3 +211,65 @@ for species in all_species:
 
 # save out 30m data (all adjusted to 7am-7pm)
 fish_tracks_30m.to_csv(os.path.join(rootdir, "{}_als_30m.csv".format(species)))
+
+
+# feature vector version  2: for each fish readout vector of feature values
+# version 2: 'predawn', 'dawn', 'day', 'dusk', 'postdusk', 'night' for: speed -  mean, stdev; y position - mean, stdev;
+# FM - mean, stdev, immobile/mobile bout lengths; Rest - mean, stdev, bout lengths;
+
+time_v2_m_names = ['predawn', 'dawn', 'day', 'dusk', 'postdusk', 'night']
+times_v2_m = {'predawn': 360, 'dawn': 420, 'day': 480, 'dusk': 1080, 'postdusk': 1140, 'night': 1200}
+
+fish_tracks = add_daytime(fish_tracks, time_v2_m_names, times_v2_m)
+fish_bouts_move = add_daytime(fish_bouts_move, time_v2_m_names, times_v2_m)
+fish_bouts_rest = add_daytime(fish_bouts_rest, time_v2_m_names, times_v2_m)
+print("added daytime {} column".format(time_v2_m_names))
+
+data_names = ['spd_mean', 'move_mean', 'rest_mean', 'y_mean', 'spd_std', 'move_std', 'rest_std', 'y_std',
+              'move_bout_mean', 'nonmove_bout_mean', 'rest_bout_mean', 'nonrest_bout_mean', 'move_bout_std',
+              'nonmove_bout_std', 'rest_bout_std', 'nonrest_bout_std']
+
+extras_names = ['fish_length_mm']
+
+for species in all_species:
+    new_df = True
+    for fish in fish_IDs:
+        new_fish = True
+        for epoque in time_v2_m_names:
+            # adding main data
+            column_names = [sub + ('_' + epoque) for sub in data_names]
+            fish_v = fish_tracks.loc[(fish_tracks.FishID == fish) & (fish_tracks.daytime == epoque), ['speed_mm',
+                                                                                'movement', 'rest', 'vertical_pos']]
+            fish_b_move = fish_bouts_move.loc[(fish_bouts_move.FishID == fish) & (fish_bouts_move.daytime == epoque),
+                                              ['movement_length', 'nonmovement_length']]
+            fish_b_rest = fish_bouts_rest.loc[(fish_bouts_rest.FishID == fish) & (fish_bouts_rest.daytime == epoque),
+                                              ['rest_length', 'nonrest_length']]
+
+            # make dataframe for this epoque
+            df_e = pd.DataFrame([[fish_v.mean()['speed_mm'], fish_v.mean()['movement'], fish_v.mean()['rest'],
+                                  fish_v.mean()['vertical_pos'], fish_v.std()['speed_mm'], fish_v.std()['movement'],
+                                  fish_v.std()['rest'], fish_v.std()['vertical_pos'],
+                                  fish_b_move.mean()['movement_length'], fish_b_move.mean()['nonmovement_length'],
+                                  fish_b_rest.mean()['rest_length'], fish_b_rest.mean()['nonrest_length'],
+                                  fish_b_move.std()['movement_length'], fish_b_move.std()['nonmovement_length'],
+                                  fish_b_rest.std()['rest_length'], fish_b_rest.std()['nonrest_length']]],
+                                index=[fish], columns=column_names)
+            # add epoques together
+            if new_fish:
+                df_f = copy.copy(df_e)
+                new_fish = False
+            else:
+                df_f = pd.concat([df_f, df_e], axis=1)
+        df_f['fish_length_mm'] = metat.loc[fish, 'fish_length_mm']
+        df_f = df_f.round(2)
+
+        # add fish together
+        if new_df:
+            feature_vector = copy.copy(df_f)
+            new_df = False
+        else:
+            feature_vector = pd.concat([feature_vector, df_f], axis=0)
+
+    feature_vector.to_csv(os.path.join(rootdir, "{}_als_fv2.csv".format(species)))
+print("Saved out feature vector v2")
+print("Finished")

@@ -51,14 +51,20 @@ if __name__ == '__main__':
     feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
     averages_spd, date_time_obj_sp, sp_spd_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                               ylabeling, change_times_datetime, rootdir)
+
+    feature, ymax, span_max, ylabeling = 'rest', 95, 80, 'Rest'
+    averages_spd, date_time_obj_sp, sp_spd_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
+                                                                              ylabeling, change_times_datetime, rootdir)
     aves_ave_spd = feature_daily(averages_spd)
     aves_ave_vp = feature_daily(averages_vp)
+    aves_ave_rest = feature_daily(averages_spd)
 
     # reorganising
     species_short = shorten_sp_name(species)
 
     fig = sns.clustermap(aves_ave_spd.T, figsize=(7, 5), col_cluster=False, method='complete', metric='correlation')
     fig = sns.clustermap(aves_ave_vp.T, figsize=(7, 5), col_cluster=False, method='complete', metric='correlation')
+    fig = sns.clustermap(aves_ave_rest.T, figsize=(7, 5), col_cluster=False, method='complete', metric='correlation')
 
 
 

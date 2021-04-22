@@ -243,6 +243,22 @@ def norm_hist(input_d):
     return input_d_norm
 
 
+def add_daytime(fish_df, time_m_names, times_m_dict):
+    """ Add daytime column with given time_m_names, works on fish_tracks and fish_bouts if they have a time_of_day_m
+    column
+
+    :param fish_df:
+    :param time_m_names:
+    :param times_m_dict:
+    :return:
+    """
+    fish_df['daytime'] = "night"
+    for epoque_n, epoque in enumerate(time_m_names[0:-1]):
+        fish_df.loc[(fish_df.time_of_day_m > times_m_dict[epoque]) &
+                            (fish_df.time_of_day_m < times_m_dict[time_m_names[epoque_n + 1]]), 'daytime'] = epoque
+    return fish_df
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
