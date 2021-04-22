@@ -15,6 +15,7 @@ from tkinter import *
 import os
 import warnings
 import time
+import copy
 
 import pandas as pd
 import numpy as np
@@ -23,12 +24,15 @@ import datetime as dt
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.analysis.processing import add_col, threshold_data
+from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols, add_daytime
 from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
-from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd
+from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd, \
+    plot_bout_lengths_dn_move
 from cichlidanalysis.plotting.daily_plots import plot_daily
-# from cichlidanalysis.analysis.behavioural_state import define_bs, bout_play
+from cichlidanalysis.analysis.behavioural_state import define_rest
+from cichlidanalysis.plotting.rest_plots import plot_rest_ind, plot_rest_mstd, plot_rest_bout_lengths_dn
+from cichlidanalysis.analysis.bouts import find_bouts_input
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -46,18 +50,13 @@ fish_tracks = load_als_files(rootdir)
 t1 = time.time()
 print("time to load tracks {}".format(t1-t0))
 
-# drop any time points < dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S') (since some are adjusted)
 fish_tracks = fish_tracks.drop(fish_tracks[fish_tracks.ts < dt.datetime.strptime("1970-1-2 00:00:00",
                                                                                  '%Y-%m-%d %H:%M:%S')].index)
 fish_tracks.reset_index()
 
 meta = load_meta_files(rootdir)
 metat = meta.transpose()
-remove = ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity']
-for remove_name in remove:
-    if remove_name in fish_tracks.columns:
-        fish_tracks = fish_tracks.drop(remove_name, axis=1)
-        print("old track, removed {}".format(remove_name))
+fish_tracks = remove_cols(fish_tracks, ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity'])
 
 # get each fish ID
 fish_IDs = fish_tracks['FishID'].unique()
@@ -76,18 +75,24 @@ print("time to add time_of_day tracks {}".format(t3-t2))
 fish_tracks['daynight'] = "d"
 fish_tracks.loc[fish_tracks.time_of_day_m < change_times_m[0], 'daynight'] = "n"
 fish_tracks.loc[fish_tracks.time_of_day_m > change_times_m[3], 'daynight'] = "n"
+print("added night and day column")
 
-#### Movement moving/not-moving use 0.25bl threshold ####
+# ### Movement moving/not-moving use 15mm/s threshold ####
+move_thresh = 15
 fish_tracks['movement'] = np.nan
 for fish in fish_IDs:
-    # threshold the speed_mm with 0.25 of the body length of the fish
-    fish_tracks.loc[(fish_tracks.FishID == fish), 'movement'] = \
-        threshold_data(fish_tracks.loc[(fish_tracks.FishID == fish), "speed_mm"], metat.loc[fish, 'fish_length_mm']*0.25)
+    # threshold the speed_mm with 15mm/s
+    fish_tracks.loc[(fish_tracks.FishID == fish), 'movement'] = threshold_data(fish_tracks.loc[(fish_tracks.FishID ==
+                                                            fish), "speed_mm"], move_thresh)
 
-fish_tracks.info()
+# ### Behavioural state - calculated from Movement ###
+time_window_s = 60
+fraction_threshold = 0.05
+# define behave states
+fish_tracks = define_rest(fish_tracks, time_window_s, fraction_threshold)
 
-##### x,y position (binned day/night, and average day/night) #####
-# resample data
+# #### x,y position (binned day/night, and average day/night) #####
+# normalising positional data
 horizontal_pos = fish_tracks.pivot(columns="FishID", values="x_nt")
 vertical_pos = fish_tracks.pivot(columns="FishID", values="y_nt")
 
@@ -105,17 +110,15 @@ fish_tracks['horizontal_pos'] = np.nan
 for fish in fish_IDs:
     fish_tracks.loc[fish_tracks.FishID == fish, 'vertical_pos'] = vertical_pos.loc[:, fish]
     fish_tracks.loc[fish_tracks.FishID == fish, 'horizontal_pos'] = horizontal_pos.loc[:, fish]
+print("added vertical and horizontal position columns")
 
 # data gets heavy so remove what is not necessary
-remove = ['y_nt', 'x_nt', 'tv_ns']
-for remove_name in remove:
-    if remove_name in fish_tracks.columns:
-        fish_tracks = fish_tracks.drop(remove_name, axis=1)
-        print("removed {}".format(remove_name))
+fish_tracks = remove_cols(fish_tracks, ['y_nt', 'x_nt', 'tv_ns'])
 
 # resample data
 fish_tracks_30m = fish_tracks.groupby('FishID').resample('30T', on='ts').mean()
 fish_tracks_30m.reset_index(inplace=True)
+print("calculated resampled 30min data")
 
 # add back 'species', 'sex'
 # for col_name in ['species', 'sex', 'fish_length_mm']:
@@ -126,35 +129,36 @@ all_species = fish_tracks_30m['species'].unique()
 fish_tracks_30m['daynight'] = "d"
 fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m < change_times_m[0], 'daynight'] = "n"
 fish_tracks_30m.loc[fish_tracks_30m.time_of_day_m > change_times_m[3], 'daynight'] = "n"
+print("Finished adding 30min species and daynight")
 
+# define bouts for movement
+fish_bouts_move = find_bouts_input(fish_tracks, change_times_m, measure="movement")
 
-# # ### Behavioural state - calculated from Movement ###
-# time_window_s = 10
-# fraction_threshold = 0.2
-#
-# testing1 = bout_play(fish_tracks, metat)
-#
-# testing = define_bs(fish_tracks, rootdir, time_window_s, fraction_threshold)
-
+# define bouts for rest
+fish_bouts_rest = find_bouts_input(fish_tracks, change_times_m, measure="rest")
 
 
 # ### plotting ### #
-
+# ### SPEED ###
 # speed_mm (30m bins) for each fish (individual lines)
 plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 
 # speed_mm (30m bins) for each species (mean  +- std)
 plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
+# ### MOVEMENT ###
 # movement for each fish (individual lines)
-plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
+plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d, move_thresh)
 
 # movement (30m bins) for each species (mean  +- std)
-plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
+plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d, move_thresh)
+
+plot_bout_lengths_dn_move(fish_bouts_move, rootdir)
 
 # get daily average
 plot_daily(fish_tracks_30m, change_times_unit, rootdir)
 
+# ### POSITION ###
 # ##### x,y position (binned day/night, and average day/night) #####
 plot_position_maps(meta, fish_tracks, rootdir)
 
@@ -162,12 +166,23 @@ plot_position_maps(meta, fish_tracks, rootdir)
 spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
 
 
+# ### REST ###
+# rest (30m bins) for each fish (individual lines)
+plot_rest_ind(rootdir, fish_tracks_30m, change_times_d, fraction_threshold, time_window_s, "30m")
+
+# rest (30m bins) for each species (mean  +- std)
+plot_rest_mstd(rootdir, fish_tracks_30m, change_times_d, "30m")
+
+# rest day/night
+plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
 
 # feature vector: for each fish readout vector of feature values
 # version 1: Day/Night for: speed -  mean, stdev, median; y position - mean, stdev, median;
 # FM - mean, stdev, median;
 # to add later:
+#   movement immobile/mobile bout lengths, distributions, max speed
 #   BS - mean, stdev, median
+#   BS rest/active bout lengths, distributions, max speed
 #   30min bins of each data
 
 column_names = ['spd_mean_d', 'spd_mean_n', 'spd_std_d', 'spd_std_n', 'spd_median_d', 'spd_median_n', 'move_mean_d',
@@ -196,3 +211,65 @@ for species in all_species:
 
 # save out 30m data (all adjusted to 7am-7pm)
 fish_tracks_30m.to_csv(os.path.join(rootdir, "{}_als_30m.csv".format(species)))
+
+
+# feature vector version  2: for each fish readout vector of feature values
+# version 2: 'predawn', 'dawn', 'day', 'dusk', 'postdusk', 'night' for: speed -  mean, stdev; y position - mean, stdev;
+# FM - mean, stdev, immobile/mobile bout lengths; Rest - mean, stdev, bout lengths;
+
+time_v2_m_names = ['predawn', 'dawn', 'day', 'dusk', 'postdusk', 'night']
+times_v2_m = {'predawn': 360, 'dawn': 420, 'day': 480, 'dusk': 1080, 'postdusk': 1140, 'night': 1200}
+
+fish_tracks = add_daytime(fish_tracks, time_v2_m_names, times_v2_m)
+fish_bouts_move = add_daytime(fish_bouts_move, time_v2_m_names, times_v2_m)
+fish_bouts_rest = add_daytime(fish_bouts_rest, time_v2_m_names, times_v2_m)
+print("added daytime {} column".format(time_v2_m_names))
+
+data_names = ['spd_mean', 'move_mean', 'rest_mean', 'y_mean', 'spd_std', 'move_std', 'rest_std', 'y_std',
+              'move_bout_mean', 'nonmove_bout_mean', 'rest_bout_mean', 'nonrest_bout_mean', 'move_bout_std',
+              'nonmove_bout_std', 'rest_bout_std', 'nonrest_bout_std']
+
+extras_names = ['fish_length_mm']
+
+for species in all_species:
+    new_df = True
+    for fish in fish_IDs:
+        new_fish = True
+        for epoque in time_v2_m_names:
+            # adding main data
+            column_names = [sub + ('_' + epoque) for sub in data_names]
+            fish_v = fish_tracks.loc[(fish_tracks.FishID == fish) & (fish_tracks.daytime == epoque), ['speed_mm',
+                                                                                'movement', 'rest', 'vertical_pos']]
+            fish_b_move = fish_bouts_move.loc[(fish_bouts_move.FishID == fish) & (fish_bouts_move.daytime == epoque),
+                                              ['movement_length', 'nonmovement_length']]
+            fish_b_rest = fish_bouts_rest.loc[(fish_bouts_rest.FishID == fish) & (fish_bouts_rest.daytime == epoque),
+                                              ['rest_length', 'nonrest_length']]
+
+            # make dataframe for this epoque
+            df_e = pd.DataFrame([[fish_v.mean()['speed_mm'], fish_v.mean()['movement'], fish_v.mean()['rest'],
+                                  fish_v.mean()['vertical_pos'], fish_v.std()['speed_mm'], fish_v.std()['movement'],
+                                  fish_v.std()['rest'], fish_v.std()['vertical_pos'],
+                                  fish_b_move.mean()['movement_length'], fish_b_move.mean()['nonmovement_length'],
+                                  fish_b_rest.mean()['rest_length'], fish_b_rest.mean()['nonrest_length'],
+                                  fish_b_move.std()['movement_length'], fish_b_move.std()['nonmovement_length'],
+                                  fish_b_rest.std()['rest_length'], fish_b_rest.std()['nonrest_length']]],
+                                index=[fish], columns=column_names)
+            # add epoques together
+            if new_fish:
+                df_f = copy.copy(df_e)
+                new_fish = False
+            else:
+                df_f = pd.concat([df_f, df_e], axis=1)
+        df_f['fish_length_mm'] = metat.loc[fish, 'fish_length_mm']
+        df_f = df_f.round(2)
+
+        # add fish together
+        if new_df:
+            feature_vector = copy.copy(df_f)
+            new_df = False
+        else:
+            feature_vector = pd.concat([feature_vector, df_f], axis=0)
+
+    feature_vector.to_csv(os.path.join(rootdir, "{}_als_fv2.csv".format(species)))
+print("Saved out feature vector v2")
+print("Finished")

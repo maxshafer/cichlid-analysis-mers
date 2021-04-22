@@ -177,6 +177,14 @@ def threshold_data(speed, threshold):
 
 
 def add_col(df, col_str, fish_IDs_i, meta_i):
+    """
+
+    :param df: fish_tracks
+    :param col_str: column to add back e.g. "species"
+    :param fish_IDs_i:
+    :param meta_i:
+    :return:
+    """
     if col_str in meta_i.index:
         if col_str not in df.columns:
             df[col_str] = 'blank'
@@ -196,6 +204,59 @@ def feature_daily(averages_feature):
     averages_feature['time_of_day'] = averages_feature.apply(lambda row: str(row.name)[11:16], axis=1)
     aves_ave_feature = averages_feature.groupby('time_of_day').mean()
     return aves_ave_feature
+
+
+def standardise_cols(input_pd_df):
+    """ Calculate z-scores for every column"""
+
+    first = 1
+    cols = input_pd_df.columns
+    for col in cols:
+        col_zscore = col + '_zscore'
+        if first:
+            output_pd_df = ((input_pd_df[col] - input_pd_df[col].mean()) / input_pd_df[col].std()).to_frame().\
+                rename(columns={'spd_mean': col_zscore})
+            first = 0
+        else:
+            output_pd_df[col_zscore] = (input_pd_df[col] - input_pd_df[col].mean()) / input_pd_df[col].std()
+
+    return output_pd_df
+
+
+def remove_cols(fish_tracks_i, remove):
+    """ removing cols from fish_tracks
+
+    :param fish_tracks_i: fish_tracks
+    :param remove: list of ccolumn names to remove
+    :return: fish_tracks
+    """
+    for remove_name in remove:
+        if remove_name in fish_tracks_i.columns:
+            fish_tracks_i = fish_tracks_i.drop(remove_name, axis=1)
+            print("old track, removed {}".format(remove_name))
+    return fish_tracks_i
+
+
+def norm_hist(input_d):
+    """ Normalise input by total number e.g. fraction"""
+    input_d_norm = input_d / sum(input_d)
+    return input_d_norm
+
+
+def add_daytime(fish_df, time_m_names, times_m_dict):
+    """ Add daytime column with given time_m_names, works on fish_tracks and fish_bouts if they have a time_of_day_m
+    column
+
+    :param fish_df:
+    :param time_m_names:
+    :param times_m_dict:
+    :return:
+    """
+    fish_df['daytime'] = "night"
+    for epoque_n, epoque in enumerate(time_m_names[0:-1]):
+        fish_df.loc[(fish_df.time_of_day_m > times_m_dict[epoque]) &
+                            (fish_df.time_of_day_m < times_m_dict[time_m_names[epoque_n + 1]]), 'daytime'] = epoque
+    return fish_df
 
 
 if __name__ == "__main__":

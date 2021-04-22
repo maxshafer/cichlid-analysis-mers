@@ -92,7 +92,7 @@ def tracker_checker_inputs(video_path_i):
     spd_sm_mm = spd_sm * config["mm_per_pixel"]
     spd_sm_mm_ps = spd_sm_mm * config['fps']
 
-    thresh = (0.25 * meta["fish_length_mm"]) / config["mm_per_pixel"]
+    thresh = 0.25 * meta["fish_length_mm"]
 
     return bkgd, spd_sm, spd_sm_mm_ps, thresh, displacement_i_mm_s, vid_name, track_single_i, start_point, end_point, \
            x_nt_i, y_nt_i
@@ -194,16 +194,17 @@ def track_checker_gui(video_path_j, bgd, spd_sm, spd_sm_mm_ps, thresh, displacem
             win_max = spd_sm.shape[0]
 
         values = spd_sm_mm_ps[win_min:win_max]
-        values_2 = displacement_i_mm_s[win_min:win_max]
+        # values_2 = displacement_i_mm_s[win_min:win_max]
         plt.plot(values)
-        plt.plot(values_2)
-        plt.plot([0, 400], [thresh, thresh])
+        # plt.plot(values_2)
+        # plt.plot([0, 400], [thresh, thresh])
+        plt.plot([0, 400], [15, 15])
 
         ax.set_ylim([0, max_sp])
         ax.set_xlim([0, 400])
         ax.set_aspect('auto')
-        # ax.legend(["current frame", "speed_sm_mm_ps", "thresh (0.25 bl)"])
-        ax.legend(["current frame", "speed_sm_mm_ps", "speed_raw_mm_ps", "threshold (0.25 bl)"])
+        ax.legend(["current frame", "speed_sm_mm_ps", "thresh 15mm/s"])
+        # ax.legend(["current frame", "speed_sm_mm_ps", "speed_raw_mm_ps", "threshold (0.25 bl)"])
         plt.ylabel("mm/s")
 
         k = cv2.waitKey(33)

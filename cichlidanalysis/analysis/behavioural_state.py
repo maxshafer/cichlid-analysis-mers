@@ -1,47 +1,107 @@
+import copy
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 import matplotlib.gridspec as grid_spec
 import matplotlib.cm as cm
 import scipy.signal as signal
+import seaborn as sns
+from matplotlib.dates import DateFormatter
+from matplotlib.ticker import (MultipleLocator)
 
 from cichlidanalysis.analysis.bouts import find_bouts
-from cichlidanalysis.analysis.processing import smooth_speed
+from cichlidanalysis.analysis.processing import smooth_speed, standardise_cols, norm_hist
+from cichlidanalysis.analysis.bs_clustering import kmeans_cluster
+from cichlidanalysis.plotting.speed_plots import fill_plot_ts
 
 
-def define_bs(fish_tracks_i, rootdir, time_window_s, fraction_threshold):
-    time_window_s = 60
-    fraction_threshold = 0.10
+def define_long_states(fish_tracks_i, change_times_d, time_window_s=[5, 15, 30, 60, 120, 300]):
+    """ Defines behavioural state by thresholding on a window
+    Sleep as defined by not moving for > X seconds
 
-    fish_tracks_i["behav_state"] = ((fish_tracks_i.movement.rolling(
-        10 * time_window_s).mean()) > fraction_threshold) * 1
+    :param fish_tracks_i:
+    :param change_times_d:
+    :param time_window_s:
+    :return:
+    """
+    fps = 10
 
-    fig1 = plt.subplot()
-    plt.fill_between(np.arange(0, len(fish_tracks_i.behav_state * 45)), fish_tracks_i.behav_state * 45, alpha=0.5,
-                     color='green')
-    plt.plot(fish_tracks_i.speed_mm)
-    plt.plot(fish_tracks_i.movement * 40)
+    fig1, ax = plt.subplots(1, 1)
+    # fig2, ax2 = plt.subplots(1, 1)
+    date_form = DateFormatter("%H")
+    first = True
 
-    plt.plot(fish_tracks_i.behav_state * 45)
+    for win in time_window_s:
+        win_f = fps * win
+        fish_tracks_i['rest'] = ((fish_tracks_i.groupby('FishID').movement.apply(lambda x: x.rolling(win_f).sum()) == 0)
+                                 * 1)
+        fish_tracks_30m = copy.copy(fish_tracks_i.groupby('FishID').resample('30T', on='ts').mean())
+        fish_tracks_30m = fish_tracks_30m.reset_index()
 
-    fish_tracks_30m = fish_tracks_i.groupby('FishID').resample('30T', on='ts').mean()
-    fig2 = plt.subplot()
-    plt.plot(fish_tracks_30m.speed_mm.to_numpy())
-    plt.plot(fish_tracks_30m.movement.to_numpy() * 40)
-    plt.plot(fish_tracks_30m.behav_state.to_numpy() * 45)
+        fish_tracks_i = fish_tracks_i.drop(columns=['rest'])
 
-    print("defining bs")
+        if first:
+            fish_tracks_30m_c = copy.copy(fish_tracks_30m)
+            first = False
+        else:
+            fish_tracks_30m_c["win" + str(win)] = fish_tracks_30m["rest"]
+        ax.plot(fish_tracks_30m.ts, fish_tracks_30m.rest, label=win)
+    ax.xaxis.set_major_locator(MultipleLocator(0.5))
+    ax.xaxis.set_major_formatter(date_form)
+    fill_plot_ts(ax, change_times_d, fish_tracks_30m.ts)
+    ax.set_ylim([0, 1])
+    ax.set_xlabel("Time (h)")
+    ax.set_ylabel("Fraction rest")
+    ax.set_title("Rest calculated from different lengths")
+    ax.legend()
+
+    print("defining rest")
+    return fish_tracks_i
 
 
-def norm_hist(input_d):
-    input_d_norm = input_d / sum(input_d)
-    return input_d_norm
+def define_rest(fish_tracks_i, time_window_s=60, fraction_threshold=0.05):
+    """ Defines behavioural state by thresholding on a window
+    Sleep  as defined by movement below Y% in X seconds
+
+    :param fish_tracks_i:
+    :param rootdir:
+    :param fraction_threshold:
+    :return:
+    """
+
+    fish_tracks_i["rest"] = ((fish_tracks_i.groupby("FishID")['movement'].transform(lambda s: s.rolling(10 *
+                              time_window_s).mean())) < fraction_threshold) * 1
+    return fish_tracks_i
 
 
-def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T',
-                                                '2T', '5T', '10T', '15T', '20T']):
-    # resample_units = ['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S', '45S', '1T', '2T', '5T', '10T', '15T', '20T']
+def plt_move_bs(fish_tracks_c):
+    fishes = fish_tracks_c.FishID.unique()[:]
+    p_range = np.arange(100000, 200000)
+    for fish in fishes:
+        fig1, ax = plt.subplots(1, 1, figsize=(10, 4))
+        x_ts = fish_tracks_c.loc[fish_tracks_c.FishID == fish, 'ts'][p_range]
+
+        plt.plot(x_ts, fish_tracks_c.loc[fish_tracks_c.FishID == fish, 'speed_mm'][p_range])
+        plt.fill_between(np.arange(0, len(fish_tracks_c.loc[fish_tracks_c.FishID == fish, 'movement'][p_range] * 200)),
+            fish_tracks_c.loc[fish_tracks_c.FishID == fish, 'movement'][p_range] * 200, alpha=0.5, color='green')
+        plt.plot([0, 100000], [15, 15], 'k')
+        plt.fill_between(np.arange(0, len(fish_tracks_c.loc[fish_tracks_c.FishID == fish, 'rest'][100000:200000]
+                                          * 55)), fish_tracks_c.loc[fish_tracks_c.FishID == fish, 'rest']
+        [100000:200000] * 200, alpha=0.5, color='orange')
+        plt.xlabel("frame #")
+        plt.ylabel("Speed mm/s")
+        plt.ylim([0, 65])
+
+
+def plotting_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S',
+                                                              '45S', '1T', '2T', '5T', '10T', '15T', '20T']):
+    """ For plotting the different resampling of fish clustering
+
+    :param fish_tracks_i:
+    :param resample_units:
+    :return:
+    """
     bin_boxes = np.arange(0, 150, 1)
     fishes = fish_tracks_i.FishID.unique()[:]
     all_counts_combined_norm = np.zeros([len(bin_boxes)-1, len(resample_units), len(fishes)])
@@ -49,18 +109,27 @@ def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '1
     for fish_n, fish in enumerate(fishes):
         fish_tracks_s = fish_tracks_i.loc[fish_tracks_i.FishID == fish, ['speed_mm', 'ts']]
         counts_combined = np.zeros([len(resample_units), len(bin_boxes)-1])
+        counts_combined_std = np.zeros([len(resample_units), len(bin_boxes) - 1])
 
+        fig3, ax3 = plt.subplots()
         for resample_n, resample_unit in enumerate(resample_units):
-            # resample data
-            fish_tracks_b = fish_tracks_s.resample(resample_unit, on='ts').mean()
-            fish_tracks_b.reset_index(inplace=True)
+            # resample data to get mean and std for speed
+            fish_tracks_b = fish_tracks_s.resample(resample_unit, on='ts').mean().rename(columns={'speed_mm': 'spd_mean'})
+            fish_tracks_std = fish_tracks_s.resample(resample_unit, on='ts').std().rename(columns={'speed_mm': 'spd_std'})
 
-            # for fish in fishes:
+            fish_tracks_ds = pd.concat([fish_tracks_b, fish_tracks_std], axis=1)
+            kl, _, _, kmeans_list = kmeans_cluster(fish_tracks_ds, resample_unit, cluster_number=10)
+
             fig1, ax1 = plt.subplots(2, 1)
-            # fish_tracks_b.loc[fish_tracks_b.FishID == fish].plot.hist(y="speed_mm", bins=100, ax=ax1[0])
-            counts, _, _ = plt.hist(fish_tracks_b["speed_mm"], bins=bin_boxes)
+            counts, _, _ = plt.hist(fish_tracks_b["spd_mean"], bins=bin_boxes)
             counts_combined[resample_n, :] = counts
-            fish_tracks_b.plot.line(y="speed_mm", ax=ax1[0])
+            fish_tracks_b.plot.line(y="spd_mean", ax=ax1[0])
+            plt.close()
+
+            fig1, ax1 = plt.subplots(2, 1)
+            counts_std, _, _ = plt.hist(fish_tracks_std["spd_std"], bins=bin_boxes)
+            counts_combined_std[resample_n, :] = counts_std
+            fish_tracks_std.plot.line(y="spd_std", ax=ax1[0])
             plt.close()
 
         fig2, ax2 = plt.subplots(len(resample_units), 1)
@@ -71,10 +140,13 @@ def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '1
         ax2[i].get_xaxis().set_ticks(np.arange(0, max(bin_boxes), step=20))
         fig2.suptitle("{}".format(fish), fontsize=8)
 
-        # heatmap
+        # HEATMAP
         # normalise each row
         counts_combined_norm = pd.DataFrame(data=counts_combined.T, index=bin_boxes[0:-1], columns=resample_units)
         counts_combined_norm = counts_combined_norm.div(counts_combined_norm.sum(axis=0), axis=1)
+
+        counts_combined_std_norm = pd.DataFrame(data=counts_combined_std.T, index=bin_boxes[0:-1], columns=resample_units)
+        counts_combined_std_norm = counts_combined_std_norm.div(counts_combined_std_norm.sum(axis=0), axis=1)
 
         fig3 = plt.figure(figsize=(8, 4))
         plt.imshow(counts_combined_norm.T, cmap='hot', aspect='auto')
@@ -90,6 +162,18 @@ def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '1
         fig2.suptitle("{}".format(fish), fontsize=8)
         # plt.savefig(os.path.join(rootdir, "xy_ave_Day_{0}.png".format(species_n.replace(' ', '-'))))
 
+        fig3 = plt.figure(figsize=(8, 4))
+        plt.imshow(counts_combined_std_norm.T, cmap='hot', aspect='auto')
+        plt.title("{}".format(fish))
+        cbar = plt.colorbar(label="% occupancy")
+        plt.gca().invert_yaxis()
+        plt.gca().set_xticks(np.arange(0, bin_boxes[-1], 10))
+        plt.gca().set_yticks(np.arange(0, len(resample_units)))
+        plt.gca().set_yticklabels(resample_units)
+        plt.gca().set_xlim([0, 120])
+        plt.gca().set_xlabel("Speed mm/s std")
+        plt.gca().set_ylabel("Time bin")
+        fig2.suptitle("{}".format(fish), fontsize=8)
 
         # https://matplotlib.org/matplotblog/posts/create-ridgeplots-in-matplotlib/
         cmap = cm.get_cmap('turbo')
@@ -152,10 +236,10 @@ def bin_seperate(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '1
 
 
 def set_bs_thresh(fish_tracks_i_fish, fish_tracks_unit, thresholds):
-
-    ## playing around:
+    fishes = fish_tracks_i_fish.FishID.unique()[:]
+    # playing around:
     thresholds = [5, 20]
-    fish_tracks_i_fish = fish_tracks_i.loc[fish_tracks_i.FishID == fishes[3], ['speed_mm', 'ts']]
+    fish_tracks_i_fish = fish_tracks_i_fish.loc[fish_tracks_i_fish.FishID == fishes[3], ['speed_mm', 'ts']]
     # resample data
     fish_tracks_b = fish_tracks_i_fish.resample('30S', on='ts').mean()
     fish_tracks_b.reset_index(inplace=True)
@@ -179,8 +263,6 @@ def set_bs_thresh(fish_tracks_i_fish, fish_tracks_unit, thresholds):
     plt.plot(fish_tracks_b.ts, fish_tracks_b.speed_mm, color='k')
 
 
-
-
 def finding_thresholds(spd_hist):
     # filtering shifts everything to the right
     _, row_n = spd_hist.shape
@@ -196,16 +278,32 @@ def finding_thresholds(spd_hist):
         plt.plot(troughs, smoothed_row[troughs], 'x', color='k')
 
 
-def bout_play(fish_tracks_i, metat):
+def bout_processing():
+
+
+    # NEED TO DEAL WITH EDGE CASES! IGNORING FOR THE MOMENT SINCE THEY ARE SUCH A SMALL FRACTION
+    active_bout_lengths_d, active_bout_end_d, active_bout_start_d, inactive_bout_lengths_d, inactive_bout_end_d, \
+    inactive_bout_start_d, active_speed_d, active_bout_max_d, active_indices_d, inactive_speed_d, \
+    inactive_bout_max_d, inactive_indices_d = find_bouts(fish_speed_d, metat.loc[fish, 'fish_length_mm'] * 0.25)
+
+    active_bout_lengths_n, active_bout_end_n, active_bout_start_n, inactive_bout_lengths_n, inactive_bout_end_n, \
+    inactive_bout_start_n, active_speed_n, active_bout_max_n, active_indices_n, inactive_speed_n, \
+    inactive_bout_max_n, inactive_indices_n = find_bouts(fish_speed_n, metat.loc[fish, 'fish_length_mm'] * 0.25)
+
+
+
+def bout_play(fish_tracks_i, metat, fish_tracks_30m):
     fishes = fish_tracks_i.FishID.unique()[:]
     for fish in fishes:
         fig1 = plt.subplot()
         plt.plot(np.arange(0, 100000, 1), fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'speed_mm'][100000:200000])
-        plt.fill_between(np.arange(0, len(fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'movement'][100000:200000] * 45)),
-                         fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'movement'][100000:200000] * 45, alpha=0.5, color='green')
+        plt.fill_between(np.arange(0, len(fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'movement'][100000:200000] *
+                                          45)), fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'movement']
+        [100000:200000] * 45, alpha=0.5, color='green')
         plt.plot([0, 100000], [metat.loc[fish, 'fish_length_mm']*0.25, metat.loc[fish, 'fish_length_mm']*0.25], 'k')
-        plt.fill_between(np.arange(0, len(fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'behav_state'][100000:200000] * 55)),
-                         fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'behav_state'][100000:200000] * 45, alpha=0.5, color='orange')
+        plt.fill_between(np.arange(0, len(fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'rest'][100000:200000]
+                                          * 55)), fish_tracks_i.loc[fish_tracks_i.FishID == fish, 'rest']
+        [100000:200000] * 45, alpha=0.5, color='orange')
         plt.xlabel("frame #")
         plt.ylabel("Speed mm/s")
 
@@ -444,7 +542,6 @@ def bout_play(fish_tracks_i, metat):
         ax2[1].legend()
         # plt.title("Movement bouts for {}".format(fish))
 
-
         fig2, ax2 = plt.subplots(2, 1)
         ax2[0].plot(bins[0:-1] / 10, np.cumsum(total_time_active_f_d_norm), color='red', label='Day')
         ax2[0].plot(bins[0:-1] / 10, np.cumsum(total_time_active_f_n_norm), color='blueviolet', label='Night')
@@ -477,4 +574,3 @@ def bout_play(fish_tracks_i, metat):
         ax2[0].legend()
         ax2[1].legend()
         fig2.suptitle("Cumulative movement bouts for {}".format(fish), fontsize=8)
-

@@ -72,7 +72,7 @@ def full_analysis(rootdir):
     x_n = int_nan_streches(track_full[:, 1])
     y_n = int_nan_streches(track_full[:, 2])
 
-    # replace bad track NaNs (-1) -> these are manually defined as artefacts by "split_tracking"
+    # replace bad track NaNs (-1) -> these are manually defined as artifacts by "split_tracking"
     x_n[np.where(x_n == -1)] = np.nan
     y_n[np.where(y_n == -1)] = np.nan
 
@@ -132,22 +132,22 @@ def full_analysis(rootdir):
     tv_night = np.append(tv_night, tv_24h_sec[np.where(change_times_s[0] > tv_24h_sec)])
     tv_night = np.append(tv_night, tv[np.where(tv_24h_sec[0:-1] > change_times_s[3])])
 
-    speed_sm_night = np.append(speed_sm_night, speed_sm[np.where(change_times_s[0] > tv_24h_sec[0:-1]), 0])
-    speed_sm_night = np.append(speed_sm_night, speed_sm[np.where(tv_24h_sec[0:-1] > change_times_s[3]), 0])
+    speed_sm_night = np.append(speed_sm_night, speed_sm_mm_ps[np.where(change_times_s[0] > tv_24h_sec[0:-1]), 0])
+    speed_sm_night = np.append(speed_sm_night, speed_sm_mm_ps[np.where(tv_24h_sec[0:-1] > change_times_s[3]), 0])
 
     tv_day = np.empty([0, 0])
     speed_sm_day = np.empty([0, 0])
 
     tv_day = np.append(tv_day, tv[np.where((change_times_s[0] < tv_24h_sec[0:-1]) &
                                            (tv_24h_sec[0:-1] < change_times_s[3]))])
-    speed_sm_day = np.append(speed_sm_day, speed_sm[np.where((change_times_s[0] < tv_24h_sec[0:-1]) &
+    speed_sm_day = np.append(speed_sm_day, speed_sm_mm_ps[np.where((change_times_s[0] < tv_24h_sec[0:-1]) &
                                                              (tv_24h_sec[0:-1] < change_times_s[3])), 0])
 
     # plot speed distributions
-    bin_edges_plot = np.linspace(0, 50, 101)
+    bin_edges_plot = np.linspace(0, 200, 101)
     # bin_edges_plot = np.logspace(0, 1.2, 10)
-    plot_hist_2(bin_edges_plot, speed_sm_day, "day", speed_sm_night, "night", "speed", 1)
-    plt.savefig(os.path.join(rootdir, "{0}_hist_D_vs_N_{1}_spt.png".format(fish_ID, meta["species"].replace(' ', '-'))))
+    plot_hist_2(bin_edges_plot, speed_sm_day, "day", speed_sm_night, "night", "speed mm/s", 1)
+    plt.savefig(os.path.join(rootdir, "{0}_hist_D_vs_N_{1}_spd_mms.png".format(fish_ID, meta["species"].replace(' ', '-'))))
 
     # split data into day and night
     position_night_x = np.empty([0, 0])
@@ -235,10 +235,10 @@ def full_analysis(rootdir):
             np.logical_and((x_nt - xmin) >= previous_x_bin * x_bin_size, (x_nt - xmin) <= x_bin * x_bin_size))] = x_bin
         previous_x_bin = copy.copy(x_bin)
 
-    thresh = 0.25
+    move_thresh = 15
 
     # Bin thresholded data (10fps = seconds, 60 seconds = min e.g. 10*60*10 = 10min bins
-    fraction_active = (speed_sm_tbl_ps > thresh) * 1
+    fraction_active = (speed_sm_mm_ps > move_thresh) * 1
     super_threshold_indices_bin = smooth_speed(fraction_active, 10 * 60 * min_bins)
 
     # filled plot in s
@@ -249,7 +249,7 @@ def full_analysis(rootdir):
     sec_axis_h(ax1, start_total_sec)
     plt.xlabel("Time (h)")
     plt.ylabel("Fraction active in {} min sliding windows".format(min_bins))
-    plt.title("Fraction_active_{}_thresh_{}_bodylengths".format(meta["species"], thresh))
+    plt.title("Fraction_active_{}_thresh_{}_mmps".format(meta["species"], move_thresh))
     plt.savefig(os.path.join(rootdir, "{0}_wake_{1}_spt.png".format(fish_ID, meta["species"].replace(' ', '-'))))
 
     # win_size = fps * sec/min * mins (was 30*60)heatm
@@ -333,7 +333,7 @@ def full_analysis(rootdir):
     meta_df = pd.DataFrame(track_meta, columns=['ID', 'species', 'sex', 'fish_length_mm', 'mm_per_pixel'], index=[0])
     meta_df.to_csv(os.path.join(rootdir, "{0}_meta.csv".format(fish_ID)))
 
-    # start from midnight (so they all start at the same time) - need to adjust "middnight" depending on if ts were
+    # start from midnight (so they all start at the same time) - need to adjust "midnight" depending on if ts were
     # adjusted for 30min shift (all recordings before 20201127).
     if int(fish_ID[4:12]) < 20201127:
         thirty_min_ns = 30 * 60 * 1000000000
