@@ -240,8 +240,7 @@ def load_feature_vectors(folder, suffix="*als_fv.csv"):
             first_done = 1
 
     data = data.rename(columns={"Unnamed: 0": "fish_ID"})
-    data = data.reset_index()
-    data = data.drop(columns=['index'])
+    data = data.reset_index(drop=True)
 
     print("All down sampled als.csv files loaded")
     return data

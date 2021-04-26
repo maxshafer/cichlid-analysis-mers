@@ -25,7 +25,7 @@ rootdir = askdirectory(parent=root)
 root.destroy()
 
 
-feature_v = load_feature_vectors(rootdir, "*als_fv.csv")
+feature_v = load_feature_vectors(rootdir, "*als_fv2.csv")
 
 # add species
 feature_v['species'] = 'undefined'
@@ -44,11 +44,10 @@ for species_n, species_name in enumerate(species):
     if species_n == 0:
         averages = average
     else:
-        averages = pd.concat([averages, average], axis=1)
+        averages = pd.concat([averages, average], axis=1, join='inner')
     stdv = sp_subset.std(axis=0)
 
 averages_norm = averages.div(averages.sum(axis=1), axis=0)
-averages_norm = averages_norm.drop(['move_median_d', 'move_median_n'])
 
 ## heatmap of fv
 fig1, ax1 = plt.subplots()
@@ -72,5 +71,8 @@ fig1.tight_layout(pad=3)
 # cols = [averages.columns.tolist()[i] for i in list((np.argsort(ind)))]
 # averages = averages[cols]
 
-fig = sns.clustermap(averages_norm.T, figsize=(7, 5), col_cluster=False, method='complete')
+fig = sns.clustermap(averages_norm, figsize=(10, 10), col_cluster=False, method='complete', yticklabels=True)
 plt.savefig(os.path.join(rootdir, "cluster_map_fv_{0}.png".format(datetime.date.today())))
+
+fig = sns.heatmap(averages_norm.iloc[averages.index == 'total_rest', :], yticklabels=True)
+
