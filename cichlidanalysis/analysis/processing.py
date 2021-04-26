@@ -259,6 +259,25 @@ def add_daytime(fish_df, time_m_names, times_m_dict):
     return fish_df
 
 
+def ave_daily_fish(fish_tracks_30m, fish, measure):
+    """ To find the daily average for something (measure e.g. 'rest' or 'movement')
+
+    :param fish_tracks_30m:
+    :param fish:
+    :param measure:
+    :return: daily_ave, daily_ave_std, daily_ave_total
+    """
+    days = fish_tracks_30m[fish_tracks_30m.FishID == fish][[measure, 'ts']]
+    days = days.set_index('ts')
+
+    # get time of day so that the same time of day for each day can be averaged
+    days['time_of_day'] = days.apply(lambda row: str(row.name)[11:16], axis=1)
+    daily_ave = days.groupby('time_of_day').mean()
+    daily_ave_std = days.groupby('time_of_day').std()
+    daily_ave_total = sum(daily_ave.iloc[:, 0])
+    return daily_ave, daily_ave_std, daily_ave_total
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

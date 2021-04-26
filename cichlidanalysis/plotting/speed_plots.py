@@ -37,6 +37,48 @@ def plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d):
         plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0., prop={'size': 6})
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "speed_30min_individual{0}.png".format(species_f.replace(' ', '-'))))
+        plt.close()
+
+
+def plot_speed_30m_sex(rootdir, fish_tracks_30m, change_times_d):
+    """speed_mm (30m bins) for each fish (individual lines) coloured by sex
+
+    """
+    # get each species
+    all_species = fish_tracks_30m['species'].unique()
+    # get each fish ID
+    fish_IDs = fish_tracks_30m['FishID'].unique()
+
+    date_form = DateFormatter("%H")
+    for species_f in all_species:
+        plt.figure(figsize=(10, 4))
+        ax = sns.lineplot(data=fish_tracks_30m[fish_tracks_30m.species == species_f], x='ts', y='speed_mm', hue='sex',
+                          units="FishID", estimator=None)
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
+        ax.set_ylim([0, 60])
+        plt.xlabel("Time (h)")
+        plt.ylabel("Speed (mm/s)")
+        plt.title(species_f)
+        plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0., prop={'size': 6})
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_30min_individuals_by_sex_{0}.png".format(species_f.replace(' ', '-'))))
+        plt.close()
+
+        plt.figure(figsize=(10, 4))
+        ax = sns.lineplot(data=fish_tracks_30m[fish_tracks_30m.species == species_f], x='ts', y='speed_mm', hue='sex')
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
+        ax.set_ylim([0, 60])
+        plt.xlabel("Time (h)")
+        plt.ylabel("Speed (mm/s)")
+        plt.title(species_f)
+        plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0., prop={'size': 6})
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "speed_30min_mean-stdev_by_sex_{0}.png".format(species_f.replace(' ', '-'))))
+        plt.close()
 
 
 # speed_mm (30m bins) for each species (mean  +- std)
@@ -69,6 +111,7 @@ def plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d):
         plt.title(species_f)
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "speed_30min_m-stdev{0}.png".format(species_f.replace(' ', '-'))))
+        plt.close()
 
 
 def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling, change_times_datetime_i, rootdir):
@@ -174,6 +217,6 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
     plt.show()
 
     plt.savefig(os.path.join(rootdir, "speed_30min_combined_species_{0}.png".format(dt.date.today())))
-
+    plt.close()
     aves_feature = pd.DataFrame(averages.T, columns=species, index=date_time_obj[0:averages.shape[1]])
     return aves_feature, date_time_obj, sp_feature_combined

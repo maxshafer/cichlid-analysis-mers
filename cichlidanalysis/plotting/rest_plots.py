@@ -29,10 +29,58 @@ def plot_rest_ind(rootdir, fish_tracks_ds, change_times_d, fraction_threshold, t
         ax.set_ylabel("Fraction rest")
         ax.set_title("Rest calculated from thresh {} and window {}".format(fraction_threshold, time_window_s))
         plt.tight_layout()
-        print("defining behavioural state")
-        plt.show()
         plt.savefig(os.path.join(rootdir, "rest_{0}_individuals_{1}.png".format(ds_unit, species_f.replace(' ', '-'))))
+        plt.close()
 
+
+def plot_rest_sex(rootdir, fish_tracks_ds, change_times_d, fraction_threshold, time_window_s, ds_unit):
+    """ Splitting by sex
+
+    :param rootdir:
+    :param fish_tracks_ds:
+    :param change_times_d:
+    :param fraction_threshold:
+    :param time_window_s:
+    :param ds_unit:
+    :return:
+    """
+    # get each species
+    all_species = fish_tracks_ds['species'].unique()
+    date_form = DateFormatter("%H")
+
+    for species_f in all_species:
+        fig1, ax = plt.subplots(1, 1, figsize=(10, 4))
+        date_form = DateFormatter("%H")
+        ax = sns.lineplot(data=fish_tracks_ds[fish_tracks_ds.species == species_f], x='ts', y='rest', hue='sex',
+                          units="FishID", estimator=None)
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_ds.ts)
+        ax.set_ylim([0, 1])
+        plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0., prop={'size': 6})
+        ax.set_xlabel("Time (h)")
+        ax.set_ylabel("Fraction rest")
+        ax.set_title("Rest calculated from thresh {} and window {}".format(fraction_threshold, time_window_s))
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "rest_{0}_individuals_by_sex_{1}.png".format(ds_unit, species_f.replace(' ',
+                                                                                                                '-'))))
+        plt.close()
+
+
+        fig1, ax = plt.subplots(1, 1, figsize=(10, 4))
+        date_form = DateFormatter("%H")
+        ax = sns.lineplot(data=fish_tracks_ds[fish_tracks_ds.species == species_f], x='ts', y='rest', hue='sex')
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_ds.ts)
+        ax.set_ylim([0, 1])
+        plt.legend(bbox_to_anchor=(1.01, 1), loc=2, borderaxespad=0., prop={'size': 6})
+        ax.set_xlabel("Time (h)")
+        ax.set_ylabel("Fraction rest")
+        ax.set_title("Rest calculated from thresh {} and window {}".format(fraction_threshold, time_window_s))
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "rest_{0}_mean-std_sex_{1}.png".format(ds_unit, species_f.replace(' ', '-'))))
+        plt.close()
 
 
 def plot_rest_mstd(rootdir, fish_tracks_ds, change_times_d, ds_unit):
@@ -65,6 +113,7 @@ def plot_rest_mstd(rootdir, fish_tracks_ds, change_times_d, ds_unit):
         plt.title(species_f)
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "rest_{0}_m-stdev{1}.png".format(ds_unit, species_f.replace(' ', '-'))))
+        plt.close()
 
 
 def plot_rest_bout_lengths_dn(fish_bouts, rootdir):
@@ -83,10 +132,10 @@ def plot_rest_bout_lengths_dn(fish_bouts, rootdir):
     for species_n in species:
         # counts of bout lengths for on and off bout
         fig1, ax1 = plt.subplots(2, 2)
-        fish_on_bouts_d = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'd'), "rest_length"]
-        fish_on_bouts_n = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'n'), "rest_length"]
-        fish_off_bouts_d = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'd'), "nonrest_length"]
-        fish_off_bouts_n = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'n'), "nonrest_length"]
+        fish_on_bouts_d = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'd'), "rest_len"]
+        fish_on_bouts_n = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'n'), "rest_len"]
+        fish_off_bouts_d = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'd'), "nonrest_len"]
+        fish_off_bouts_n = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'n'), "nonrest_len"]
 
         bin_boxes_on = np.arange(0, 1000, 10)
         bin_boxes_off = np.arange(0, 60*60*10, 10)
@@ -143,6 +192,7 @@ def plot_rest_bout_lengths_dn(fish_bouts, rootdir):
         fig3.suptitle("Cumulative movement bouts for {}".format(fish), fontsize=8)
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "cumsum_rest_nonrest_bouts_{0}.png".format(species_n.replace(' ', '-'))))
+        plt.close()
 
 # # get start time 24h distribution
 # fishes = fish_bouts['FishID'].unique()

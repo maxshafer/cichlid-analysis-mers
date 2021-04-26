@@ -24,14 +24,14 @@ import datetime as dt
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols, add_daytime
+from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols, add_daytime, ave_daily_fish
 from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
-from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd
+from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd, plot_speed_30m_sex
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd, \
-    plot_bout_lengths_dn_move
+    plot_bout_lengths_dn_move, plot_movement_30m_sex
 from cichlidanalysis.plotting.daily_plots import plot_daily
 from cichlidanalysis.analysis.behavioural_state import define_rest
-from cichlidanalysis.plotting.rest_plots import plot_rest_ind, plot_rest_mstd, plot_rest_bout_lengths_dn
+from cichlidanalysis.plotting.rest_plots import plot_rest_ind, plot_rest_mstd, plot_rest_bout_lengths_dn, plot_rest_sex
 from cichlidanalysis.analysis.bouts import find_bouts_input
 
 # debug pycharm problem
@@ -121,8 +121,7 @@ fish_tracks_30m.reset_index(inplace=True)
 print("calculated resampled 30min data")
 
 # add back 'species', 'sex'
-# for col_name in ['species', 'sex', 'fish_length_mm']:
-for col_name in ['species']:
+for col_name in ['species', 'sex']:
     add_col(fish_tracks_30m, col_name, fish_IDs, meta)
 all_species = fish_tracks_30m['species'].unique()
 
@@ -133,10 +132,11 @@ print("Finished adding 30min species and daynight")
 
 # define bouts for movement
 fish_bouts_move = find_bouts_input(fish_tracks, change_times_m, measure="movement")
+print("Defined bouts for movement")
 
 # define bouts for rest
 fish_bouts_rest = find_bouts_input(fish_tracks, change_times_m, measure="rest")
-
+print("Defined bouts for rest")
 
 # ### plotting ### #
 # ### SPEED ###
@@ -146,6 +146,9 @@ plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 # speed_mm (30m bins) for each species (mean  +- std)
 plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
+plot_speed_30m_sex(rootdir, fish_tracks_30m, change_times_d)
+print("Finished speed plots")
+
 # ### MOVEMENT ###
 # movement for each fish (individual lines)
 plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d, move_thresh)
@@ -153,7 +156,9 @@ plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d, move_thr
 # movement (30m bins) for each species (mean  +- std)
 plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d, move_thresh)
 
+plot_movement_30m_sex(rootdir, fish_tracks_30m, change_times_d, move_thresh)
 plot_bout_lengths_dn_move(fish_bouts_move, rootdir)
+print("Finished movement plots")
 
 # get daily average
 plot_daily(fish_tracks_30m, change_times_unit, rootdir)
@@ -164,7 +169,7 @@ plot_position_maps(meta, fish_tracks, rootdir)
 
 # speed vs Y position, for each fish, for combine fish of species, separated between day and night
 spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir)
-
+print("Finished position plots")
 
 # ### REST ###
 # rest (30m bins) for each fish (individual lines)
@@ -175,6 +180,10 @@ plot_rest_mstd(rootdir, fish_tracks_30m, change_times_d, "30m")
 
 # rest day/night
 plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
+
+# rest by sex
+plot_rest_sex(rootdir, fish_tracks_30m, change_times_d, fraction_threshold, time_window_s, "30m")
+print("Finished rest plots")
 
 # feature vector: for each fish readout vector of feature values
 # version 1: Day/Night for: speed -  mean, stdev, median; y position - mean, stdev, median;
@@ -208,10 +217,11 @@ for species in all_species:
         df = pd.concat([df, df_f])
 
     df.to_csv(os.path.join(rootdir, "{}_als_fv.csv".format(species)))
+print("Finished fv v1")
 
 # save out 30m data (all adjusted to 7am-7pm)
 fish_tracks_30m.to_csv(os.path.join(rootdir, "{}_als_30m.csv".format(species)))
-
+print("Finished saving out 30min data")
 
 # feature vector version  2: for each fish readout vector of feature values
 # version 2: 'predawn', 'dawn', 'day', 'dusk', 'postdusk', 'night' for: speed -  mean, stdev; y position - mean, stdev;
@@ -229,8 +239,6 @@ data_names = ['spd_mean', 'move_mean', 'rest_mean', 'y_mean', 'spd_std', 'move_s
               'move_bout_mean', 'nonmove_bout_mean', 'rest_bout_mean', 'nonrest_bout_mean', 'move_bout_std',
               'nonmove_bout_std', 'rest_bout_std', 'nonrest_bout_std']
 
-extras_names = ['fish_length_mm']
-
 for species in all_species:
     new_df = True
     for fish in fish_IDs:
@@ -241,18 +249,18 @@ for species in all_species:
             fish_v = fish_tracks.loc[(fish_tracks.FishID == fish) & (fish_tracks.daytime == epoque), ['speed_mm',
                                                                                 'movement', 'rest', 'vertical_pos']]
             fish_b_move = fish_bouts_move.loc[(fish_bouts_move.FishID == fish) & (fish_bouts_move.daytime == epoque),
-                                              ['movement_length', 'nonmovement_length']]
+                                              ['movement_len', 'nonmovement_len']]
             fish_b_rest = fish_bouts_rest.loc[(fish_bouts_rest.FishID == fish) & (fish_bouts_rest.daytime == epoque),
-                                              ['rest_length', 'nonrest_length']]
+                                              ['rest_len', 'nonrest_len']]
 
             # make dataframe for this epoque
             df_e = pd.DataFrame([[fish_v.mean()['speed_mm'], fish_v.mean()['movement'], fish_v.mean()['rest'],
                                   fish_v.mean()['vertical_pos'], fish_v.std()['speed_mm'], fish_v.std()['movement'],
                                   fish_v.std()['rest'], fish_v.std()['vertical_pos'],
-                                  fish_b_move.mean()['movement_length'], fish_b_move.mean()['nonmovement_length'],
-                                  fish_b_rest.mean()['rest_length'], fish_b_rest.mean()['nonrest_length'],
-                                  fish_b_move.std()['movement_length'], fish_b_move.std()['nonmovement_length'],
-                                  fish_b_rest.std()['rest_length'], fish_b_rest.std()['nonrest_length']]],
+                                  fish_b_move.mean()['movement_len'], fish_b_move.mean()['nonmovement_len'],
+                                  fish_b_rest.mean()['rest_len'], fish_b_rest.mean()['nonrest_len'],
+                                  fish_b_move.std()['movement_len'], fish_b_move.std()['nonmovement_len'],
+                                  fish_b_rest.std()['rest_len'], fish_b_rest.std()['nonrest_len']]],
                                 index=[fish], columns=column_names)
             # add epoques together
             if new_fish:
@@ -261,6 +269,7 @@ for species in all_species:
             else:
                 df_f = pd.concat([df_f, df_e], axis=1)
         df_f['fish_length_mm'] = metat.loc[fish, 'fish_length_mm']
+        _, _, df_f['total_rest'] = ave_daily_fish(fish_tracks_30m, fish, 'rest')
         df_f = df_f.round(2)
 
         # add fish together
