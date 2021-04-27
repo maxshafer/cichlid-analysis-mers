@@ -1,19 +1,80 @@
 from tkinter.filedialog import askdirectory
 from tkinter import *
 import warnings
+import os
 import time
 
 import datetime as dt
 import seaborn as sns
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.cluster.hierarchy as sch
 
 from cichlidanalysis.io.tracks import load_ds_als_files
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.utils.species_names import shorten_sp_name
+from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
 from cichlidanalysis.plotting.speed_plots import plot_spd_30min_combined
 from cichlidanalysis.analysis.processing import feature_daily
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
+
+
+def fish_corr(fish_tracks_ds, feature):
+    species = fish_tracks_ds['species'].unique()
+
+    for species_i in species:
+        print(species_i)
+        fish_tracks_ds_sp = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, ['FishID', 'ts', feature]]
+        fish_tracks_ds_sp = fish_tracks_ds_sp.pivot(columns='FishID', values='speed_mm', index='ts')
+        individ_corr = fish_tracks_ds_sp.corr()
+
+        X = individ_corr.values
+        d = sch.distance.pdist(X)
+        L = sch.linkage(d, method='complete')
+        ind = sch.fcluster(L, 0.5*d.max(), 'distance')
+        cols = [individ_corr.columns.tolist()[i] for i in list((np.argsort(ind)))]
+        individ_corr = individ_corr[cols]
+        individ_corr = individ_corr.reindex(cols)
+
+        fish_sex = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, ['FishID', 'sex']].drop_duplicates()
+        fish_sex = list(fish_sex.sex)
+        fish_sex_clus = [fish_sex[i] for i in list((np.argsort(ind)))]
+
+        # fish_n = np.arange(1, len(fish_tracks_ds_sp.columns) + 1)
+        # fish_n = [fish_n[i] for i in list((np.argsort(ind)))]
+        f, ax = plt.subplots(figsize=(7, 5))
+        ax = sns.heatmap(individ_corr, vmin=0, vmax=1, xticklabels=fish_sex_clus, yticklabels=fish_sex_clus)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "{}_corr_by_30min_{0}_{1}.png".format(species_i.replace(' ', '-'), feature,
+                                                                                dt.date.today())))
+        plt.close()
+
+
+def species_corr(averages_feature, feature):
+    """ Plots corr matrix of clustered species by given feature
+
+    :param averages_feature:
+    :param feature:
+    :return:
+    """
+
+    individ_corr = averages_feature.iloc[:, 0:-1].corr()
+
+    X = individ_corr.values
+    d = sch.distance.pdist(X)  # vector of ('55' choose 2) pairwise distances
+    L = sch.linkage(d, method='complete')
+    ind = sch.fcluster(L, 0.5 * d.max(), 'distance')
+    cols = [individ_corr.columns.tolist()[i] for i in list((np.argsort(ind)))]
+    individ_corr = individ_corr[cols]
+    individ_corr = individ_corr.reindex(cols)
+
+    f, ax = plt.subplots(figsize=(7, 5))
+    ax = sns.heatmap(individ_corr, vmin=0, vmax=1)
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}.png".format(feature, dt.date.today())))
+    plt.close()
+
 
 if __name__ == '__main__':
     # pick folder
@@ -49,15 +110,15 @@ if __name__ == '__main__':
                                                                             ylabeling, change_times_datetime, rootdir)
 
     feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
-    averages_spd, date_time_obj_sp, sp_spd_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
+    averages_spd, _, sp_spd_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                               ylabeling, change_times_datetime, rootdir)
 
-    feature, ymax, span_max, ylabeling = 'rest', 95, 80, 'Rest'
-    averages_spd, date_time_obj_sp, sp_spd_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
+    feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
+    averages_rest, _, sp_rest_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                               ylabeling, change_times_datetime, rootdir)
     aves_ave_spd = feature_daily(averages_spd)
     aves_ave_vp = feature_daily(averages_vp)
-    aves_ave_rest = feature_daily(averages_spd)
+    aves_ave_rest = feature_daily(averages_rest)
 
     # reorganising
     species_short = shorten_sp_name(species)

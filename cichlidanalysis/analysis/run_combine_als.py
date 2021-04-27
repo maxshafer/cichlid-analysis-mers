@@ -257,11 +257,15 @@ for species in all_species:
             df_e = pd.DataFrame([[fish_v.mean()['speed_mm'], fish_v.mean()['movement'], fish_v.mean()['rest'],
                                   fish_v.mean()['vertical_pos'], fish_v.std()['speed_mm'], fish_v.std()['movement'],
                                   fish_v.std()['rest'], fish_v.std()['vertical_pos'],
-                                  fish_b_move.mean()['movement_len'], fish_b_move.mean()['nonmovement_len'],
-                                  fish_b_rest.mean()['rest_len'], fish_b_rest.mean()['nonrest_len'],
-                                  fish_b_move.std()['movement_len'], fish_b_move.std()['nonmovement_len'],
-                                  fish_b_rest.std()['rest_len'], fish_b_rest.std()['nonrest_len']]],
-                                index=[fish], columns=column_names)
+                                  fish_b_move.mean()['movement_len'].total_seconds(),
+                                  fish_b_move.mean()['nonmovement_len'].total_seconds(),
+                                  fish_b_rest.mean()['rest_len'].total_seconds(),
+                                  fish_b_rest.mean()['nonrest_len'].total_seconds(),
+                                  fish_b_move.std()['movement_len'].total_seconds(),
+                                  fish_b_move.std()['nonmovement_len'].total_seconds(),
+                                  fish_b_rest.std()['rest_len'].total_seconds(),
+                                  fish_b_rest.std()['nonrest_len'].total_seconds()]], index=[fish],
+                                  columns=column_names)
             # add epoques together
             if new_fish:
                 df_f = copy.copy(df_e)

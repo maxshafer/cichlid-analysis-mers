@@ -274,7 +274,7 @@ def ave_daily_fish(fish_tracks_30m, fish, measure):
     days['time_of_day'] = days.apply(lambda row: str(row.name)[11:16], axis=1)
     daily_ave = days.groupby('time_of_day').mean()
     daily_ave_std = days.groupby('time_of_day').std()
-    daily_ave_total = sum(daily_ave.iloc[:, 0])
+    daily_ave_total = sum(daily_ave.iloc[:, 0])/2
     return daily_ave, daily_ave_std, daily_ave_total
 
 
