@@ -12,7 +12,7 @@ import datetime as dt
 from datetime import timedelta
 
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
-from cichlidanalysis.utils.species_names import shorten_sp_name
+from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
 
 
 # speed_mm (30m bins) for each fish (individual lines)
@@ -210,8 +210,7 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
         for s in spines:
             ax_objs[-1].spines[s].set_visible(False)
 
-        short_name = shorten_sp_name(species_name)
-        shortened_sp_name = species_name[0] + ". " + species_name.split(' ')[1]
+        short_name = six_letter_sp_name(species_name)
         ax_objs[-1].text(0.9, 0, short_name[0], fontweight="bold", fontsize=10, ha="right", rotation=-45)
         gs.update(hspace=-0.1)
     plt.show()

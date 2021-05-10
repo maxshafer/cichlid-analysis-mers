@@ -7,3 +7,4 @@ seaborn
 scipy
 sklearn
 kneed
+openpyxl
