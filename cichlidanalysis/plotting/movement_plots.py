@@ -11,8 +11,15 @@ from cichlidanalysis.io.meta import extract_meta
 from cichlidanalysis.analysis.processing import norm_hist
 
 
-# movement (30m bins) for each fish (individual lines)
 def plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d, move_thresh):
+    """ movement (30m bins) for each fish (individual lines)
+
+    :param rootdir:
+    :param fish_tracks_30m:
+    :param change_times_d:
+    :param move_thresh:
+    :return:
+    """
     # get each species
     all_species = fish_tracks_30m['species'].unique()
     # get each fish ID
@@ -32,7 +39,52 @@ def plot_movement_30m_individuals(rootdir, fish_tracks_30m, change_times_d, move
         plt.title(species_f)
         plt.savefig(os.path.join(rootdir, "fraction_moving_30min_move_thresh-{0}_individual{1}.png".format(move_thresh,
                                           species_f.replace(' ', '-'))))
-    return
+        plt.close()
+
+
+def plot_movement_30m_sex(rootdir, fish_tracks_30m, change_times_d, move_thresh):
+    """
+
+    :param rootdir:
+    :param fish_tracks_30m:
+    :param change_times_d:
+    :param move_thresh:
+    :return:
+    """
+    # get each species
+    all_species = fish_tracks_30m['species'].unique()
+    # get each fish ID
+    fish_IDs = fish_tracks_30m['FishID'].unique()
+
+    date_form = DateFormatter("%H")
+    for species_f in all_species:
+        plt.figure(figsize=(10, 4))
+        ax = sns.lineplot(data=fish_tracks_30m[fish_tracks_30m.species == species_f], x='ts', y='movement',
+                          hue='sex', units="FishID", estimator=None)
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
+        ax.set_ylim([0, 1])
+        plt.xlabel("Time (h)")
+        plt.ylabel("Fraction moving")
+        plt.title(species_f)
+        plt.savefig(
+            os.path.join(rootdir, "fraction_moving_30min_move_thresh-{0}_individual_by_sex_{1}.png".format(move_thresh,
+                        species_f.replace(' ', '-'))))
+
+        plt.figure(figsize=(10, 4))
+        ax = sns.lineplot(data=fish_tracks_30m[fish_tracks_30m.species == species_f], x='ts', y='movement',
+                          hue='sex')
+        ax.xaxis.set_major_locator(MultipleLocator(0.5))
+        ax.xaxis.set_major_formatter(date_form)
+        fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)
+        ax.set_ylim([0, 1])
+        plt.xlabel("Time (h)")
+        plt.ylabel("Fraction moving")
+        plt.title(species_f)
+        plt.savefig(os.path.join(rootdir, "fraction_moving_30min_move_thresh-{0}_mean_std_sex{1}.png".format(
+            move_thresh, species_f.replace(' ', '-'))))
+        plt.close()
 
 
 # movement (30m bins) for each species (mean  +- std)
@@ -65,6 +117,7 @@ def plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d, move_thresh
         plt.title(species_f)
         plt.savefig(os.path.join(rootdir, "fraction_movement_30min_move_thresh-{0}_m-stdev{1}.png".format(move_thresh,
                                           species_f.replace(' ', '-'))))
+        plt.close()
 
 
 def plot_bout_lengths_dn_move(fish_bouts, rootdir):
@@ -83,10 +136,10 @@ def plot_bout_lengths_dn_move(fish_bouts, rootdir):
     for species_n in species:
         # counts of bout lengths for on and off bout
         fig1, ax1 = plt.subplots(2, 2)
-        fish_on_bouts_d = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'd'), "movement_length"]
-        fish_on_bouts_n = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'n'), "movement_length"]
-        fish_off_bouts_d = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'd'), "nonmovement_length"]
-        fish_off_bouts_n = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'n'), "nonmovement_length"]
+        fish_on_bouts_d = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'd'), "movement_len"]
+        fish_on_bouts_n = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'n'), "movement_len"]
+        fish_off_bouts_d = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'd'), "nonmovement_len"]
+        fish_off_bouts_n = fish_bouts.loc[(fish_bouts['FishID'] == fish) & (fish_bouts['daynight'] == 'n'), "nonmovement_len"]
 
         bin_boxes_on = np.arange(0, 100, 0.5)
         bin_boxes_off = np.arange(0, 100, 0.5)
@@ -143,3 +196,4 @@ def plot_bout_lengths_dn_move(fish_bouts, rootdir):
         fig3.suptitle("Cumulative movement bouts for {}".format(fish), fontsize=8)
         plt.tight_layout()
         plt.savefig(os.path.join(rootdir, "cumsum_movement_bouts_{0}.png".format(species_n.replace(' ', '-'))))
+        plt.close()

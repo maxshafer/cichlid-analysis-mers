@@ -7,7 +7,15 @@ import seaborn as sns
 
 
 def daily_ave_spd(sp_spd_ave, sp_spd_ave_std, rootdir, species_f, change_times_unit):
-    # speed_mm (30m bins daily average) for each fish (individual lines)
+    """ speed_mm (30m bins daily average) for each fish (individual lines)
+
+    :param sp_spd_ave:
+    :param sp_spd_ave_std:
+    :param rootdir:
+    :param species_f:
+    :param change_times_unit:
+    :return: daily_speed:
+    """
     plt.figure(figsize=(6, 4))
     for cols in np.arange(0, sp_spd_ave.columns.shape[0]):
         ax = sns.lineplot(x=sp_spd_ave.index, y=(sp_spd_ave).iloc[:, cols])
@@ -22,13 +30,14 @@ def daily_ave_spd(sp_spd_ave, sp_spd_ave_std, rootdir, species_f, change_times_u
     ax.xaxis.set_major_locator(MultipleLocator(6))
     plt.title(species_f)
     plt.savefig(os.path.join(rootdir, "speed_30min_ave_individual{0}.png".format(species_f.replace(' ', '-'))))
+    plt.close()
 
     # speed_mm (30m bins daily average) for each fish (mean  +- std)
     plt.figure(figsize=(6, 4))
-    sp_spd_ave_ave = sp_spd_ave.mean(axis=1)
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(sp_spd_ave_ave))
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(sp_spd_ave_ave + sp_spd_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_spd_ave.index, y=(sp_spd_ave_ave - sp_spd_ave_std), color='lightgrey')
+    daily_speed = sp_spd_ave.mean(axis=1)
+    ax = sns.lineplot(x=sp_spd_ave.index, y=(daily_speed))
+    ax = sns.lineplot(x=sp_spd_ave.index, y=(daily_speed + sp_spd_ave_std), color='lightgrey')
+    ax = sns.lineplot(x=sp_spd_ave.index, y=(daily_speed - sp_spd_ave_std), color='lightgrey')
 
     ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
     ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
@@ -41,9 +50,19 @@ def daily_ave_spd(sp_spd_ave, sp_spd_ave_std, rootdir, species_f, change_times_u
     ax.xaxis.set_major_locator(MultipleLocator(6))
     plt.title(species_f)
     plt.savefig(os.path.join(rootdir, "speed_30min_ave_ave-stdev{0}.png".format(species_f.replace(' ', '-'))))
+    plt.close()
 
 
 def daily_ave_move(sp_move_ave, sp_move_ave_std, rootdir, species_f, change_times_unit):
+    """
+
+    :param sp_move_ave:
+    :param sp_move_ave_std:
+    :param rootdir:
+    :param species_f:
+    :param change_times_unit:
+    :return:
+    """
 
     plt.figure(figsize=(6, 4))
     for cols in np.arange(0, sp_move_ave.columns.shape[0]):
@@ -59,13 +78,14 @@ def daily_ave_move(sp_move_ave, sp_move_ave_std, rootdir, species_f, change_time
     ax.xaxis.set_major_locator(MultipleLocator(6))
     plt.title(species_f)
     plt.savefig(os.path.join(rootdir, "movement_30min_ave_individual{0}.png".format(species_f.replace(' ', '-'))))
+    plt.close()
 
     # movement (30m bins daily average) for each fish (mean  +- std)
     plt.figure(figsize=(6, 4))
-    sp_move_ave_ave = sp_move_ave.mean(axis=1)
-    ax = sns.lineplot(x=sp_move_ave.index, y=(sp_move_ave_ave + sp_move_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_move_ave.index, y=(sp_move_ave_ave - sp_move_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_move_ave.index, y=(sp_move_ave_ave))
+    daily_move = sp_move_ave.mean(axis=1)
+    ax = sns.lineplot(x=sp_move_ave.index, y=(daily_move + sp_move_ave_std), color='lightgrey')
+    ax = sns.lineplot(x=sp_move_ave.index, y=(daily_move - sp_move_ave_std), color='lightgrey')
+    ax = sns.lineplot(x=sp_move_ave.index, y=(daily_move))
 
     ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
     ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
@@ -78,6 +98,7 @@ def daily_ave_move(sp_move_ave, sp_move_ave_std, rootdir, species_f, change_time
     ax.xaxis.set_major_locator(MultipleLocator(6))
     plt.title(species_f)
     plt.savefig(os.path.join(rootdir, "movement_30min_ave_ave-stdev{0}.png".format(species_f.replace(' ', '-'))))
+    plt.close()
 
 
 def daily_ave_rest(sp_rest_ave, sp_rest_ave_std, rootdir, species_f, change_times_unit):
@@ -96,13 +117,14 @@ def daily_ave_rest(sp_rest_ave, sp_rest_ave_std, rootdir, species_f, change_time
     ax.xaxis.set_major_locator(MultipleLocator(6))
     plt.title(species_f)
     plt.savefig(os.path.join(rootdir, "Rest_30min_ave_individual{0}.png".format(species_f.replace(' ', '-'))))
+    plt.close()
 
-    # movement (30m bins daily average) for each fish (mean  +- std)
+    # rest (30m bins daily average) for each fish (mean  +- std)
     plt.figure(figsize=(6, 4))
-    sp_move_ave_ave = sp_rest_ave.mean(axis=1)
-    ax = sns.lineplot(x=sp_rest_ave.index, y=(sp_move_ave_ave + sp_rest_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_rest_ave.index, y=(sp_move_ave_ave - sp_rest_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_rest_ave.index, y=(sp_move_ave_ave))
+    daily_rest = sp_rest_ave.mean(axis=1)
+    ax = sns.lineplot(x=sp_rest_ave.index, y=(daily_rest + sp_rest_ave_std), color='lightgrey')
+    ax = sns.lineplot(x=sp_rest_ave.index, y=(daily_rest - sp_rest_ave_std), color='lightgrey')
+    ax = sns.lineplot(x=sp_rest_ave.index, y=(daily_rest))
 
     ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
     ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
@@ -115,6 +137,8 @@ def daily_ave_rest(sp_rest_ave, sp_rest_ave_std, rootdir, species_f, change_time
     ax.xaxis.set_major_locator(MultipleLocator(6))
     plt.title(species_f)
     plt.savefig(os.path.join(rootdir, "rest_30min_ave_ave-stdev{0}.png".format(species_f.replace(' ', '-'))))
+    plt.close()
+    return daily_rest
 
 
 # make a new col where the daily timestamp is (no year/ month/ day)

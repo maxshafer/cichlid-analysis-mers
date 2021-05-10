@@ -249,9 +249,15 @@ def find_bouts_input(fish_tracks_i, change_times_m,  measure='rest'):
         # plt.scatter(all_bout_starts, np.zeros([1, len(all_bout_starts)]), color='r')
         # plt.scatter(all_bout_ends, np.zeros([1, len(all_bout_starts)]), color='b')
 
-        #  make fish_bouts df
-        fish_bouts_i = pd.concat([all_bout_starts, all_bout_ends], axis=1)
-        fish_bouts_i.columns = ['bout_start', 'bout_end']
+        # find bout lengths for measure and nonmeasure
+        all_bout_measure_lengths = all_bout_ends - all_bout_starts
+        all_bout_nonmeasure_lengths = all_bout_starts.to_numpy()[1:] - all_bout_ends.to_numpy()[0:-1]
+
+        # make fish_bouts df
+        fish_bouts_i = pd.concat([all_bout_starts.reset_index(drop=True), all_bout_ends.reset_index(drop=True),
+                            all_bout_measure_lengths.reset_index(drop=True), pd.Series(all_bout_nonmeasure_lengths)],
+                                 axis=1)
+        fish_bouts_i.columns = ['bout_start', 'bout_end', measure + '_len', 'non' + measure + '_len']
         fish_bouts_i['FishID'] = fish
 
         # combine with the other fish
@@ -262,12 +268,6 @@ def find_bouts_input(fish_tracks_i, change_times_m,  measure='rest'):
             fish_bouts = pd.concat([fish_bouts, fish_bouts_i], axis=0)
 
     fish_bouts = fish_bouts.reset_index(drop=True)
-
-    # find bout lengths for measure and nonmeasure
-    fish_bouts[measure + '_length'] = fish_bouts['bout_end'] - fish_bouts['bout_start']
-    fish_bouts['non' + measure + '_length'] = np.nan
-    fish_bouts['non' + measure + '_length'] = fish_bouts.iloc[1:, fish_bouts.columns == 'bout_start']['bout_start'].\
-    reset_index(drop=True) - fish_bouts.iloc[0:-1, fish_bouts.columns == 'bout_end']['bout_end'].reset_index(drop=True)
 
     # add new column with Day or Night
     fish_bouts['time_of_day_m'] = fish_bouts.bout_start.apply(lambda row: int(str(row)[11:16][:-3]) * 60 +
