@@ -1,6 +1,7 @@
 import math
 import numpy as np
 
+
 def infer_tv(fps, filechunk):
     """Takes fps and the length of the video to compute an inferred time vector that starts from 0
     >>> infer_tv(1, 3)
@@ -9,8 +10,13 @@ def infer_tv(fps, filechunk):
     tv = np.arange(0, filechunk, 1 / fps)
     return tv
 
+
 def output_timings():
-    # set sunrise, day, sunset, night times (ns, s, m, h)
+    """ set sunrise, day, sunset, night times (ns, s, m, h).
+    Sunrise starts at 7am, Day 7.30am, Sunset 6.30pm, Night 7pm
+
+    :return:
+    """
     change_times_s = [7*60*60, 7*60*60 + 30*60, 18*60*60 + 30*60, 19*60*60]
     change_times_ns = [i * 10**9 for i in change_times_s]
     change_times_m = [i / 60 for i in change_times_s]
@@ -24,7 +30,11 @@ def output_timings():
 
 
 def output_timings_730():
-    # set sunrise, day, sunset, night times (ns, s, m, h)
+    """ set sunrise, day, sunset, night times (ns, s, m, h). For old data where:
+    Sunrise starts at 7.30am, Day 8.00am, Sunset 7.00pm, Night 7.30pm
+
+    :return:
+    """
     change_times_s = [7*60*60 + 30*60, 8*60*60, 19*60*60, 19*60*60 + 30*60]
     change_times_ns = [i * 10**9 for i in change_times_s]
     change_times_m = [i / 60 for i in change_times_s]
@@ -38,6 +48,11 @@ def output_timings_730():
 
 
 def load_timings(vector_length):
+    """ Get all of the required time parameters. All data is with fps = 10 (may change in future
+
+    :param vector_length:
+    :return:
+    """
     fps = 10
 
     # get time variables

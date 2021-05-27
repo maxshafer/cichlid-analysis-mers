@@ -13,8 +13,10 @@ import yaml
 from cichlidanalysis.io.meta import load_yaml, add_sex
 from cichlidanalysis.measuring.measure_units import measuring
 
-# function called by trackbar, sets the next frame to be read
+
 def getFrame(frame_nr):
+    """function called by trackbar, sets the next frame to be read
+    """
     # global video
     video.set(cv2.CAP_PROP_POS_FRAMES, frame_nr)
 

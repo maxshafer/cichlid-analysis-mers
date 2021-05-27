@@ -8,3 +8,4 @@ scipy
 sklearn
 kneed
 openpyxl
+pytest

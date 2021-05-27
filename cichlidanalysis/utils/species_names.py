@@ -1,6 +1,6 @@
 
 def shorten_sp_name(species_full):
-    """ Shortens genus name of species e.g. Neolamprologous toad becomes N. toae
+    """ Shortens genus name of species e.g. Neolamprologous toae becomes N. toae
 
     :param species_full:
     :return shortened_sp_names:
