@@ -5,12 +5,23 @@ import pandas as pd
 
 
 def smooth_speed(speed, win_size=2):
+    """ Rolling average of win_size for the speed array
+
+    :param speed: array of speed to smooth
+    :param win_size: over how many frames to smooth over
+    :return: smoothed speed
+    """
     df = pd.DataFrame(speed)
     smooth_speed = (df.rolling(window=win_size, min_periods=1).mean()).values
     return smooth_speed
 
 
 def neg_values(array):
+    """ make values in array negative (useful for some plotting)
+
+    :param array: array to make negative
+    :return: negative array
+    """
     new_array = copy.copy(array)
     for index, element in enumerate(array):
         if not np.isnan(element):
@@ -18,61 +29,9 @@ def neg_values(array):
     return new_array
 
 
-def remove_high_spd(speed_raw):
-    # takes the raw speed and will replace any value over threshold with the mean of the values < threshold -5:+5.
-    # This is to get rid of the massive speed jumps caused by roi jumps
-    speed_t = copy.copy(speed_raw)
-    threshold = np.nanpercentile(speed_raw, 95) * 2
-    ind_high = np.where(speed_raw > threshold)[0]
-
-    # for each index > threshold find the values on the side and take the average of all of those values < threshold
-    for index_n in range(0, ind_high.shape[0]):
-        win_min = ind_high[index_n] - 5
-        win_max = ind_high[index_n] + 5
-
-        if win_min < 0:
-            win_min = 0
-        if win_max > speed_t.shape[0]:
-            win_max = speed_t.shape[0]
-
-        values = speed_t[win_min:win_max]
-        speed_t[ind_high[index_n]] = np.nanmean(values[values < threshold])
-    return speed_t
-
-
-def coord_smooth(x_coords, y_coords, win_size):
-    # type: # (np.array, np.array, int) -> np.array, np.array
-    df_x = pd.DataFrame(x_coords)
-    smooth_x = (df_x.rolling(window=win_size).apply(lambda x: median(x)[0])).values
-
-    df_y = pd.DataFrame(y_coords)
-    smooth_y = (df_y.rolling(window=win_size).apply(lambda x: median(x)[0])).values
-    return smooth_x, smooth_y
-
-
-def binner(input_data, bin_width, axis_d):
-    """ takes a 1D np array and bins it with bin size of bin_width, input needs to be with data in dim 0 e.g.
-    [10,0] or [10,] """
-    # input must be np.array, if pandas.series change it to np.array
-    if isinstance(input_data, pd.core.series.Series):
-        print("correcting input from pd.series to np.array")
-        input_data = input_data.to_numpy()
-
-    if input_data.shape[0] % bin_width != 0:
-        rest = input_data.shape[0] % bin_width
-        output_data = np.reshape(input_data[0:-rest], [int(input_data[0:-rest].shape[0] / bin_width), bin_width])
-    else:
-        output_data = np.reshape(input_data, [int(input_data.shape[0] / bin_width), bin_width])
-
-    output_data_mean = np.nanmean(output_data, axis=axis_d)
-
-    return output_data_mean, output_data
-
-
 def int_nan_streches(data_input):
     """ finds nan streches and interporlates the strech, pads start as continuous"""
     data = copy.copy(data_input)
-    # data = speed_full[99000:103000]
 
     # taking care of ends
     # determine if data started with nan or not
@@ -125,8 +84,15 @@ def int_nan_streches(data_input):
 
 
 def remove_high_spd_xy(speed_raw, x, y):
-    # takes the raw speed and will replace any value over threshold with the mean of the values < threshold -5:+5.
-    # This is to get rid of the massive speed jumps caused by roi jumps
+    """ takes the raw speed and will replace any value over threshold with the mean of the values < threshold -5:+5.
+    This is to get rid of the massive speed jumps caused by roi jumps
+
+    :param speed_raw:
+    :param x:
+    :param y:
+    :return:
+    """
+
     speed_t = copy.copy(speed_raw)
     x_t = copy.copy(x)
     y_t = copy.copy(y)
@@ -177,7 +143,7 @@ def threshold_data(speed, threshold):
 
 
 def add_col(df, col_str, fish_IDs_i, meta_i):
-    """
+    """ Adds column to fish_tracks type data from meta data
 
     :param df: fish_tracks
     :param col_str: column to add back e.g. "species"
@@ -197,7 +163,7 @@ def add_col(df, col_str, fish_IDs_i, meta_i):
 
 
 def feature_daily(averages_feature):
-    """ Calculates the  daily average, note must be organised with datetime ass index and columns as different
+    """ Calculates the  daily average, note must be organised with datetime as index and columns as different
     fish/species"""
 
     # get time of day so that the same time of day for each fish can be averaged

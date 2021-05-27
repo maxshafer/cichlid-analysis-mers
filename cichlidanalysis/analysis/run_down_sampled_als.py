@@ -23,6 +23,13 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def fish_corr(fish_tracks_ds, feature, link_method):
+    """
+
+    :param fish_tracks_ds:
+    :param feature:
+    :param link_method:
+    :return:
+    """
     species = fish_tracks_ds['species'].unique()
     first = True
 
@@ -70,6 +77,7 @@ def fish_corr(fish_tracks_ds, feature, link_method):
     sns.stripplot(data=corr_vals_long, x='corr_coef', y='species_six', color=".2", ax=ax, size=3)
     ax.set(xlabel='Correlation', ylabel='Species')
     ax.set(xlim=(-1, 1))
+    ax = plt.axvline(0, ls='--', color='k')
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "fish_corr_coefs_{0}_{1}.png".format(feature,  dt.date.today())))
     plt.close()
@@ -77,7 +85,7 @@ def fish_corr(fish_tracks_ds, feature, link_method):
     return corr_vals
 
 
-def species_corr(averages_feature, feature, link_method):
+def species_corr(averages_feature, feature, link_method='single'):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -87,28 +95,34 @@ def species_corr(averages_feature, feature, link_method):
 
     individ_corr = averages_feature.corr()
 
-    X = individ_corr.values
-    d = sch.distance.pdist(X)  # vector of ('55' choose 2) pairwise distances
-    L = sch.linkage(d, method=link_method)
-    Z = sch.dendrogram(L, orientation='right')
-    ind = Z['leaves']
-
-    individ_corr = individ_corr.to_numpy()
-    individ_corr = individ_corr[ind, :]
-    individ_corr = individ_corr[:, ind]
-
-    # ind = sch.fcluster(L, 0.5 * d.max(), 'distance')
-    cols = [individ_corr.columns.tolist()[i] for i in list((np.argsort(ind)))]
-    individ_corr = individ_corr[cols]
-    individ_corr = individ_corr.reindex(cols)
-
-    #add back col names
-
-    f, ax = plt.subplots(figsize=(7, 5))
-    ax = sns.heatmap(individ_corr, vmin=-1, vmax=1, cmap='RdBu_r')
-    plt.tight_layout()
+    ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1, cmap='RdBu_r', yticklabels=True)
+    ax.fig.suptitle(feature)
     plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))
     plt.close()
+
+    #
+    # X = individ_corr.values
+    # d = sch.distance.pdist(X)  # vector of ('55' choose 2) pairwise distances
+    # L = sch.linkage(d, method=link_method)
+    # Z = sch.dendrogram(L, orientation='right')
+    # ind = Z['leaves']
+    #
+    # individ_corr_np = individ_corr.to_numpy()
+    # individ_corr_np = individ_corr_np[ind, :]
+    # individ_corr_np = individ_corr_np[:, ind]
+    #
+    # # add back col names
+    # cols = [individ_corr.columns.to_list()[i] for i in list((np.argsort(ind)))]
+    # df = pd.DataFrame(individ_corr_np, columns=[cols], index=cols)
+    #
+    # # individ_corr = individ_corr[cols]
+    # # individ_corr = individ_corr.reindex(cols)
+    #
+    # f, ax = plt.subplots(figsize=(7, 5))
+    # ax = sns.heatmap(df, vmin=-1, vmax=1, cmap='RdBu_r')
+    # plt.tight_layout()
+    # plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))
+    # plt.close()
 
 
 def week_corr(fish_tracks_ds, feature):
@@ -196,12 +210,6 @@ if __name__ == '__main__':
 
     tribe_col = tribe_cols()
 
-    # extra data
-    # root = Tk()
-    # root.withdraw()
-    # root.update()
-    # metrics_path = askopenfilename(title="Select metrics file")
-    # root.destroy()
     metrics_path = '/Users/annikanichols/Desktop/cichlid_species_database.xlsx'
     sp_metrics = add_metrics(species_sixes, metrics_path)
 
@@ -219,19 +227,15 @@ if __name__ == '__main__':
     feature, ymax, span_max, ylabeling = 'vertical_pos', 1, 0.8, 'Vertical position'
     averages_vp, date_time_obj_vp, sp_vp_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                             ylabeling, change_times_datetime, rootdir)
-    plt.close()
     feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
     averages_spd, _, sp_spd_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                               ylabeling, change_times_datetime, rootdir)
-    plt.close()
     feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
     averages_rest, _, sp_rest_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                               ylabeling, change_times_datetime, rootdir)
-    plt.close()
     feature, ymax, span_max, ylabeling = 'movement', 1, 0.8, 'Movement'
     averages_move, _, sp_move_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                               ylabeling, change_times_datetime, rootdir)
-    plt.close()
 
     aves_ave_spd = feature_daily(averages_spd)
     aves_ave_vp = feature_daily(averages_vp)
@@ -253,13 +257,17 @@ if __name__ == '__main__':
     #                     metric='correlation',
     #                     row_colors=row_cols_2)
 
-    ax = sns.clustermap(aves_ave_spd.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation')
+    ax = sns.clustermap(aves_ave_spd.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation', yticklabels=True)
+    ax.fig.suptitle("Speed mm/s")
+    ax = sns.clustermap(aves_ave_spd.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1)
     ax.fig.suptitle("Speed mm/s")
     plt.close()
     ax = sns.clustermap(aves_ave_vp.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1)
     ax.fig.suptitle("Vertical position")
     plt.close()
-    ax = sns.clustermap(aves_ave_rest.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1)
+    ax = sns.clustermap(aves_ave_rest.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation', yticklabels=True)
+    ax.fig.suptitle("Rest")
+    ax = sns.clustermap(aves_ave_rest.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1, yticklabels=True)
     ax.fig.suptitle("Rest")
     plt.close()
     ax = sns.clustermap(aves_ave_move.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1)
@@ -272,12 +280,12 @@ if __name__ == '__main__':
     # week_corr(fish_tracks_ds, 'rest')
 
     # correlations for individuals
-    _ = fish_corr(fish_tracks_ds, 'rest', 'ward')
-    _ = fish_corr(fish_tracks_ds, 'speed_mm')
+    _ = fish_corr(fish_tracks_ds, 'rest', 'single')
+    _ = fish_corr(fish_tracks_ds, 'speed_mm', 'single')
 
     # correlations for species
     species_corr(aves_ave_spd, 'speed_mm', 'single')
-    species_corr(aves_ave_rest, 'rest')
+    species_corr(aves_ave_rest, 'rest', 'single')
 
     # # https://matplotlib.org/matplotblog/posts/create-ridgeplots-in-matplotlib/
     # cmap = cm.get_cmap('turbo')

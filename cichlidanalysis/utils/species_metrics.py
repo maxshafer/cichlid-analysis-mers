@@ -28,7 +28,7 @@ def tribe_cols():
 
     :return:
     """
-    tribe_col = dict({'Tropheini': (133/255, 197/255, 112/255),
+    tribe_col = dict({'Trophenini': (133/255, 197/255, 112/255),
                       'Haplochromini': (24/255, 100/255, 51/255),
                       'Perissodini': (249/255, 173/255, 70/255),
                       'Benthochromini': (175/255, 39/255, 44/255),
