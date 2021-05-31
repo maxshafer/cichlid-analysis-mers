@@ -4,7 +4,7 @@ import copy
 
 import cv2.cv2 as cv2
 import numpy as np
-from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter.filedialog import askdirectory
 from tkinter import Tk
 
 from cichlidanalysis.io.tracks import load_track, remove_tags

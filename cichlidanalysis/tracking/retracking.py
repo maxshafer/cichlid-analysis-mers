@@ -147,6 +147,9 @@ if __name__ == '__main__':
             for idx, val in enumerate(video_files):
                 movie_n = val.split("_")[1]
                 background_of_movie = [i for i in backgrounds if i.split("_")[1] == movie_n]
+                if not background_of_movie:
+                    print("didn't find background, stopping tracking")
+                    break
                 print("tracking with background {}".format(background_of_movie))
                 background_full = cv2.imread(background_of_movie[0], 0)
                 background_crop = background_full[curr_roi[1]:curr_roi[1] + curr_roi[3], curr_roi[0]:curr_roi[0] +
@@ -169,6 +172,5 @@ if __name__ == '__main__':
 
         # find cases where a movie has multiple csv files, add exclude tag to the ones from not today (date in file
         # names) and replace timestamps.
-
         date = datetime.datetime.now().strftime("%Y%m%d")
         correct_tags(date, vid_dir)
