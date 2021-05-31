@@ -1,28 +1,38 @@
-from tkinter.filedialog import askdirectory, askopenfilename
+from tkinter.filedialog import askdirectory
 from tkinter import *
 import warnings
 import os
-import time
 
 import datetime as dt
 import seaborn as sns
 import matplotlib.pyplot as plt
+from matplotlib.cm import hsv
 import numpy as np
 import pandas as pd
 import scipy.cluster.hierarchy as sch
 
+from cichlidanalysis.io.meta import add_meta_from_name
 from cichlidanalysis.io.tracks import load_ds_als_files
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
 from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
 from cichlidanalysis.plotting.speed_plots import plot_spd_30min_combined
-from cichlidanalysis.analysis.processing import feature_daily
+from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
-def fish_corr(fish_tracks_ds, feature, link_method):
+def get_n_colors(n):
+    """
+    from: https://stackoverflow.com/questions/33246065/convert-categorical-variable-to-color-with-matplotlib
+    :param n:
+    :return:
+    """
+    return [cool(float(i) / n) for i in range(n)]
+
+
+def fish_weekly_corr(fish_tracks_ds, feature, link_method):
     """
 
     :param fish_tracks_ds:
@@ -85,7 +95,27 @@ def fish_corr(fish_tracks_ds, feature, link_method):
     return corr_vals
 
 
-def species_corr(averages_feature, feature, link_method='single'):
+def fish_daily_corr(averages_feature, feature, species_name, link_method='single'):
+    """ Plots corr matrix of clustered species by given feature
+
+    :param averages_feature:
+    :param feature:
+    :param species_name:
+    :param link_method:
+    :return:
+    """
+
+    individ_corr = averages_feature.corr()
+
+    ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1,
+                        cmap='RdBu_r', xticklabels=False, yticklabels=False)
+    ax.fig.suptitle(feature)
+    plt.savefig(os.path.join(rootdir, "fish_of_{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_name, feature, dt.date.today(), link_method)))
+    plt.close()
+
+
+
+def species_daily_corr(averages_feature, feature, link_method='single'):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -99,30 +129,6 @@ def species_corr(averages_feature, feature, link_method='single'):
     ax.fig.suptitle(feature)
     plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))
     plt.close()
-
-    #
-    # X = individ_corr.values
-    # d = sch.distance.pdist(X)  # vector of ('55' choose 2) pairwise distances
-    # L = sch.linkage(d, method=link_method)
-    # Z = sch.dendrogram(L, orientation='right')
-    # ind = Z['leaves']
-    #
-    # individ_corr_np = individ_corr.to_numpy()
-    # individ_corr_np = individ_corr_np[ind, :]
-    # individ_corr_np = individ_corr_np[:, ind]
-    #
-    # # add back col names
-    # cols = [individ_corr.columns.to_list()[i] for i in list((np.argsort(ind)))]
-    # df = pd.DataFrame(individ_corr_np, columns=[cols], index=cols)
-    #
-    # # individ_corr = individ_corr[cols]
-    # # individ_corr = individ_corr.reindex(cols)
-    #
-    # f, ax = plt.subplots(figsize=(7, 5))
-    # ax = sns.heatmap(df, vmin=-1, vmax=1, cmap='RdBu_r')
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))
-    # plt.close()
 
 
 def week_corr(fish_tracks_ds, feature):
@@ -187,7 +193,6 @@ def add_day(fish_df):
 
 
 if __name__ == '__main__':
-    # pick folder
     # Allows user to select top directory and load all als files here
     root = Tk()
     root.withdraw()
@@ -237,6 +242,7 @@ if __name__ == '__main__':
     averages_move, _, sp_move_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                               ylabeling, change_times_datetime, rootdir)
 
+    # generate
     aves_ave_spd = feature_daily(averages_spd)
     aves_ave_vp = feature_daily(averages_vp)
     aves_ave_rest = feature_daily(averages_rest)
@@ -257,194 +263,67 @@ if __name__ == '__main__':
     #                     metric='correlation',
     #                     row_colors=row_cols_2)
 
-    ax = sns.clustermap(aves_ave_spd.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation', yticklabels=True)
+    ax = sns.clustermap(aves_ave_spd.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation',
+                        yticklabels=True)
     ax.fig.suptitle("Speed mm/s")
-    ax = sns.clustermap(aves_ave_spd.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1)
+    ax = sns.clustermap(aves_ave_spd.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
+                        metric='correlation', row_colors=row_cols_1)
     ax.fig.suptitle("Speed mm/s")
     plt.close()
-    ax = sns.clustermap(aves_ave_vp.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1)
+    ax = sns.clustermap(aves_ave_vp.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
+                        metric='correlation', row_colors=row_cols_1)
     ax.fig.suptitle("Vertical position")
     plt.close()
-    ax = sns.clustermap(aves_ave_rest.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation', yticklabels=True)
+    ax = sns.clustermap(aves_ave_rest.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation',
+                        yticklabels=True)
     ax.fig.suptitle("Rest")
-    ax = sns.clustermap(aves_ave_rest.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1, yticklabels=True)
+    ax = sns.clustermap(aves_ave_rest.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
+                        metric='correlation', row_colors=row_cols_1, yticklabels=True)
     ax.fig.suptitle("Rest")
     plt.close()
-    ax = sns.clustermap(aves_ave_move.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single', metric='correlation', row_colors=row_cols_1)
+    ax = sns.clustermap(aves_ave_move.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
+                        metric='correlation', row_colors=row_cols_1)
     ax.fig.suptitle("Movement")
     plt.close()
+
+    # clustering of daily average of individuals, massive clustermap!
+    features = ['speed_mm', 'rest']
+    for feature in features:
+        first = True
+        for species_name in species:
+            fish_daily_ave_feature = species_feature_fish_daily_ave(fish_tracks_ds, species_name, feature)
+
+            if first:
+                all_fish_daily_ave_feature = fish_daily_ave_feature
+                first = False
+            else:
+                all_fish_daily_ave_feature = pd.concat([all_fish_daily_ave_feature, fish_daily_ave_feature], axis=1)
+
+        col_species = add_meta_from_name(all_fish_daily_ave_feature.columns, 'species').T
+        species_code = col_species.species.astype('category').cat.codes
+
+        num_categories = len(set(col_species.species))
+        colors = [hsv(float(i) / num_categories) for i in species_code]
+
+        sns.clustermap(all_fish_daily_ave_feature, row_cluster=False, col_colors=colors, xticklabels=col_species.species)
+        plt.savefig(os.path.join(rootdir, "all_fish_daily_clustered_30min_{0}_{1}.png".format(feature, dt.date.today())))
 
 # ## correlations ##
     fish_tracks_ds = add_day(fish_tracks_ds)
     # correlations for days across week for an individual
     # week_corr(fish_tracks_ds, 'rest')
 
-    # correlations for individuals
-    _ = fish_corr(fish_tracks_ds, 'rest', 'single')
-    _ = fish_corr(fish_tracks_ds, 'speed_mm', 'single')
+    features = ['speed_mm', 'rest']
+    for feature in features:
+        for species_name in species:
+            # correlations for individuals across daily average
+            fish_daily_ave_feature = species_feature_fish_daily_ave(fish_tracks_ds, species_name, feature)
+            fish_daily_corr(fish_daily_ave_feature, feature, species_name)
+
+        # correlations for individuals across week
+        _ = fish_weekly_corr(fish_tracks_ds, feature, 'single')
 
     # correlations for species
-    species_corr(aves_ave_spd, 'speed_mm', 'single')
-    species_corr(aves_ave_rest, 'rest', 'single')
+    species_daily_corr(aves_ave_spd, 'speed_mm', 'single')
+    species_daily_corr(aves_ave_rest, 'rest', 'single')
 
-    # # https://matplotlib.org/matplotblog/posts/create-ridgeplots-in-matplotlib/
-    # cmap = cm.get_cmap('turbo')
-    # colour_array = np.arange(0, 1, 1 / len(species))
-    #
-    # gs = grid_spec.GridSpec(len(species), 1)
-    # fig = plt.figure(figsize=(16, 9))
-    # # date_form = DateFormatter('%Y-%m-%d')
-    # date_form = DateFormatter('%H:%M:%S')
-    # ax_objs = []
-    # averages = np.zeros([len(species), 303])
-    #
-    # first = 1
-    # for species_n, species_name in enumerate(species):
-    #     # get speeds for each individual for a given species
-    #     spd = fish_tracks_ds[fish_tracks_ds.species == species_name][[feature, 'FishID', 'ts']]
-    #     sp_spd = spd.pivot(columns='FishID', values=feature, index='ts')
-    #     if first:
-    #         sp_spd_combined = sp_spd
-    #         first = 0
-    #     else:
-    #         frames = [sp_spd_combined, sp_spd]
-    #         sp_spd_combined = pd.concat(frames, axis=1)
-    #
-    #     # calculate ave and stdv
-    #     average = sp_spd.mean(axis=1)
-    #     averages[species_n, :] = average[0:303]
-    #     # stdv = sp_spd.std(axis=1)
-    #
-    #     # create time vector in datetime format
-    #     # tv = fish_tracks_ds.loc[fish_tracks_ds.FishID == fish_IDs[0], 'ts']
-    #     date_time_obj = []
-    #     for i in sp_spd.index:
-    #         date_time_obj.append(dt.datetime.strptime(i, '%Y-%m-%d %H:%M:%S'))
-    #
-    #     # creating new axes object
-    #     ax_objs.append(fig.add_subplot(gs[species_n:species_n + 1, 0:]))
-    #
-    #     days_to_plot = (date_time_obj[-1] - date_time_obj[0]).days + 1
-    #
-    #     for day_n in range(days_to_plot):
-    #         # ax_objs[-1].axvspan(dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S')+timedelta(days=day_n),
-    #         #                     change_times_datetime[0]+timedelta(days=day_n), color='lightblue',
-    #         #                     alpha=0.5, linewidth=0)
-    #         # ax_objs[-1].axvspan(change_times_datetime[0]+timedelta(days=day_n),
-    #         #                     change_times_datetime[1]+timedelta(days=day_n),  color='wheat',
-    #         #                     alpha=0.5, linewidth=0)
-    #         # ax_objs[-1].axvspan(change_times_datetime[2]+timedelta(days=day_n), change_times_datetime[3]+timedelta
-    #         # (days=day_n), color='wheat', alpha=0.5, linewidth=0)
-    #         # ax_objs[-1].axvspan(change_times_datetime[3]+timedelta(days=day_n), change_times_datetime[4]+timedelta
-    #         # (days=day_n), color='lightblue', alpha=0.5, linewidth=0)
-    #
-    #         ax_objs[-1].fill_between([dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S')+timedelta(days=day_n),
-    #                                   change_times_datetime[0]+timedelta(days=day_n)], [span_max, span_max], 0,
-    #                                  color='lightblue', alpha=0.5, linewidth=0, zorder=1)
-    #         ax_objs[-1].fill_between([change_times_datetime[0]+timedelta(days=day_n),
-    #                             change_times_datetime[1]+timedelta(days=day_n)], [span_max, span_max], 0,  color='wheat',
-    #                             alpha=0.5, linewidth=0)
-    #         ax_objs[-1].fill_between([change_times_datetime[2]+timedelta(days=day_n), change_times_datetime[3]+timedelta
-    #         (days=day_n)], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
-    #         ax_objs[-1].fill_between([change_times_datetime[3]+timedelta(days=day_n), change_times_datetime[4]+timedelta
-    #         (days=day_n)], [span_max, span_max], 0, color='lightblue', alpha=0.5, linewidth=0)
-    #
-    #     # plotting the distribution
-    #     ax_objs[-1].plot(date_time_obj, average, lw=1, color='w')
-    #     ax_objs[-1].fill_between(date_time_obj, average, 0, color=cmap(colour_array[species_n]), zorder=2)
-    #
-    #     # setting uniform x and y lims
-    #     ax_objs[-1].set_xlim(min(date_time_obj), dt.datetime.strptime("1970-1-8 08:30:00", '%Y-%m-%d %H:%M:%S'))
-    #     ax_objs[-1].set_ylim(0, ymax)
-    #
-    #     # make background transparent
-    #     rect = ax_objs[-1].patch
-    #     rect.set_alpha(0)
-    #
-    #     if species_n == len(species) - 1:
-    #         ax_objs[-1].set_xlabel("Time", fontsize=10, fontweight="bold")
-    #         ax_objs[-1].xaxis.set_major_locator(MultipleLocator(20))
-    #         ax_objs[-1].xaxis.set_major_formatter(date_form)
-    #         ax_objs[-1].yaxis.tick_right()
-    #         ax_objs[-1].yaxis.set_label_position("right")
-    #         ax_objs[-1].set_ylabel(ylabeling)
-    #
-    #     else:
-    #         # remove borders, axis ticks, and labels
-    #         ax_objs[-1].set_xticklabels([])
-    #         ax_objs[-1].set_xticks([])
-    #         ax_objs[-1].set_yticks([])
-    #         ax_objs[-1].set_yticklabels([])
-    #         ax_objs[-1].set_ylabel('')
-    #
-    #     spines = ["top", "right", "left", "bottom"]
-    #     for s in spines:
-    #         ax_objs[-1].spines[s].set_visible(False)
-    #
-    #     short_name = shorten_sp_name(species_name)
-    #     shortened_sp_name = species_name[0] + ". " + species_name.split(' ')[1]
-    #     ax_objs[-1].text(0.9, 0, short_name[0], fontweight="bold", fontsize=10, ha="right", rotation=-45)
-    #     gs.update(hspace=-0.1)
-    # plt.show()
-
-    # # clustering
-    # X = aves_ave.corr().values
-    # d = sch.distance.pdist(X)   # vector of ('55' choose 2) pairwise distances
-    # L = sch.linkage(d, method='complete')
-    # ind = sch.fcluster(L, 0.5*d.max(), 'distance')
-    # cols = [aves_ave.columns.tolist()[i] for i in list((np.argsort(ind)))]
-    # aves_ave = aves_ave[cols]
-    #
-    # ## heatmap average
-    # changes = [7, 19]
-    # changes_ticks = []
-    # for i in np.arange(0, 6):
-    #     changes_ticks = np.append(changes_ticks, np.add(changes, 24*i))
-    # changes_ticks = np.multiply(changes_ticks, 2)
-    #
-    # fig1, ax1 = plt.subplots()
-    # fig1.set_figheight(5)
-    # fig1.set_figwidth(15)
-    # im_spd = ax1.imshow(averages, aspect='auto', vmin=0, vmax=70)
-    # ax1.get_yaxis().set_ticks(np.arange(0, len(species)))
-    # ax1.get_yaxis().set_ticklabels(species_short, rotation=45)
-    # ax1.get_xaxis().set_ticks(np.arange(0, averages.shape[1], 12))
-    # ax1.get_xaxis().set_ticks(changes_ticks)
-    # ax1.get_xaxis().set_ticklabels(['7am', '7pm']*6)
-    # cbar = fig1.colorbar(im_spd, label="Speed mm/s")
-    # fig1.tight_layout(pad=2)
-    #
-    # ## heatmap daily average
-    # fig1, ax1 = plt.subplots()
-    # fig1.set_figheight(6)
-    # fig1.set_figwidth(6)
-    # im_spd = ax1.imshow(aves_ave.T, aspect='auto', vmin=0, vmax=50, cmap='magma')
-    # ax1.get_yaxis().set_ticks(np.arange(0, len(species)))
-    # sp_names = shorten_sp_name(aves_ave.columns)
-    # ax1.get_yaxis().set_ticklabels(sp_names, rotation=45)
-    # ax1.get_xaxis().set_ticks(np.arange(0, aves_ave.shape[1], 12))
-    # ax1.get_xaxis().set_ticks(changes_ticks[0:2])
-    # ax1.get_xaxis().set_ticklabels(['7am', '7pm'])
-    # cbar = fig1.colorbar(im_spd, label="Speed mm/s")
-    # plt.title('Daily average speed mm/s')
-    # fig1.tight_layout(pad=3)
-    #
-    # ## heatmap individuals
-    # changes = [7, 19]
-    # changes_ticks = []
-    # for i in np.arange(0, 6):
-    #     changes_ticks = np.append(changes_ticks, np.add(changes, 24*i))
-    # changes_ticks = np.multiply(changes_ticks, 2)
-    #
-    # fig1, ax1 = plt.subplots()
-    # fig1.set_figheight(5)
-    # fig1.set_figwidth(15)
-    # im_spd = ax1.imshow(sp_spd_combined.T, aspect='auto', vmin=0, vmax=70)
-    # ax1.get_yaxis().set_ticks(np.arange(0, len(fish_IDs)))
-    # ax1.get_yaxis().set_ticklabels(sp_spd_combined.columns, rotation=45)
-    # ax1.get_xaxis().set_ticks(np.arange(0, sp_spd_combined.shape[1], 12))
-    # ax1.get_xaxis().set_ticks(changes_ticks)
-    # ax1.get_xaxis().set_ticklabels(['7am', '7pm']*6)
-    # cbar = fig1.colorbar(im_spd, label="Speed mm/s")
-    # fig1.tight_layout(pad=3)
-    #

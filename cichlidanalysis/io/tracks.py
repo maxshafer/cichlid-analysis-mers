@@ -221,29 +221,17 @@ def load_ds_als_files(folder, suffix="*als.csv"):
     return data
 
 
-def load_feature_vectors(folder, suffix="*als_fv.csv"):
-    os.chdir(folder)
-    files = glob.glob(suffix)
-    files.sort()
-    first_done = 0
+def save_fishtracks_30m(fish_tracks_30m, rootdir):
+    """ Save out combined fish_tracks_30m
 
-    for file in files:
-        if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
-            print("loaded file {}".format(file))
-            data = pd.concat([data, data_s])
-
-        else:
-            # initiate data frames for each of the fish, beside the time series,
-            data = pd.read_csv(os.path.join(folder, file), sep=',')
-            print("loaded file {}".format(file))
-            first_done = 1
-
-    data = data.rename(columns={"Unnamed: 0": "fish_ID"})
-    data = data.reset_index(drop=True)
-
-    print("All down sampled als.csv files loaded")
-    return data
+    :param fish_tracks_30m:
+    :param rootdir:
+    :return:
+    """
+    date = datetime.datetime.now().strftime("%Y%m%d")
+    # save out 30m data (all adjusted to 7am-7pm)
+    fish_tracks_30m.to_csv(os.path.join(rootdir, "combined_{0}_als_30m.csv".format(date)))
+    print("Finished saving out 30min data")
 
 
 if __name__ == '__main__':

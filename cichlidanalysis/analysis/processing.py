@@ -244,6 +244,21 @@ def ave_daily_fish(fish_tracks_30m, fish, measure):
     return daily_ave, daily_ave_std, daily_ave_total
 
 
+def species_feature_fish_daily_ave(fish_tracks_ds_i, species_name, feature):
+    """ Gets fish of species "species_name", finds the daily average of  the given feature
+
+    :param fish_tracks_ds_i:
+    :param species_name:
+    :param feature:
+    :return: fish_daily_ave_feature
+    """
+    feature_i = fish_tracks_ds_i.loc[fish_tracks_ds_i.species == species_name, [feature, 'FishID', 'ts']]
+    fish_feature = feature_i.pivot(columns='FishID', values=feature, index='ts')
+    fish_daily_ave_feature = feature_daily(fish_feature)
+
+    return fish_daily_ave_feature
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

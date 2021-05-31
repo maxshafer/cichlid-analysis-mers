@@ -9,8 +9,8 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from cichlidanalysis.io.tracks import load_feature_vectors
-from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
+from cichlidanalysis.io.io_feature_vector import load_feature_vectors
+from cichlidanalysis.utils.species_names import six_letter_sp_name
 from cichlidanalysis.io.meta import extract_meta
 from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
 
