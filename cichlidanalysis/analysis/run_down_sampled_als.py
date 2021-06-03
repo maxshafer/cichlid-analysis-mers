@@ -281,13 +281,16 @@ if __name__ == '__main__':
                         metric='correlation', row_colors=row_cols_1, yticklabels=True)
     ax.fig.suptitle("Rest")
     plt.close()
+    ax = sns.clustermap(aves_ave_move.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation',
+                        yticklabels=True)
+    ax.fig.suptitle("Movement")
     ax = sns.clustermap(aves_ave_move.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
                         metric='correlation', row_colors=row_cols_1)
     ax.fig.suptitle("Movement")
     plt.close()
 
     # clustering of daily average of individuals, massive clustermap!
-    features = ['speed_mm', 'rest']
+    features = ['speed_mm', 'rest',  'movement']
     for feature in features:
         first = True
         for species_name in species:
@@ -327,3 +330,98 @@ if __name__ == '__main__':
     species_daily_corr(aves_ave_spd, 'speed_mm', 'single')
     species_daily_corr(aves_ave_rest, 'rest', 'single')
 
+
+# better crepuscular
+from scipy.signal import find_peaks
+
+border_top = np.ones(48)
+border_bottom = np.ones(48)
+border_bottom[6*2:8*2] = 0
+border_bottom[18*2:20*2] = 0
+# features = ['speed_mm', 'rest', 'movement']
+# for feature in features:
+#     first = True
+for species_name in species:
+    fish_daily_ave_feature = species_feature_fish_daily_ave(fish_tracks_ds, species_name, feature)
+    fig = plt.figure(figsize=(5, 5))
+    sns.heatmap(fish_daily_ave_feature.T, cmap="Greys")
+    for i in np.arange(0, len(fish_daily_ave_feature.columns)):
+        x = fish_daily_ave_feature.iloc[:, i]
+        peaks, _ = find_peaks(x, distance=4, prominence=0.15, height=(border_bottom, border_top))
+        plt.plot(x)
+        plt.plot(peaks, x[peaks],  "o", color="r")
+        plt.plot(border_bottom)
+        plt.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks))*i)+0.5,   "o", color="r")
+        plt.title(species_name)
+        plt.show()
+
+
+border_bottom = np.concatenate((border_bottom, border_bottom, border_bottom, border_bottom, border_bottom,
+                                border_bottom, border_bottom))
+border_top = np.ones(48*7)
+for species_name in species:
+    fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
+        columns='FishID', values=feature, index='ts')
+    fig = plt.figure(figsize=(10, 5))
+    sns.heatmap(fish_feature.T, cmap="Greys")
+    for i in np.arange(0, len(fish_feature.columns)):
+        x = fish_feature.iloc[:, i]
+        peaks, peak_prop = find_peaks(x, distance=4, prominence=0.15, height=(border_bottom[0:x.shape[0]], border_top[0:x.shape[0]]))
+
+        np.around(peak_prop['peak_heights'], 2)
+
+        # plt.plot(x)
+        # plt.plot(peaks, x[peaks],  "o", color="r")
+        # plt.plot(border_bottom)
+        plt.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks))*i)+0.5,   "o", color="r")
+        plt.title(species_name)
+        plt.show()
+
+
+border_top = np.ones(24)
+border_bottom = np.ones(24)
+border_bottom[6*2:8*2] = 0
+for species_name in species:
+    fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
+        columns='FishID', values=feature, index='ts')
+    first = True
+    for i in np.arange(0, len(fish_feature.columns)):
+        epoques = np.arange(0, 48*8, 24)
+        fish_peaks = np.zeros([2, int(np.floor(fish_feature.iloc[:, i].reset_index().shape[0]/24))])
+        for j in np.arange(0, int(np.ceil(fish_feature.shape[0]/48)*2)):
+            x = fish_feature.iloc[epoques[j]:epoques[j+1], i]
+            if x.size == 24:
+                peak, peak_prop = find_peaks(x, distance=4, prominence=0.15, height=(border_bottom[0:x.shape[0]],
+                                                                                     border_top[0:x.shape[0]]))
+                if peak.size != 0:
+                    fish_peaks[0, j] = peak[0] + epoques[j]
+                    fish_peaks[1, j] = np.round(peak_prop['peak_heights'][0], 2)
+                # fig = plt.figure(figsize=(10, 5))
+                # plt.plot(x)
+                # plt.plot(peak[0], x[int(peak[0])],  "o", color="r")
+                # plt.plot(border_bottom)
+
+        fish_peaks_df = pd.DataFrame(fish_peaks.T, columns=['peak_loc', 'peak_height'])
+        fish_peaks_df = fish_peaks_df.reset_index().rename(columns={'index': 'crep_num'})
+        fish_peaks_df['FishID'] = fish_feature.columns[i]
+
+        if first:
+            species_peaks_df = fish_peaks_df
+            first = False
+        else:
+            species_peaks_df = pd.concat([species_peaks_df, fish_peaks_df], axis=0)
+    species_peaks_df = species_peaks_df.reset_index(drop=True)
+        x = fish_feature.iloc[:, i]
+        fig = plt.figure(figsize=(10, 5))
+        plt.plot(x)
+        plt.plot(x.reset_index().index[fish_peaks[0, :].astype(int)].values, fish_peaks[1, :],   "o", color="r")
+        plt.title(species_name)
+        plt.show()
+
+# 	1. Find peaks in daily average of Individuals and  species
+# 	2. Find peaks across week
+# 	3. Find amplitude of peaks
+# For non-peaks -  take the most common peak bin
+
+x = fish_feature.iloc[:, i]
+plt.plot(fish_peaks[0, :], x[(fish_peaks[0, :]).astype(int)],  "x", color="k")
