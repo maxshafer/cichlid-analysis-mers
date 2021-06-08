@@ -66,6 +66,15 @@ def plot_speed(speed, tv_internal):
 
 
 def image_minmax(rootdir, ymin, ymax, fish_ID, meta):
+    """
+
+    :param rootdir:
+    :param ymin:
+    :param ymax:
+    :param fish_ID:
+    :param meta:
+    :return:
+    """
     track_roi = load_yaml(rootdir, "roi_file")
 
     vid_paths = glob.glob(os.path.join(rootdir, "*.mp4"))

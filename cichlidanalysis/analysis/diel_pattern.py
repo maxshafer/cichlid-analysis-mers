@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from scipy import stats
 
 
 def daily_more_than_pattern_individ(feature_v, species, plot=False):
@@ -125,3 +126,38 @@ def day_night_ratio_species(averages):
     day_night_ratio = day_night_ratio.to_frame()
 
     return day_night_ratio
+
+
+def replace_crep_peaks(fish_peaks, fish_feature, fish_num, epoques):
+    """for crepuscular peaks, this finds if the first row (intra day 30min bin) is == 0, which means it didn't have a
+    peak and replaces it's peak height with the value of the mode of the first row. It then corrects the peak amplitude.
+
+    :param fish_peaks:
+    :param fish_feature:
+    :param fish_num:
+    :return: fish_peaks
+    """
+    # check if any of the peaks need replacing
+    if (fish_peaks[0, :] == 0).any():
+        common_peak = stats.mode(fish_peaks[0, :])[0][0]
+        no_peaks = np.where(fish_peaks[0, :] == 0)[0]
+        for no_peak in no_peaks:
+            # add in peak height
+            fish_peaks[2, no_peak] = fish_feature.iloc[int(epoques[no_peak] + common_peak), fish_num]
+            # correct peak amplitude
+            fish_peaks[3, no_peak] = fish_peaks[3, no_peak] + fish_peaks[2, no_peak]
+    return fish_peaks
+
+
+def make_fish_peaks_df(fish_peaks, fish_id):
+    """ makes df from np.array of fish peaks data (4 rows where [0, 2, 3] = ['peak_loc', 'peak_height',
+    'peak_amplitude']
+
+    :param fish_peaks:
+    :param fish_id:
+    :return: fish_peaks_df
+    """
+    fish_peaks_df = pd.DataFrame(fish_peaks[[0, 2, 3], :].T, columns=['peak_loc', 'peak_height', 'peak_amplitude'])
+    fish_peaks_df = fish_peaks_df.reset_index().rename(columns={'index': 'crep_num'})
+    fish_peaks_df['FishID'] = fish_id
+    return fish_peaks_df
