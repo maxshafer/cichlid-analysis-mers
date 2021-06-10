@@ -7,8 +7,19 @@ def shorten_sp_name(species_full):
     """
     shortened_sp_names = []
 
+    # if one name
     if type(species_full) == str:
-        shortened_sp_names.append(species_full[0] + ". " + species_full.split(' ')[1])
+
+        if species_full.find(' ') == -1 and species_full.find('-') > 0:
+            splitting_by = '-'
+        elif species_full.find(' ') > 0 and species_full.find('-') == -1:
+            splitting_by = ' '
+        else:
+            print("problem, quitting")
+            return False
+        shortened_sp_names.append(species_full[0] + ". " + species_full.split(splitting_by)[1])
+
+    # if many species names
     else:
         if species_full[0].find(' ') == -1 and species_full[0].find('-') > 0:
             splitting_by = '-'

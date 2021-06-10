@@ -1,14 +1,16 @@
 import glob
 import os
 import copy
-import datetime
+import datetime as dt
 
 import numpy as np
 import pandas as pd
 
+from cichlidanalysis.analysis.processing import remove_cols
+
 
 def load_track(csv_file_path):
-    """Takes file path, loads  the csv track, computes speed from this, returns  both
+    """Takes file path, loads  the csv track, computes speed from this, returns both
     """
     track_internal = np.genfromtxt(csv_file_path, delimiter=',')
 
@@ -145,7 +147,7 @@ def adjust_old_time_ns(recname, timevector_ns):
 
 def adjust_old_time(recname, timestamps):
     """ some older recordings use 7:30-19:30 light  instead of 7-19 light, subtract 30min from timestamps"""
-    thirty_minutes = datetime.timedelta(minutes=30)
+    thirty_minutes = dt.timedelta(minutes=30)
 
     # finding old recordings
     if int(recname[4:12]) < 20201127:
@@ -166,30 +168,35 @@ def load_als_files(folder, suffix="*als.csv"):
     for file in files:
         if first_done:
             data_s = pd.read_csv(os.path.join(folder, file), sep=',')
-            # Removed index_col=0, as is giving Type error ufunc "isnan'
+            # data_s = pd.read_csv(os.path.join(folder, file), sep='/')
+            # str.split(',' expand = T)
+            # #, error_bad_lines=False, warn_bad_lines=True)
             print("loaded file {}".format(file))
             data_s['FishID'] = file[0:-8]
-            # data_s['species'] = file[0:-8].split("_")[3]
-            # data_s['sex'] = file[0:-8].split("_")[4]
             data_s['ts'] = adjust_old_time(file, pd.to_datetime(data_s['tv_ns'], unit='ns'))
             data = pd.concat([data, data_s])
 
         else:
             # initiate data frames for each of the fish, beside the time series,
             # also add in the species name and ID at the start
-            data = pd.read_csv(os.path.join(folder, file), sep=',')
-            # Removed index_col=0, as is giving Type error ufunc "isnan'
+            data = pd.read_csv(os.path.join(folder, file), sep=',', error_bad_lines=False, warn_bad_lines=True)
             print("loaded file {}".format(file))
             data['FishID'] = file[0:-8]
-            # data['species'] = file[0:-8].split("_")[3]
-            # data['sex'] = file[0:-8].split("_")[4]
-
             data['ts'] = adjust_old_time(file, pd.to_datetime(data['tv_ns'], unit='ns'))
             first_done = 1
 
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
     data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
     # also change how the csv is saved in run_fish_als.py
+
+    data = data.drop(data[data.ts < dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S')].index)
+    data = data.reset_index(drop=True)
+    data = remove_cols(data, ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity'])
+
+    # # drop "not a time" columns - these occur when not the full data is  in the als files, no sure why this
+    # occiainsionally happens - add to issue #29
+    # print("dropping indices as they don't have a time {}".format(data[np.isnat(data.ts)].index))
+    # data = data.drop(data[np.isnat(data.ts)].index)
 
     print("All als.csv files loaded")
     return data
@@ -215,7 +222,6 @@ def load_ds_als_files(folder, suffix="*als.csv"):
 
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
     data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
-    # also change how the csv is saved in run_fish_als.py
 
     print("All down sampled als.csv files loaded")
     return data
@@ -228,7 +234,7 @@ def save_fishtracks_30m(fish_tracks_30m, rootdir):
     :param rootdir:
     :return:
     """
-    date = datetime.datetime.now().strftime("%Y%m%d")
+    date = dt.datetime.now().strftime("%Y%m%d")
     # save out 30m data (all adjusted to 7am-7pm)
     fish_tracks_30m.to_csv(os.path.join(rootdir, "combined_{0}_als_30m.csv".format(date)))
     print("Finished saving out 30min data")

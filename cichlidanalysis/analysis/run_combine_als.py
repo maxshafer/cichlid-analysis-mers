@@ -16,7 +16,6 @@ import warnings
 import time
 
 import numpy as np
-import datetime as dt
 
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.tracks import load_als_files
@@ -48,13 +47,8 @@ fish_tracks = load_als_files(rootdir)
 t1 = time.time()
 print("time to load tracks {}".format(t1-t0))
 
-fish_tracks = fish_tracks.drop(fish_tracks[fish_tracks.ts < dt.datetime.strptime("1970-1-2 00:00:00",
-                                                                                 '%Y-%m-%d %H:%M:%S')].index)
-fish_tracks.reset_index()
-
 meta = load_meta_files(rootdir)
 metat = meta.transpose()
-fish_tracks = remove_cols(fish_tracks, ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity'])
 
 # get each fish ID
 fish_IDs = fish_tracks['FishID'].unique()
@@ -66,6 +60,9 @@ change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
 
 # add new column with Day or Night
 t2 = time.time()
+# fish_tracks['time_of_day_m'] = 0
+# for index, row in fish_tracks.ts.iteritems():
+#     fish_tracks.loc[index, 'time_of_day_m'] = int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:])
 fish_tracks['time_of_day_m'] = fish_tracks.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
 t3 = time.time()
 print("time to add time_of_day tracks {}".format(t3-t2))

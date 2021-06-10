@@ -13,6 +13,8 @@ from cichlidanalysis.io.io_feature_vector import load_feature_vectors
 from cichlidanalysis.utils.species_names import six_letter_sp_name
 from cichlidanalysis.io.meta import extract_meta
 from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
+from cichlidanalysis.analysis.diel_pattern import daily_more_than_pattern_individ, daily_more_than_pattern_species, \
+    day_night_ratio_individ, day_night_ratio_species
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -92,25 +94,13 @@ ax1.get_xaxis().set_ticklabels(averages_norm.index, rotation=90)
 plt.title('Feature vector (normalised by feature)')
 fig1.tight_layout(pad=3)
 
-# # cluster by correlation
-# X = averages.corr().values
-# d = sch.distance.pdist(X)   # vector of ('55' choose 2) pairwise distances
-# L = sch.linkage(d, method='single')
-# ind = sch.fcluster(L, 0.5*d.max(), 'distance')
-# cols = [averages.columns.tolist()[i] for i in list((np.argsort(ind)))]
-# averages = averages[cols]
-
+# clustered heatmap of  fv
 fig = sns.clustermap(averages_norm, figsize=(10, 10), col_cluster=False, method='single', yticklabels=True)
 plt.savefig(os.path.join(rootdir, "cluster_map_fv_{0}.png".format(datetime.date.today())))
 
-# row_cols = []
-# for i in sp_metrics.tribe:
-#     row_cols.append(tribe_col[i])
-#
-# row_cols_2 = pd.DataFrame(row_cols, index=[feature_v.species_six.unique()]).apply(tuple, axis=1)
-
 # # total rest
 # ax = sns.catplot(data=feature_v, y='species_six', x='total_rest', kind="swarm")
+fig = plt.figure(figsize=(5, 10))
 ax = sns.boxplot(data=feature_v, y='species_six', x='total_rest') #, hue='tribe')
 ax = sns.swarmplot(data=feature_v, y='species_six', x='total_rest', color=".2")
 ax.set(xlabel='Average total rest per day', ylabel='Species')
@@ -127,9 +117,11 @@ for row in feature_v_mean['species_six']:
     feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = \
         sp_metrics.loc[sp_metrics['species_abbreviation'] == row, 'tribe'].values[0]
 
+fig = plt.figure(figsize=(5, 10))
 sns.histplot(data=feature_v_mean, x='total_rest', binwidth=1, hue='tribe', multiple="stack")
 
 # total rest vs fish length
+fig = plt.figure(figsize=(5, 5))
 sns.regplot(data=feature_v, x='total_rest', y='fish_length_mm')
 
 # total rest vs day speed
@@ -137,9 +129,12 @@ feature_v['spd_max_mean'] = pd.concat([feature_v['spd_mean_day'], feature_v['spd
                                        feature_v['spd_mean_predawn'], feature_v['spd_mean_dawn'],
                                        feature_v['spd_mean_dusk'], feature_v['spd_mean_postdusk']], axis=1).max(axis=1)
 
+fig = plt.figure(figsize=(5, 5))
 sns.scatterplot(data=feature_v, x='total_rest', y='spd_mean_day', hue='tribe')
+fig = plt.figure(figsize=(5, 5))
 sns.scatterplot(data=feature_v, x='total_rest', y='spd_mean_night', hue='tribe')
-sns.regplot(data=feature_v, x='total_rest', y='spd_max_mean', hue='tribe')
+fig = plt.figure(figsize=(5, 5))
+sns.regplot(data=feature_v, x='total_rest', y='spd_max_mean')
 
 # # bout lengths rest
 fig = plt.figure(figsize=(5, 10))
@@ -156,7 +151,7 @@ ax.set(xlim=(0, 1250))
 plt.tight_layout()
 plt.savefig(os.path.join(rootdir, "rest_bout_mean_night_{0}.png".format(datetime.date.today())))
 
-feature_v['rest_bout_mean_dn_dif'] = feature_v['rest_bout_mean_night'] - feature_v['rest_bout_mean_day']
+feature_v['rest_bout_mean_dn_dif'] =  feature_v['rest_bout_mean_day'] - feature_v['rest_bout_mean_night']
 fig = plt.figure(figsize=(5, 10))
 ax = sns.boxplot(data=feature_v, y='species_six', x='rest_bout_mean_dn_dif', fliersize=1)
 ax = sns.swarmplot(data=feature_v, y='species_six', x='rest_bout_mean_dn_dif', color=".2", size=3)
@@ -181,7 +176,7 @@ ax.set(xlim=(0, 1250))
 plt.tight_layout()
 plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_night_{0}.png".format(datetime.date.today())))
 
-feature_v['nonrest_bout_mean_dn_dif'] = feature_v['nonrest_bout_mean_night'] - feature_v['nonrest_bout_mean_day']
+feature_v['nonrest_bout_mean_dn_dif'] = feature_v['nonrest_bout_mean_day'] - feature_v['nonrest_bout_mean_night']
 fig = plt.figure(figsize=(5, 10))
 ax = sns.boxplot(data=feature_v, y='species_six', x='nonrest_bout_mean_dn_dif', fliersize=1)
 ax = sns.swarmplot(data=feature_v, y='species_six', x='nonrest_bout_mean_dn_dif', color=".2", size=3)
@@ -190,6 +185,9 @@ ax.set(xlim=(-4000, 3000))
 plt.tight_layout()
 plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_dn_dif_{0}.png".format(datetime.date.today())))
 
+
+feature_v_mean['rest_bout_mean_dn_dif'] = feature_v_mean['rest_bout_mean_day'] - feature_v_mean['rest_bout_mean_night']
+feature_v_mean['nonrest_bout_mean_dn_dif'] = feature_v_mean['nonrest_bout_mean_day'] - feature_v_mean['nonrest_bout_mean_night']
 fig = plt.figure(figsize=(5, 10))
 sns.histplot(data=feature_v_mean, x='rest_bout_mean_dn_dif', hue='tribe', multiple="stack")
 fig = plt.figure(figsize=(5, 10))
@@ -225,111 +223,15 @@ subset_feature_plt(averages, rest_b_means, 'Average rest bout length')
 subset_feature_plt(averages, nonrest_b_means, 'Average nonrest bout length')
 # make clustermaps!
 
+### Daily activity pattern ###
+diel_fish = daily_more_than_pattern_individ(feature_v, species, plot=False)
+diel_species = daily_more_than_pattern_species(averages, plot=False)
+day_night_ratio_fish = day_night_ratio_individ(feature_v)
+day_night_ratio_sp = day_night_ratio_species(averages)
 
-# ### Daily activity pattern ###
-for species_name in species:
-    night = feature_v.loc[feature_v.species == species_name, 'rest_mean_night']
-    day = feature_v.loc[feature_v.species == species_name, 'rest_mean_day']
-    dawn_dusk = feature_v.loc[feature_v.species == species_name, ['rest_mean_predawn', 'rest_mean_dawn', 'rest_mean_dusk', 'rest_mean_postdusk']].mean(axis=1)
-
-    nocturnal = (night*1.1 < day) & (night*1.1 < dawn_dusk)
-    dirunal = (day*1.1 < night*1.1) & (day*1.1 < dawn_dusk)
-    crepuscular = (dawn_dusk*1.1 < night) & (dawn_dusk*1.1 < day)
-    cathemeral = (nocturnal + dirunal + crepuscular) == False
-
-    fig = plt.figure(figsize=(5, 5))
-    plt.imshow(pd.concat([dirunal, nocturnal, crepuscular, cathemeral], axis=1))
-    plt.xticks(np.arange(0, 4), labels=['diurnal', 'nocturnal', 'crepuscular', 'cathemeral'], rotation=45, ha='right', va='top')
-    plt.title(species_name)
-    plt.tight_layout()
-
-# all individuals
-night = feature_v.loc[:, 'rest_mean_night']
-day = feature_v.loc[:, 'rest_mean_day']
-dawn_dusk = feature_v.loc[:, ['rest_mean_predawn', 'rest_mean_dawn', 'rest_mean_dusk', 'rest_mean_postdusk']].mean(axis=1)
-
-nocturnal = (night*1.1 < day) & (night*1.1 < dawn_dusk)
-dirunal = (day*1.1 < night*1.1) & (day*1.1 < dawn_dusk)
-crepuscular = (dawn_dusk*1.1 < night) & (dawn_dusk*1.1 < day)
-cathemeral = (nocturnal*1 + dirunal*1 + crepuscular*1) == 0
-
-fig = plt.figure(figsize=(5, 5))
-plt.imshow(pd.concat([dirunal, nocturnal, crepuscular, cathemeral], axis=1))
-plt.xticks(np.arange(0, 4), labels=['diurnal', 'nocturnal', 'crepuscular', 'cathemeral'], rotation=45, ha='right', va='top')
-plt.yticks(np.arange(0, len(feature_v)), labels=feature_v.species_six)
-plt.title(species_name)
+sns.clustermap(pd.concat([day_night_ratio_fish.ratio, diel_fish.crepuscular*1], axis=1), col_cluster=False,
+               yticklabels=day_night_ratio_fish.species_six, cmap='RdBu_r', vmin=0, vmax=2)
 plt.tight_layout()
 
-# crepuscular_ratio = np.abs(1-dawn_dusk)/((np.abs(1-night) + np.abs(1-day))/2)
-crepuscular_ratio = np.abs(1-dawn_dusk)/(pd.concat([day, night], axis=1).max(axis=1)) # new version
-
-crepuscular_ratio = crepuscular_ratio.rename('ratio')
-crepuscular_ratio = crepuscular_ratio.to_frame()
-crepuscular_ratio["species_six"] = feature_v.species_six
-
-day_night_ratio = np.abs(1-day)/np.abs(1-night)
-day_night_ratio = day_night_ratio.rename('ratio')
-day_night_ratio = day_night_ratio.to_frame()
-day_night_ratio["species_six"] = feature_v.species_six
-
-ax = sns.boxplot(data=crepuscular_ratio, y='species_six', x='ratio')
-ax = sns.swarmplot(data=crepuscular_ratio, y='species_six', x='ratio', color=".2")
-ax = plt.axvline(1, ls='--', color='k')
-plt.xlabel('Crepuscular vs Day+night ratio')
-plt.xscale('log')
-# plt.xlim([0.01, 10])
-plt.tight_layout()
-
-ax = sns.boxplot(data=day_night_ratio, y='species_six', x='ratio')
-ax = sns.swarmplot(data=day_night_ratio, y='species_six', x='ratio', color=".2")
-ax = plt.axvline(1, ls='--', color='k')
-plt.xlabel('Day/night ratio')
-plt.xscale('log')
-# plt.xlim([0.01, 80])
-plt.tight_layout()
-
-day_night_ratio.rename(columns={'ratio': 'dn_ratio'})
-ratios_com = pd.concat([day_night_ratio.rename(columns={'ratio': 'dn_ratio'}),
-                        crepuscular_ratio.rename(columns={'ratio': 'cres_ratio'}).iloc[:, 0]], axis=1)
-fig = plt.figure(figsize=(8, 8))
-sns.scatterplot(data=ratios_com, x='dn_ratio', y='cres_ratio', hue='species_six')
-plt.xlabel('Day/night ratio')
-plt.ylabel('crepuscular ratio')
-plt.tight_layout()
-
-
-# for each species
-night = averages.loc['rest_mean_night', :]
-day = averages.loc['rest_mean_day', :]
-dawn_dusk = averages.loc[['rest_mean_predawn', 'rest_mean_dawn', 'rest_mean_dusk', 'rest_mean_postdusk'], :].mean(axis=0)
-
-nocturnal = (night*1.1 < day) & (night*1.1 < dawn_dusk)
-dirunal = (day*1.1 < night*1.1) & (day*1.1 < dawn_dusk)
-crepuscular = (dawn_dusk*1.1 < night) & (dawn_dusk*1.1 < day)
-cathemeral = (nocturnal*1 + dirunal*1 + crepuscular*1) == 0
-
-fig = plt.figure(figsize=(5, 5))
-plt.imshow(pd.concat([dirunal, nocturnal, crepuscular, cathemeral], axis=1))
-plt.yticks(np.arange(0, len(averages.columns)), labels=averages.columns)
-plt.xticks(np.arange(0, 4), labels=['diurnal', 'nocturnal', 'crepuscular', 'cathemeral'], rotation=45, ha='right', va='top')
-plt.tight_layout()
-
-# fig = sns.heatmap(pd.concat[dawn_dusk, day, night], yticklabels=True)
-
-# ratios
-crepuscular_ratio = np.abs(1-dawn_dusk)/((np.abs(1-night) + np.abs(1-day))/2)
-crepuscular_ratio = crepuscular_ratio.rename('crepuscular_ratio')
-crepuscular_ratio = crepuscular_ratio.to_frame()
-
-day_night_ratio = np.abs(1-day)/np.abs(1-night)
-day_night_ratio = day_night_ratio.rename('day_night_ratio')
-day_night_ratio = day_night_ratio.to_frame()
-
-fig = plt.figure(figsize=(5, 5))
-plt.imshow(pd.concat([day_night_ratio, crepuscular_ratio], axis=1), cmap='seismic')
-plt.yticks(np.arange(0, len(averages.columns)), labels=averages.columns)
-plt.xticks(np.arange(0, 2), labels=['day_night_ratio', 'crepuscular_ratio'], rotation=45, ha='right', va='top')
-plt.tight_layout()
-
-sns.clustermap(pd.concat([day_night_ratio, crepuscular_ratio], axis=1), col_cluster=False, cmap='RdBu_r', vmin=0, vmax=2)
+sns.clustermap(pd.concat([day_night_ratio_sp, diel_species.crepuscular*1], axis=1), col_cluster=False, cmap='RdBu_r', vmin=0, vmax=2)
 plt.tight_layout()

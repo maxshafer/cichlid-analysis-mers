@@ -12,7 +12,7 @@ from tkinter import Tk
 
 def background_vid(videofilepath, nth_frame, percentile):
     """ (str, int, int, int)
-     This function will create a median image of the defined area"""
+     This function will create a background image of the defined area"""
     try:
         cap = cv2.VideoCapture(videofilepath)
     except:

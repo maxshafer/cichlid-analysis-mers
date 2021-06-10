@@ -1,7 +1,9 @@
 import pytest
 import numpy as np
+import pandas as pd
 
-from cichlidanalysis.analysis.processing import smooth_speed, neg_values, int_nan_streches, remove_high_spd_xy
+from cichlidanalysis.analysis.processing import smooth_speed, neg_values, int_nan_streches, remove_high_spd_xy, \
+    fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
 
 @pytest.mark.parametrize("win_size, speed_raw, speed_smooth", [
     (2, np.array([0, 0, 0, 1, 0, 0]).reshape(6, 1), np.array([0, 0, 0, 0.5, 0.5, 0]).reshape(6, 1)),
@@ -25,7 +27,7 @@ def test_neg_values(input_array, output_array):
     (np.array([np.nan, np.nan, 0, 0, 1, np.nan, 0, np.nan, np.nan]), np.array([0, 0, 0, 0, 1, 0.5, 0, 0, 0]))])
 def test_int_nan_streches(input_data, binned_data):
     output_data = int_nan_streches(input_data)
-    print(output_data)
+    # print(output_data)
     assert (output_data == binned_data).all()
 
 
@@ -58,3 +60,22 @@ def test_remove_high_spd_xy(speed_raw, x, y, thresh_speed, thresh_x, thresh_y):
         errors.append("y not thresholded properly")
 
     assert not errors, "errors occured:\n{}".format("\n".join(errors))
+
+
+@pytest.mark.parametrize("input_fish_tracks_ds, expected", [(
+    pd.DataFrame(np.array([350, 359, 360, 361, 479, 480, 481, 1079, 1080, 1081, 1199, 1200, 1201]), columns=['time_of_day_m']),
+    pd.DataFrame([[350, 'n'], [359, 'n'], [360, 'c'],  [361, 'c'], [479, 'c'], [480, 'd'], [481, 'd'], [1079, 'd'],
+                  [1080, 'c'], [1081, 'c'], [1199, 'c'], [1200, 'n'], [1201, 'n']],
+                 columns=['time_of_day_m', 'daytime']))])
+def test_fish_tracks_add_day_twilight_night(input_fish_tracks_ds, expected):
+    output_fish_tracks_ds = fish_tracks_add_day_twilight_night(input_fish_tracks_ds)
+    assert output_fish_tracks_ds.equals(expected)
+
+
+@pytest.mark.parametrize("input_fish_tracks_ds, expected", [(
+    pd.DataFrame(['1970-01-02 00:00:00', '1970-01-02 01:30:00', '1970-01-03 06:00:00', '1970-01-03 10:30:00'], columns=['ts']),
+    pd.DataFrame([['1970-01-02 00:00:00', 1], ['1970-01-02 01:30:00', 1], ['1970-01-03 06:00:00', 2], ['1970-01-03 10:30:00', 2]],
+                 columns=['ts', 'day_n']))])
+def test_add_day_number_fish_tracks(input_fish_tracks_ds, expected):
+    output_fish_tracks_ds = add_day_number_fish_tracks(input_fish_tracks_ds)
+    assert output_fish_tracks_ds.equals(expected)

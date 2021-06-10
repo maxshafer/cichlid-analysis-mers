@@ -70,10 +70,12 @@ if __name__ == '__main__':
 
             backgrounds = glob.glob("*background.png")
             backgrounds = remove_tags(backgrounds, remove=["frame"])
+            new_bgd = True
             if len(backgrounds) < 1:
                 print("Didn't find remade background, will use original background in camera folder")
                 os.chdir(cam_dir)
                 backgrounds = glob.glob("*.png")
+                new_bgd = False
             backgrounds.sort()
 
             rec_name = os.path.split(vid_dir)[1]
@@ -95,10 +97,12 @@ if __name__ == '__main__':
             os.chdir(os.path.split(video_file)[0])
             backgrounds = glob.glob(video_file[0:-4] + "*background.png")
             backgrounds = remove_tags(backgrounds, remove=["frame"])
+            new_bgd = True
             if len(backgrounds) < 1:
                 print("Didn't find remade background, will use original background in camera folder")
                 os.chdir(cam_dir)
                 backgrounds = glob.glob("*" + video_file[-20:-10] + "*.png")
+                new_bgd = False
 
         fish_data = extract_meta(rec_name)
 
@@ -152,8 +156,11 @@ if __name__ == '__main__':
                     break
                 print("tracking with background {}".format(background_of_movie))
                 background_full = cv2.imread(background_of_movie[0], 0)
-                background_crop = background_full[curr_roi[1]:curr_roi[1] + curr_roi[3], curr_roi[0]:curr_roi[0] +
-                                                                                                     curr_roi[2]]
+                if new_bgd:
+                    background_crop = background_full
+                else:
+                    background_crop = background_full[curr_roi[1]:curr_roi[1] + curr_roi[3], curr_roi[0]:curr_roi[0] +
+                                                                                                         curr_roi[2]]
                 tracker(os.path.join(vid_dir, val), background_crop, vid_rois, threshold=35, display=False,
                         area_size=100)
 
