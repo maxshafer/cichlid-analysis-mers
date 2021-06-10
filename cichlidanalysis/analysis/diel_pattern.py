@@ -161,3 +161,4 @@ def make_fish_peaks_df(fish_peaks, fish_id):
     fish_peaks_df = fish_peaks_df.reset_index().rename(columns={'index': 'crep_num'})
     fish_peaks_df['FishID'] = fish_id
     return fish_peaks_df
+

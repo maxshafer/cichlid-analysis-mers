@@ -259,6 +259,32 @@ def species_feature_fish_daily_ave(fish_tracks_ds_i, species_name, feature):
     return fish_daily_ave_feature
 
 
+def fish_tracks_add_day_twilight_night(fish_tracks_ds):
+    """ Adds daytime column based off time_of_day_m changes (6-8am and 6-8pm are crepuscular"""
+
+    dcn_times_m = [6*60, 8*60, 18*60, 20*60]
+
+    fish_tracks_ds['daytime'] = "n"
+    fish_tracks_ds.loc[(fish_tracks_ds.time_of_day_m >= dcn_times_m[0]) & (fish_tracks_ds.time_of_day_m < dcn_times_m[1])
+    , 'daytime'] = "c"
+    fish_tracks_ds.loc[(fish_tracks_ds.time_of_day_m >= dcn_times_m[1]) & (fish_tracks_ds.time_of_day_m < dcn_times_m[2])
+    , 'daytime'] = "d"
+    fish_tracks_ds.loc[(fish_tracks_ds.time_of_day_m >= dcn_times_m[2]) & (fish_tracks_ds.time_of_day_m < dcn_times_m[3])
+    , 'daytime'] = "c"
+    print("added night and day column")
+    return fish_tracks_ds
+
+
+def add_day_number_fish_tracks(fish_tracks_ds):
+    """ Add day number to fish. Time stamp (ts) neds to be in '1970-01-02 00:00:00' format
+
+    :param fish_tracks_ds:
+    :return:
+    """
+    fish_tracks_ds['day_n'] = fish_tracks_ds.ts.apply(lambda row: int(str(row)[8:11]) - 1)
+    return fish_tracks_ds
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

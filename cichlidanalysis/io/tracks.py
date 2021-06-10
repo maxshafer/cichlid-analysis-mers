@@ -10,7 +10,7 @@ from cichlidanalysis.analysis.processing import remove_cols
 
 
 def load_track(csv_file_path):
-    """Takes file path, loads  the csv track, computes speed from this, returns  both
+    """Takes file path, loads  the csv track, computes speed from this, returns both
     """
     track_internal = np.genfromtxt(csv_file_path, delimiter=',')
 
@@ -167,7 +167,10 @@ def load_als_files(folder, suffix="*als.csv"):
 
     for file in files:
         if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',') #, error_bad_lines=False, warn_bad_lines=True)
+            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
+            # data_s = pd.read_csv(os.path.join(folder, file), sep='/')
+            # str.split(',' expand = T)
+            # #, error_bad_lines=False, warn_bad_lines=True)
             print("loaded file {}".format(file))
             data_s['FishID'] = file[0:-8]
             data_s['ts'] = adjust_old_time(file, pd.to_datetime(data_s['tv_ns'], unit='ns'))
@@ -176,7 +179,7 @@ def load_als_files(folder, suffix="*als.csv"):
         else:
             # initiate data frames for each of the fish, beside the time series,
             # also add in the species name and ID at the start
-            data = pd.read_csv(os.path.join(folder, file), sep=',') #, error_bad_lines=False, warn_bad_lines=True)
+            data = pd.read_csv(os.path.join(folder, file), sep=',', error_bad_lines=False, warn_bad_lines=True)
             print("loaded file {}".format(file))
             data['FishID'] = file[0:-8]
             data['ts'] = adjust_old_time(file, pd.to_datetime(data['tv_ns'], unit='ns'))

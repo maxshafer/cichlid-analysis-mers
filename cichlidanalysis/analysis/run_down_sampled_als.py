@@ -19,7 +19,8 @@ from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
 from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
 from cichlidanalysis.plotting.speed_plots import plot_spd_30min_combined
-from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave
+from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave, \
+    fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
 from cichlidanalysis.analysis.diel_pattern import replace_crep_peaks, make_fish_peaks_df
 
 # debug pycharm problem
@@ -390,14 +391,14 @@ dusk_border_bottom  = copy.copy(border_bottom)
 dusk_border_bottom[18*2:(20*2)+1] = 0
 
 border = np.zeros(48)
-day_border  = copy.copy(border)
+day_border = copy.copy(border)
 day_border[8*2:18*2] = 1
-night_border  = copy.copy(border)
+night_border = copy.copy(border)
 night_border[0:6*2] = 1
 night_border[20*2:24*2] = 1
 
 
-# check what happens when that crepuscaulr peeriod is missing!
+# check what happens when that crepuscaulr period is missing!
 first_all= True
 for species_name in species:
     fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
@@ -507,32 +508,79 @@ fig = plt.figure(figsize=(10, 5))
 sns.swarmplot(x='species', y='peak_amplitude', data=all_feature_combined, hue='twilight', dodge=True)
 
 
-# calculate ave and stdv
-average = sp_feature.mean(axis=1)
-averages[species_n, :] = average[0:303]
-
-
-
-    fig = plt.figure(figsize=(10, 5))
-    plt.hist(species_peaks_df.peak_amplitude)
-
-    fig = plt.figure(figsize=(10, 5))
-    plt.hist(species_peaks_df_dusk.loc[species_peaks_df_dusk.peak_loc == 0, 'peak_amplitude'])
-
-        x = fish_feature.iloc[:, i]
-        fig = plt.figure(figsize=(10, 5))
-        plt.plot(x)
-        plt.plot(x.reset_index().index[fish_peaks[0, :].astype(int)].values, fish_peaks[1, :],   "o", color="r")
-        plt.title(species_name)
-        plt.show()
+# # calculate ave and stdv
+# average = sp_feature.mean(axis=1)
+# averages[species_n, :] = average[0:303]
+#
+#
+#
+#     fig = plt.figure(figsize=(10, 5))
+#     plt.hist(species_peaks_df.peak_amplitude)
+#
+#     fig = plt.figure(figsize=(10, 5))
+#     plt.hist(species_peaks_df_dusk.loc[species_peaks_df_dusk.peak_loc == 0, 'peak_amplitude'])
+#
+#         x = fish_feature.iloc[:, i]
+#         fig = plt.figure(figsize=(10, 5))
+#         plt.plot(x)
+#         plt.plot(x.reset_index().index[fish_peaks[0, :].astype(int)].values, fish_peaks[1, :],   "o", color="r")
+#         plt.title(species_name)
+#         plt.show()
 
 # 	1. Find peaks in daily average of Individuals and  species
 # 	2. Find peaks across week
 # 	3. Find amplitude of peaks
 # For non-peaks -  take the most common peak bin
+#
+# feature_i.loc[feature_i.peak_loc > 0].groupby('FishID').mean().peak_loc
+# feature_i.loc[feature_i.peak_loc > 0].groupby('FishID').peak_loc.agg(pd.Series.mode)
+#
+# x = fish_feature.iloc[:, i]
+# plt.plot(fish_peaks[0, :], x[(fish_peaks[0, :]).astype(int)],  "x", color="k")
 
-feature_i.loc[feature_i.peak_loc > 0].groupby('FishID').mean().peak_loc
-feature_i.loc[feature_i.peak_loc > 0].groupby('FishID').peak_loc.agg(pd.Series.mode)
+fish_tracks_ds = fish_tracks_add_day_twilight_night(fish_tracks_ds)
+fish_tracks_ds = add_day_number_fish_tracks(fish_tracks_ds)
 
-x = fish_feature.iloc[:, i]
-plt.plot(fish_peaks[0, :], x[(fish_peaks[0, :]).astype(int)],  "x", color="k")
+def day_night_ratio_individ_30min(fish_tracks_ds, feature='movement'):
+    """ Find the day/night ratio of non-rest for the daily average rest trace of each individual fish
+
+    :param fish_tracks_ds:
+    :return:
+    """
+    # all individuals
+    night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID']].groupby('FishID').mean()
+    day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID']].groupby('FishID').mean()
+
+    day_night_ratio = np.abs(1 - day) / np.abs(1 - night)
+    day_night_ratio = day_night_ratio.rename(columns={feature: "ratio"})
+    day_night_ratio = day_night_ratio.reset_index()
+
+    ax = sns.boxplot(data=day_night_ratio, y='FishID', x='ratio')
+    ax = sns.swarmplot(data=day_night_ratio, y='FishID', x='ratio', color=".2")
+    ax = plt.axvline(1, ls='--', color='k')
+    plt.xlabel('Day/night ratio')
+    plt.xscale('log')
+    plt.tight_layout()
+
+    return day_night_ratio
+
+
+feature_dist_day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID', 'day_n']].groupby(['FishID', 'day_n']).mean().reset_index()
+feature_dist_night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID', 'day_n']].groupby(['FishID', 'day_n']).mean().reset_index()
+feature_dist_day = feature_dist_day.rename(columns={feature: "day"})
+feature_dist_night = feature_dist_night.rename(columns={feature: "night"})
+feature_dist = pd.merge(feature_dist_day, feature_dist_night, how='inner', on=["FishID", "day_n"])
+feature_dist['ratio'] = feature_dist.day/feature_dist.night
+
+daily_ratio_mean = feature_dist.loc[:, ['FishID', 'ratio']].groupby(['FishID']).mean().rename(columns={'ratio': "average"})
+daily_ratio_std = feature_dist.loc[:, ['FishID', 'ratio']].groupby(['FishID']).std().rename(columns={'ratio': "stdev"})
+daily_ratio = pd.merge(daily_ratio_mean, daily_ratio_std, how='inner', on=["FishID"])
+
+daily_ratio['corrected_low'] = daily_ratio.average - daily_ratio.stdev
+daily_ratio['corrected_high'] = daily_ratio.average + daily_ratio.stdev
+
+g = sns.catplot(x="ratio", y="FishID",  data=feature_dist)
+ax = plt.axvline(1, ls='--', color='k')
+
+plt.imshow(pd.concat([daily_ratio['corrected_low']*1>1,daily_ratio['corrected_high']*1<1], axis=1))
+plt.yticks(np.arange(0, len(daily_ratio)), daily_ratio.index)
