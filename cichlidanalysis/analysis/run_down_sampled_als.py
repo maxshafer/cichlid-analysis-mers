@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import scipy.cluster.hierarchy as sch
 
-from cichlidanalysis.io.meta import add_meta_from_name
+from cichlidanalysis.io.meta import add_meta_from_name, extract_meta
 from cichlidanalysis.io.tracks import load_ds_als_files
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
@@ -21,7 +21,7 @@ from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
 from cichlidanalysis.plotting.speed_plots import plot_spd_30min_combined
 from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave, \
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
-from cichlidanalysis.analysis.diel_pattern import replace_crep_peaks, make_fish_peaks_df
+from cichlidanalysis.analysis.diel_pattern import replace_crep_peaks, make_fish_peaks_df, diel_pattern_ttest_individ_ds
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -540,29 +540,71 @@ sns.swarmplot(x='species', y='peak_amplitude', data=all_feature_combined, hue='t
 
 fish_tracks_ds = fish_tracks_add_day_twilight_night(fish_tracks_ds)
 fish_tracks_ds = add_day_number_fish_tracks(fish_tracks_ds)
+fish_diel_patterns = diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='speed_mm')
 
-def day_night_ratio_individ_30min(fish_tracks_ds, feature='movement'):
-    """ Find the day/night ratio of non-rest for the daily average rest trace of each individual fish
+# add back 'species'
+fishes = fish_tracks_ds.FishID.unique()
+fish_diel_patterns['species_six'] = 'blank'
+for fish in fishes:
+    fish_diel_patterns.loc[fish_diel_patterns['FishID'] == fish, 'species_six'] = six_letter_sp_name(extract_meta(fish)['species'])
 
-    :param fish_tracks_ds:
-    :return:
-    """
-    # all individuals
-    night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID']].groupby('FishID').mean()
-    day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID']].groupby('FishID').mean()
+# define species diel pattern
+states = ['nocturnal', 'diurnal', ]
+fish_diel_patterns['species_diel_pattern'] = 'undefined'
+for species_name in species_sixes:
+    for state in states:
+        if ((fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'diel_pattern'] == state)*1).mean() > 0.5:
+            fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'] = state
+    print("{} is {}".format(species_name, fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'].unique()))
 
-    day_night_ratio = np.abs(1 - day) / np.abs(1 - night)
-    day_night_ratio = day_night_ratio.rename(columns={feature: "ratio"})
-    day_night_ratio = day_night_ratio.reset_index()
 
-    ax = sns.boxplot(data=day_night_ratio, y='FishID', x='ratio')
-    ax = sns.swarmplot(data=day_night_ratio, y='FishID', x='ratio', color=".2")
-    ax = plt.axvline(1, ls='--', color='k')
-    plt.xlabel('Day/night ratio')
-    plt.xscale('log')
-    plt.tight_layout()
+# row colours
+row_cols = []
+subset = fish_diel_patterns.loc[:, ['species_six', 'species_diel_pattern']].drop_duplicates(subset = ["species_six"])
+for index, row in subset.iterrows():
+    if row['species_diel_pattern'] == 'diurnal':
+        # row_cols.append(sns.color_palette()[1])
+        row_cols.append((255/255, 224/255, 179/255))
+    elif row['species_diel_pattern'] == 'nocturnal':
+        # row_cols.append(sns.color_palette()[0])
+        row_cols.append((153/255, 204/255, 255/255))
+    elif row['species_diel_pattern'] == 'undefined':
+        # row_cols.append(sns.color_palette()[2])
+        row_cols.append((179/255, 230/255, 179/255))
 
-    return day_night_ratio
+clrs = [(sns.color_palette()[2]), sns.color_palette()[0], sns.color_palette()[1]]
+
+f, ax = plt.subplots(figsize=(5, 10))
+sns.boxplot(data=fish_diel_patterns, x='day_night_dif', y='species_six', palette=row_cols,  ax=ax, fliersize=0) #, color="gainsboro"
+sns.stripplot(data=fish_diel_patterns, x='day_night_dif', y='species_six', hue='diel_pattern', ax=ax, size=4, palette=clrs)
+ax.set(xlabel='Day mean - night mean', ylabel='Species')
+# ax.set(xlim=(-1, 1))
+ax = plt.axvline(0, ls='--', color='k')
+plt.tight_layout()
+
+
+# def day_night_ratio_individ_30min(fish_tracks_ds, feature='movement'):
+#     """ Find the day/night ratio of non-rest for the daily average rest trace of each individual fish
+#
+#     :param fish_tracks_ds:
+#     :return:
+#     """
+#     # all individuals
+#     night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID']].groupby('FishID').mean()
+#     day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID']].groupby('FishID').mean()
+#
+#     day_night_ratio = np.abs(1 - day) / np.abs(1 - night)
+#     day_night_ratio = day_night_ratio.rename(columns={feature: "ratio"})
+#     day_night_ratio = day_night_ratio.reset_index()
+#
+#     ax = sns.boxplot(data=day_night_ratio, y='FishID', x='ratio')
+#     ax = sns.swarmplot(data=day_night_ratio, y='FishID', x='ratio', color=".2")
+#     ax = plt.axvline(1, ls='--', color='k')
+#     plt.xlabel('Day/night ratio')
+#     plt.xscale('log')
+#     plt.tight_layout()
+#
+#     return day_night_ratio
 
 
 feature_dist_day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID', 'day_n']].groupby(['FishID', 'day_n']).mean().reset_index()

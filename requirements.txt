@@ -9,3 +9,4 @@ sklearn
 kneed
 openpyxl
 pytest
+statsmodels

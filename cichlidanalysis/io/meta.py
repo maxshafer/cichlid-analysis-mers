@@ -4,10 +4,11 @@ import glob
 import yaml
 import pandas as pd
 
-# load yaml configuration file
+
 def load_yaml(rootdir, name):
-    """ (str, str) -> (dict)
-    finds name.yaml file in given dir and opens and returns it as a  dict"""
+    """ load yaml configuration file
+    (str, str) -> (dict)
+    finds name.yaml file in given dir and opens and returns it as a dict"""
     try:
         filename = os.path.join(rootdir, name + ".yaml")
         print(filename)

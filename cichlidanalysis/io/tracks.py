@@ -167,7 +167,7 @@ def load_als_files(folder, suffix="*als.csv"):
 
     for file in files:
         if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
+            data_s = pd.read_csv(os.path.join(folder, file), sep=',', error_bad_lines=False, warn_bad_lines=True)
             # data_s = pd.read_csv(os.path.join(folder, file), sep='/')
             # str.split(',' expand = T)
             # #, error_bad_lines=False, warn_bad_lines=True)

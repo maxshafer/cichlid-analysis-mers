@@ -3,6 +3,58 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
+import statsmodels.stats.multitest as smt
+
+
+def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
+    """ To define if a fish is diurnal or nocturnal we use a paired t-test to find if day means are different from night
+    means
+
+    :param fish_tracks_ds:
+    :param feature:
+    :return:
+    """
+    fishes = fish_tracks_ds.FishID.unique()
+
+    feature_dist_day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID', 'day_n', 'species']].groupby(
+        ['FishID', 'day_n']).mean().reset_index()
+    feature_dist_night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID', 'day_n']].groupby(
+        ['FishID', 'day_n']).mean().reset_index()
+    feature_dist_day = feature_dist_day.rename(columns={feature: "day"})
+    feature_dist_night = feature_dist_night.rename(columns={feature: "night"})
+    feature_dist = pd.merge(feature_dist_day, feature_dist_night, how='inner', on=["FishID", "day_n"])
+
+    ttest_array = np.zeros([len(fishes), 6])
+    for fish_n, fish in enumerate(fishes):
+        ttest_array[fish_n, 0] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'day'])[1]
+        ttest_array[fish_n, 1] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'night'])[1]
+        ttest_array[fish_n, 2:4] = stats.ttest_rel(feature_dist.loc[feature_dist.FishID == fish, 'day'],
+                                                   feature_dist.loc[feature_dist.FishID == fish, 'night'])
+        ttest_array[fish_n, 4] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() > \
+                                 feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
+        ttest_array[fish_n, 5] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() - \
+                                 feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
+
+    df = pd.DataFrame(ttest_array, columns=['norm_day', 'norm_night', 't_stat', 't_pval', 'day_higher', 'day_night_dif'])
+    df['FishID'] = fishes
+
+    # multiple testsing correction
+    # ### bonferroni
+    # corrected_alpha = 0.05 / len(df['t_pval'])
+    # df['t_pval_corr_sig2'] = df['t_pval'] < corrected_alpha
+
+    # ### FDR Benjamini/Hochberg
+    df['t_pval_corr_sig'] = smt.fdrcorrection(df.t_pval, alpha=0.05, method='indep', is_sorted=False)[1]
+
+    df['diel_pattern'] = 'undefined'
+    for (index_label, row_series) in df.iterrows():
+        if row_series.t_pval_corr_sig < 0.05:
+            if row_series.day_higher == 1:
+                df.loc[index_label, 'diel_pattern'] = 'diurnal'     # diurnal
+            else:
+                df.loc[index_label, 'diel_pattern'] = 'nocturnal'     # nocturnal
+
+    return df
 
 
 def daily_more_than_pattern_individ(feature_v, species, plot=False):
