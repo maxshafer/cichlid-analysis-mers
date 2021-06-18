@@ -128,10 +128,9 @@ def tracker_checker_inputs(video_path_i):
     thresh = 0.25 * meta["fish_length_mm"]
 
     # Make a list of ranges, by extracting it from the previous_median_name (s)
-    if len(previous_median_name) > 1:
+    if isinstance(previous_median_name, list) > 1:
         pmn = []
         for file in previous_median_name:
-            #pmn.append(file.split("_")[4])
             pmn.append(np.arange(int(file.split("_")[4][5:9:]), int(file.split("_")[4][11:16:])))
     else:
         pmn = previous_median_name
