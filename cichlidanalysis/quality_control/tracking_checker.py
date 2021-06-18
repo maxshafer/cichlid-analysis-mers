@@ -37,28 +37,61 @@ def tracker_checker_inputs(video_path_i):
     new_rois = load_yaml(vid_folder_path, "roi_file")
     rois = load_yaml(cam_folder_path, "roi_file")
 
+    # This if statement checks if there is a new background associated with the video and loads it instead
+    # Also needs to be able to deal with multiple background files (if the video was split by divide_tracking.py)
+    os.chdir(vid_folder_path)
+    video_folder_files = glob.glob(vid_timestamp + "*background.png")
+    if len(video_folder_files) > 0:
+        if os.path.isfile(os.path.join(vid_folder_path, video_folder_files[0])):
+            previous_median_name = video_folder_files
+            print(previous_median_name)
+
+            if len(previous_median_name) != 1:
+                print('more than 1 background files detected:' + cam_folder_path)
+                background_full = []  # Make this a dictionary instead of a list, so it can be named? Or carry over previous_median_name
+                for file in previous_median_name:
+                    background_path = os.path.join(vid_folder_path, "{}".format(file))
+                    background_full.append(cv2.imread(glob.glob(background_path)[0],0))
+                # Need to modify them if new roi exists
+                os.chdir(cam_folder_path)
+                bkgd = background_full
+            else:
+                background_path = os.path.join(vid_folder_path, "{}".format(previous_median_name[0]))
+                background_full = cv2.imread(glob.glob(background_path)[0], 0)
+                os.chdir(cam_folder_path)
+                if bool(new_rois):
+                    roi_n = new_rois["roi_" + fish_data['roi'][1]]
+                    bkgd = background_full[roi_n[1]:roi_n[1] + roi_n[3], roi_n[0]:roi_n[0] + roi_n[2]]
+                else:
+                    bkgd = background_full
+        else:
+            print("weird exit not sure why")
+            sys.exit()
+    else:
+        os.chdir(cam_folder_path)
+        files = glob.glob("*.png")
+        files.sort()
+        files.insert(0, files.pop(files.index(min(files, key=len))))
+        if "{}_Median.png".format(vid_timestamp) in files:
+            previous_median_name = files[files.index("{}_Median.png".format(vid_timestamp)) - 1]
+            print(previous_median_name)
+        else:
+            previous_median_name = files[files.index("{}_per90_Background.png".format(vid_timestamp)) - 1]
+            print(previous_median_name)
+
+        # find and load background file
+        background_path = os.path.join(cam_folder_path, "{}".format(previous_median_name))
+        if len(glob.glob(background_path)) != 1:
+            print('too many or too few background files in folder:' + cam_folder_path)
+            sys.exit()
+        else:
+            background_full = cv2.imread(glob.glob(background_path)[0], 0)
+        os.chdir(cam_folder_path)
+        roi_n = rois["roi_" + fish_data['roi'][1]]
+        bkgd = background_full[roi_n[1]:roi_n[1] + roi_n[3], roi_n[0]:roi_n[0] + roi_n[2]]
+
     os.chdir(cam_folder_path)
-    files = glob.glob("*.png")
-    files.sort()
-    files.insert(0, files.pop(files.index(min(files, key=len))))
-    if "{}_Median.png".format(vid_timestamp) in files:
-        previous_median_name = files[files.index("{}_Median.png".format(vid_timestamp)) - 1]
-        print(previous_median_name)
-    else:
-        previous_median_name = files[files.index("{}_per90_Background.png".format(vid_timestamp)) - 1]
-        print(previous_median_name)
-
-    # find and load background file
-    background_path = os.path.join(cam_folder_path, "{}".format(previous_median_name))
-    if len(glob.glob(background_path)) != 1:
-        print('too many or too few background files in folder:' + cam_folder_path)
-        sys.exit()
-    else:
-        background_full = cv2.imread(glob.glob(background_path)[0], 0)
-
     roi_n = rois["roi_" + fish_data['roi'][1]]
-    bkgd = background_full[roi_n[1]:roi_n[1] + roi_n[3], roi_n[0]:roi_n[0] + roi_n[2]]
-
     # interpolate between NaN streches
     try:
         x_n = int_nan_streches(track_single_i[:, 1])
@@ -94,7 +127,16 @@ def tracker_checker_inputs(video_path_i):
 
     thresh = 0.25 * meta["fish_length_mm"]
 
-    return bkgd, spd_sm, spd_sm_mm_ps, thresh, displacement_i_mm_s, vid_name, track_single_i, start_point, end_point, \
+    # Make a list of ranges, by extracting it from the previous_median_name (s)
+    if len(previous_median_name) > 1:
+        pmn = []
+        for file in previous_median_name:
+            #pmn.append(file.split("_")[4])
+            pmn.append(np.arange(int(file.split("_")[4][5:9:]), int(file.split("_")[4][11:16:])))
+    else:
+        pmn = previous_median_name
+
+    return bkgd, pmn, spd_sm, spd_sm_mm_ps, thresh, displacement_i_mm_s, vid_name, track_single_i, start_point, end_point, \
            x_nt_i, y_nt_i
 
 
@@ -104,7 +146,7 @@ def get_frame(frame_nr, video):
     video.set(cv2.CAP_PROP_POS_FRAMES, frame_nr)
 
 
-def track_checker_gui(video_path_j, bgd, spd_sm, spd_sm_mm_ps, thresh, displacement_i_mm_s,
+def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, displacement_i_mm_s,
                       vid_name, track_single_i, start_point, end_point, x_nt, y_nt):
     # open video
     video = cv2.VideoCapture(video_path_j)
@@ -122,13 +164,27 @@ def track_checker_gui(video_path_j, bgd, spd_sm, spd_sm_mm_ps, thresh, displacem
     ret, frame = video.read()
     # height, width = frame.shape[:2]
     frame_bw = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    if frame_bw.shape != bgd.shape:
-        # add padding to the median
-        if frame_bw.shape[0] != bgd.shape[0] and frame_bw.shape[1] == bgd.shape[1]:
-            bgd = np.concatenate((bgd, frame_bw[bgd.shape[0]:frame_bw.shape[0], :]), axis=0)
+    if isinstance(bgd, list):
+      if frame_bw.shape != bgd[0].shape:
+          for file in bgd:
+              if frame_bw.shape != file.shape:
+                  # add padding to the median
+                  if frame_bw.shape[0] != file.shape[0] and frame_bw.shape[1] == file.shape[1]:
+                      file = np.concatenate((file, frame_bw[file.shape[0]:frame_bw.shape[0], :]), axis=0)
 
-        if frame_bw.shape[0] == bgd.shape[0] and frame_bw.shape[1] != bgd.shape[1]:
-            bgd = np.concatenate((bgd, frame_bw[:, bgd.shape[1]:frame_bw.shape[1]]), axis=1)
+                  if frame_bw.shape[0] == file.shape[0] and frame_bw.shape[1] != file.shape[1]:
+                      file = np.concatenate((file, frame_bw[:, file.shape[1]:frame_bw.shape[1]]), axis=1)
+
+          print("frame_bw shape doesn't equal the shape of the first of multiple background images")
+          sys.exit()
+    if isinstance(bgd, (np.ndarray, np.generic)):
+        if frame_bw.shape != bgd.shape:
+            # add padding to the median
+            if frame_bw.shape[0] != bgd.shape[0] and frame_bw.shape[1] == bgd.shape[1]:
+                bgd = np.concatenate((bgd, frame_bw[bgd.shape[0]:frame_bw.shape[0], :]), axis=0)
+
+            if frame_bw.shape[0] == bgd.shape[0] and frame_bw.shape[1] != bgd.shape[1]:
+                bgd = np.concatenate((bgd, frame_bw[:, bgd.shape[1]:frame_bw.shape[1]]), axis=1)
 
     # max_sp = int(np.nanpercentile(speed_sm, 99) + 5)
     max_sp = np.nanmax(spd_sm_mm_ps)
@@ -155,7 +211,13 @@ def track_checker_gui(video_path_j, bgd, spd_sm, spd_sm_mm_ps, thresh, displacem
 
             cv2.imshow("Speed of {}".format(vid_name), frame)
             frame_bw = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frame_delta = cv2.absdiff(frame_bw, bgd)
+            if isinstance(bgd, list):
+                pmn_index = []
+                for i in pmn:
+                    pmn_index.append(curr_frame in i)
+                frame_delta = cv2.absdiff(frame_bw, bgd[np.where(pmn_index)[0][0]])
+            else:
+                frame_delta = cv2.absdiff(frame_bw, bgd)
             image_thresholded = cv2.threshold(frame_delta, 35, 255, cv2.THRESH_TOZERO)[1]
             (contours, _) = cv2.findContours(image_thresholded.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             if len(contours) > 0:
@@ -259,10 +321,10 @@ if __name__ == '__main__':
     next_vid = True
 
     while next_vid is True:
-        background, speed_sm, speed_sm_mm_ps, threshold, displacement_internal_mm_s, video_name, track_single, s_point, \
+        background, pmn, speed_sm, speed_sm_mm_ps, threshold, displacement_internal_mm_s, video_name, track_single, s_point, \
         e_point, x_nt, y_nt = tracker_checker_inputs(video_path)
 
-        next_vid = track_checker_gui(video_path, background, speed_sm, speed_sm_mm_ps, threshold,
+        next_vid = track_checker_gui(video_path, background, pmn, speed_sm, speed_sm_mm_ps, threshold,
                                      displacement_internal_mm_s,
                                      video_name, track_single, s_point, e_point, x_nt, y_nt)
         next_movie_n = "_" + str(int(video_path.split('_')[-2]) + 1).zfill(len(video_path.split('_')[-2])) + "_"
