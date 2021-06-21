@@ -128,7 +128,7 @@ def tracker_checker_inputs(video_path_i):
     thresh = 0.25 * meta["fish_length_mm"]
 
     # Make a list of ranges, by extracting it from the previous_median_name (s)
-    if isinstance(previous_median_name, list) > 1:
+    if isinstance(previous_median_name, list):
         pmn = []
         for file in previous_median_name:
             pmn.append(np.arange(int(file.split("_")[4][5:9:]), int(file.split("_")[4][11:16:])))
@@ -320,10 +320,10 @@ if __name__ == '__main__':
     next_vid = True
 
     while next_vid is True:
-        background, pmn, speed_sm, speed_sm_mm_ps, threshold, displacement_internal_mm_s, video_name, track_single, s_point, \
+        background, previous_mean_name, speed_sm, speed_sm_mm_ps, threshold, displacement_internal_mm_s, video_name, track_single, s_point, \
         e_point, x_nt, y_nt = tracker_checker_inputs(video_path)
 
-        next_vid = track_checker_gui(video_path, background, pmn, speed_sm, speed_sm_mm_ps, threshold,
+        next_vid = track_checker_gui(video_path, background, previous_mean_name, speed_sm, speed_sm_mm_ps, threshold,
                                      displacement_internal_mm_s,
                                      video_name, track_single, s_point, e_point, x_nt, y_nt)
         next_movie_n = "_" + str(int(video_path.split('_')[-2]) + 1).zfill(len(video_path.split('_')[-2])) + "_"
