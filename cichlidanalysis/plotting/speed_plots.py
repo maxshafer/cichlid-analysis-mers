@@ -17,6 +17,9 @@ from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_n
 
 # speed_mm (30m bins) for each fish (individual lines)
 def plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d):
+    if not fish_tracks_30m.dtypes['ts'] == np.dtype('datetime64[ns]'):
+        fish_tracks_30m['ts'] = pd.to_datetime(fish_tracks_30m['ts'])
+
     # get each species
     all_species = fish_tracks_30m['species'].unique()
     # get each fish ID

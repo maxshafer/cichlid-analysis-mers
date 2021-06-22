@@ -24,6 +24,10 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
     feature_dist_night = feature_dist_night.rename(columns={feature: "night"})
     feature_dist = pd.merge(feature_dist_day, feature_dist_night, how='inner', on=["FishID", "day_n"])
 
+    if feature == 'rest':
+        feature_dist['day'] = np.abs(feature_dist['day']-1)
+        feature_dist['night'] = np.abs(feature_dist['night'] - 1)
+
     ttest_array = np.zeros([len(fishes), 6])
     for fish_n, fish in enumerate(fishes):
         ttest_array[fish_n, 0] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'day'])[1]
@@ -132,7 +136,6 @@ def daily_more_than_pattern_species(averages, plot=False):
     return species_diel
 
 
-
 def day_night_ratio_individ(feature_v):
     """ Find the day/night ratio of non-rest for the daily average rest trace of each individual fish
 
@@ -214,3 +217,26 @@ def make_fish_peaks_df(fish_peaks, fish_id):
     fish_peaks_df['FishID'] = fish_id
     return fish_peaks_df
 
+
+# def day_night_ratio_individ_30min(fish_tracks_ds, feature='movement'):
+#     """ Find the day/night ratio of non-rest for the daily average rest trace of each individual fish
+#
+#     :param fish_tracks_ds:
+#     :return:
+#     """
+#     # all individuals
+#     night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID']].groupby('FishID').mean()
+#     day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID']].groupby('FishID').mean()
+#
+#     day_night_ratio = np.abs(1 - day) / np.abs(1 - night)
+#     day_night_ratio = day_night_ratio.rename(columns={feature: "ratio"})
+#     day_night_ratio = day_night_ratio.reset_index()
+#
+#     ax = sns.boxplot(data=day_night_ratio, y='FishID', x='ratio')
+#     ax = sns.swarmplot(data=day_night_ratio, y='FishID', x='ratio', color=".2")
+#     ax = plt.axvline(1, ls='--', color='k')
+#     plt.xlabel('Day/night ratio')
+#     plt.xscale('log')
+#     plt.tight_layout()
+#
+#     return day_night_ratio

@@ -3,7 +3,6 @@ from tkinter import *
 import warnings
 import os
 import copy
-import statistics
 
 import datetime as dt
 import seaborn as sns
@@ -11,7 +10,7 @@ import matplotlib.pyplot as plt
 from matplotlib.cm import hsv
 import numpy as np
 import pandas as pd
-import scipy.cluster.hierarchy as sch
+from scipy.signal import find_peaks
 
 from cichlidanalysis.io.meta import add_meta_from_name, extract_meta
 from cichlidanalysis.io.tracks import load_ds_als_files
@@ -22,178 +21,10 @@ from cichlidanalysis.plotting.speed_plots import plot_spd_30min_combined
 from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave, \
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
 from cichlidanalysis.analysis.diel_pattern import replace_crep_peaks, make_fish_peaks_df, diel_pattern_ttest_individ_ds
+from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-
-def get_n_colors(n):
-    """
-    from: https://stackoverflow.com/questions/33246065/convert-categorical-variable-to-color-with-matplotlib
-    :param n:
-    :return:
-    """
-    return [cool(float(i) / n) for i in range(n)]
-
-
-def fish_weekly_corr(fish_tracks_ds, feature, link_method):
-    """
-
-    :param fish_tracks_ds:
-    :param feature:
-    :param link_method:
-    :return:
-    """
-    species = fish_tracks_ds['species'].unique()
-    first = True
-
-    for species_i in species:
-        print(species_i)
-        fish_tracks_ds_sp = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, ['FishID', 'ts', feature]]
-        fish_tracks_ds_sp = fish_tracks_ds_sp.pivot(columns='FishID', values=feature, index='ts')
-        individ_corr = fish_tracks_ds_sp.corr()
-
-        mask = np.ones(individ_corr.shape, dtype='bool')
-        mask[np.triu_indices(len(individ_corr))] = False
-        corr_val_f = individ_corr.values[mask]
-
-        if first:
-            corr_vals = pd.DataFrame(corr_val_f, columns=[six_letter_sp_name(species_i)[0]])
-            first = False
-        else:
-            corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_val_f, columns=[six_letter_sp_name(species_i)[0]])], axis=1)
-
-        X = individ_corr.values
-        d = sch.distance.pdist(X)
-        L = sch.linkage(d, method=link_method)
-        ind = sch.fcluster(L, 0.5*d.max(), 'distance')
-        cols = [individ_corr.columns.tolist()[i] for i in list((np.argsort(ind)))]
-        individ_corr = individ_corr[cols]
-        individ_corr = individ_corr.reindex(cols)
-
-        fish_sex = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, ['FishID', 'sex']].drop_duplicates()
-        fish_sex = list(fish_sex.sex)
-        fish_sex_clus = [fish_sex[i] for i in list((np.argsort(ind)))]
-
-        f, ax = plt.subplots(figsize=(7, 5))
-        sns.heatmap(data=individ_corr, vmin=-1, vmax=1, xticklabels=fish_sex_clus, yticklabels=fish_sex_clus,
-                         cmap='seismic', ax=ax)
-        plt.tight_layout()
-        plt.savefig(os.path.join(rootdir, "{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_i.replace(' ', '-'),
-                                                                                     feature, dt.date.today(),
-                                                                                     link_method)))
-        plt.close()
-
-    corr_vals_long = pd.melt(corr_vals, var_name='species_six', value_name='corr_coef')
-
-    f, ax = plt.subplots(figsize=(3, 5))
-    sns.boxplot(data=corr_vals_long, x='corr_coef', y='species_six', ax=ax, fliersize=0)
-    sns.stripplot(data=corr_vals_long, x='corr_coef', y='species_six', color=".2", ax=ax, size=3)
-    ax.set(xlabel='Correlation', ylabel='Species')
-    ax.set(xlim=(-1, 1))
-    ax = plt.axvline(0, ls='--', color='k')
-    plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "fish_corr_coefs_{0}_{1}.png".format(feature,  dt.date.today())))
-    plt.close()
-
-    return corr_vals
-
-
-def fish_daily_corr(averages_feature, feature, species_name, link_method='single'):
-    """ Plots corr matrix of clustered species by given feature
-
-    :param averages_feature:
-    :param feature:
-    :param species_name:
-    :param link_method:
-    :return:
-    """
-
-    individ_corr = averages_feature.corr()
-
-    ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1,
-                        cmap='RdBu_r', xticklabels=False, yticklabels=False)
-    ax.fig.suptitle(feature)
-    plt.savefig(os.path.join(rootdir, "fish_of_{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_name, feature, dt.date.today(), link_method)))
-    plt.close()
-
-
-
-def species_daily_corr(averages_feature, feature, link_method='single'):
-    """ Plots corr matrix of clustered species by given feature
-
-    :param averages_feature:
-    :param feature:
-    :return:
-    """
-
-    individ_corr = averages_feature.corr()
-
-    ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1, cmap='RdBu_r', yticklabels=True)
-    ax.fig.suptitle(feature)
-    plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))
-    plt.close()
-
-
-def week_corr(fish_tracks_ds, feature):
-    """ Plots corr matrix of clustered species by given feature
-
-    :param averages_feature:
-    :param feature:
-    :return:
-    """
-    species = fish_tracks_ds['species'].unique()
-
-    for species_i in species:
-
-        fishes = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, 'FishID'].unique()
-        first = True
-
-        for fish in fishes:
-            print(fish)
-            fish_tracks_ds_day = fish_tracks_ds.loc[fish_tracks_ds.FishID == fish, ['day', 'time_of_day_dt', feature]]
-            fish_tracks_ds_day = fish_tracks_ds_day.pivot(columns='day', values=feature, index='time_of_day_dt')
-            individ_corr = fish_tracks_ds_day.corr()
-
-            mask = np.ones(individ_corr.shape, dtype='bool')
-            mask[np.triu_indices(len(individ_corr))] = False
-            corr_val_f = individ_corr.values[mask]
-            if first:
-                corr_vals = pd.DataFrame(corr_val_f, columns=[fish])
-                first = False
-            else:
-                corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_val_f, columns=[fish])], axis=1)
-
-            X = individ_corr.values
-            d = sch.distance.pdist(X)
-            L = sch.linkage(d, method='single')
-            ind = sch.fcluster(L, 0.5*d.max(), 'distance')
-            cols = [individ_corr.columns.tolist()[i] for i in list((np.argsort(ind)))]
-            individ_corr = individ_corr[cols]
-            individ_corr = individ_corr.reindex(cols)
-
-            f, ax = plt.subplots(figsize=(7, 5))
-            ax = sns.heatmap(individ_corr, vmin=-1, vmax=1, cmap='bwr')
-            ax.set_title(fish)
-            plt.tight_layout()
-            plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}.png".format(feature, dt.date.today())))
-            plt.close()
-
-        f, ax = plt.subplots(figsize=(7, 5))
-        ax = sns.catplot(data=corr_vals, kind="swarm", vmin=-1, vmax=1)
-        ax.set_title(species_i)
-
-
-def add_day(fish_df):
-    """ Adds day number to the fish  dataframe, by using the timestamp (ts) column
-
-    :param fish_df:
-    :return:
-    """
-    # add new column with day number (starting from 1)
-    fish_df['day'] = fish_df.ts.apply(lambda row: int(str(row)[8:10]) - 1)
-    print("added night and day column")
-    return fish_df
 
 
 if __name__ == '__main__':
@@ -315,8 +146,9 @@ if __name__ == '__main__':
         sns.clustermap(all_fish_daily_ave_feature, row_cluster=False, col_colors=colors, xticklabels=col_species.species)
         plt.savefig(os.path.join(rootdir, "all_fish_daily_clustered_30min_{0}_{1}.png".format(feature, dt.date.today())))
 
-# ## correlations ##
-    fish_tracks_ds = add_day(fish_tracks_ds)
+    # ## correlations ##
+    # fish_tracks_ds = add_day(fish_tracks_ds)
+    fish_tracks_ds = add_day_number_fish_tracks(fish_tracks_ds)
     # correlations for days across week for an individual
     # week_corr(fish_tracks_ds, 'rest')
 
@@ -334,60 +166,135 @@ if __name__ == '__main__':
     species_daily_corr(aves_ave_spd, 'speed_mm', 'single')
     species_daily_corr(aves_ave_rest, 'rest', 'single')
 
+    # ### Define diel pattern ###
+    fish_tracks_ds = fish_tracks_add_day_twilight_night(fish_tracks_ds)
+    fish_tracks_ds = add_day_number_fish_tracks(fish_tracks_ds)
+    fish_diel_patterns = diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='rest')
+
+    # add back 'species'
+    fishes = fish_tracks_ds.FishID.unique()
+    fish_diel_patterns['species_six'] = 'blank'
+    for fish in fishes:
+        fish_diel_patterns.loc[fish_diel_patterns['FishID'] == fish, 'species_six'] = six_letter_sp_name(extract_meta(fish)['species'])
+
+    # define species diel pattern
+    states = ['nocturnal', 'diurnal', ]
+    fish_diel_patterns['species_diel_pattern'] = 'undefined'
+    for species_name in species_sixes:
+        for state in states:
+            if ((fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'diel_pattern'] == state)*1).mean() > 0.5:
+                fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'] = state
+        print("{} is {}".format(species_name, fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'].unique()))
+
+    # row colours
+    row_cols = []
+    subset = fish_diel_patterns.loc[:, ['species_six', 'species_diel_pattern']].drop_duplicates(subset = ["species_six"])
+    for index, row in subset.iterrows():
+        if row['species_diel_pattern'] == 'diurnal':
+            # row_cols.append(sns.color_palette()[1])
+            row_cols.append((255/255, 224/255, 179/255))
+        elif row['species_diel_pattern'] == 'nocturnal':
+            # row_cols.append(sns.color_palette()[0])
+            row_cols.append((153/255, 204/255, 255/255))
+        elif row['species_diel_pattern'] == 'undefined':
+            # row_cols.append(sns.color_palette()[2])
+            row_cols.append((179/255, 230/255, 179/255))
+
+    clrs = [(sns.color_palette()[2]), sns.color_palette()[0], sns.color_palette()[1]]
+    # 2 = green, 1 =  orange, 0 =  blue
+
+    f, ax = plt.subplots(figsize=(5, 10))
+    sns.boxplot(data=fish_diel_patterns, x='day_night_dif', y='species_six', palette=row_cols,  ax=ax, fliersize=0) #, color="gainsboro"
+    sns.stripplot(data=fish_diel_patterns, x='day_night_dif', y='species_six', hue='diel_pattern', ax=ax, size=4, palette=clrs)
+    ax.set(xlabel='Day mean - night mean', ylabel='Species')
+    # ax.set(xlim=(-1, 1))
+    ax = plt.axvline(0, ls='--', color='k')
+    plt.tight_layout()
 
 # better crepuscular
-from scipy.signal import find_peaks
-
+feature= 'speed_mm'
 border_top = np.ones(48)
-border_bottom = np.ones(48)
+border_bottom = np.ones(48)*1.05
+dawn_s, dawn_e, dusk_s, dusk_e = [6*2, 8*2, 18*2, 20*2]
 border_bottom[6*2:8*2] = 0
 border_bottom[18*2:20*2] = 0
+
+peak_prom = 0.15
+if feature == 'speed_mm':
+    border_top_i = border_top * 200
+    border_bottom_i = border_bottom * 200
+    peak_prom = 7
+
 # features = ['speed_mm', 'rest', 'movement']
 # for feature in features:
 #     first = True
 for species_name in species:
     fish_daily_ave_feature = species_feature_fish_daily_ave(fish_tracks_ds, species_name, feature)
-    fig = plt.figure(figsize=(5, 5))
+
+    if feature == 'rest':
+        fish_daily_ave_feature = np.abs(fish_daily_ave_feature-1)
+
+    fig1, ax1 = plt.subplots(figsize=(5, 5))
     sns.heatmap(fish_daily_ave_feature.T, cmap="Greys")
+    fig2, ax2 = plt.subplots(figsize=(5, 5))
+    ax2.axvspan(dawn_s, dawn_e, color='wheat', alpha=0.5, linewidth=0)
+    ax2.axvspan(dusk_s, dusk_e, color='wheat', alpha=0.5, linewidth=0)
     for i in np.arange(0, len(fish_daily_ave_feature.columns)):
         x = fish_daily_ave_feature.iloc[:, i]
-        peaks, _ = find_peaks(x, distance=4, prominence=0.15, height=(border_bottom, border_top))
-        plt.plot(x)
-        plt.plot(peaks, x[peaks],  "o", color="r")
-        plt.plot(border_bottom)
-        plt.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks))*i)+0.5,   "o", color="r")
+        peaks, _ = find_peaks(x, distance=4, prominence=peak_prom, height=(border_bottom_i, border_top_i))
+        ax2.plot(x)
+        ax2.plot(peaks, x[peaks],  "o", color="r")
+        ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks))*i)+0.5,   "o", color="r")
         plt.title(species_name)
-        plt.show()
 
-
-border_bottom = np.concatenate((border_bottom, border_bottom, border_bottom, border_bottom, border_bottom,
+border_bottom_week = np.concatenate((border_bottom, border_bottom, border_bottom, border_bottom, border_bottom,
                                 border_bottom, border_bottom))
-border_top = np.ones(48*7)
+border_top_week = np.ones(48*7)
+
+peak_prom = 0.15
+if feature == 'speed_mm':
+    border_bottom_week = border_bottom_week * 200
+    border_top_week = border_top_week * 200
+    peak_prom = 7
+
 for species_name in species:
     fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
         columns='FishID', values=feature, index='ts')
-    fig = plt.figure(figsize=(10, 5))
+
+    if feature == 'rest':
+        fish_feature = np.abs(fish_daily_ave_feature-1)
+
+    fig1, ax1 = plt.subplots(figsize=(10, 5))
     sns.heatmap(fish_feature.T, cmap="Greys")
+
+    fig2, ax2 = plt.subplots(figsize=(10, 5))
+    ax2.set_ylabel(feature)
+    for day in range(7):
+        ax2.axvspan(dawn_s+day*48, dawn_e+day*48, color='wheat', alpha=0.5, linewidth=0)
+        ax2.axvspan(dusk_s+day*48, dusk_e+day*48, color='wheat', alpha=0.5, linewidth=0)
+
     for i in np.arange(0, len(fish_feature.columns)):
         x = fish_feature.iloc[:, i]
-        peaks, peak_prop = find_peaks(x, distance=4, prominence=0.15, height=(border_bottom[0:x.shape[0]], border_top[0:x.shape[0]]))
+        peaks, peak_prop = find_peaks(x, distance=4, prominence=peak_prom, height=(border_bottom_week[0:x.shape[0]],
+                                                                              border_top_week[0:x.shape[0]]))
 
         np.around(peak_prop['peak_heights'], 2)
 
-        # plt.plot(x)
-        # plt.plot(peaks, x[peaks],  "o", color="r")
-        # plt.plot(border_bottom)
-        plt.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks))*i)+0.5,   "o", color="r")
+        ax2.plot(x)
+        ax2.plot(peaks, x[peaks], "o", color="r")
         plt.title(species_name)
-        plt.show()
 
-# need: peak height, peak location, dawn/dusk, max day/nightfor  that day, if  peak missing, find most common peak
+        ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks))*i)+0.5,   "o", color="r")
+
+
+# need: peak height, peak location, dawn/dusk, max day/night for that day, if  peak missing, find most common peak,
+# if all peaks missing use average of the whole  period
 # location and use  the  value of that  bin. Find amplitude of peaks
 border_top = np.ones(48)
-border_bottom = np.ones(48)
-dawn_border_bottom  = copy.copy(border_bottom)
+border_bottom = np.ones(48)*1.05
+dawn_border_bottom = copy.copy(border_bottom)
 dawn_border_bottom[6*2:(8*2)+1] = 0
-dusk_border_bottom  = copy.copy(border_bottom)
+dusk_border_bottom = copy.copy(border_bottom)
 dusk_border_bottom[18*2:(20*2)+1] = 0
 
 border = np.zeros(48)
@@ -397,9 +304,16 @@ night_border = copy.copy(border)
 night_border[0:6*2] = 1
 night_border[20*2:24*2] = 1
 
+peak_prom = 0.15
+if feature == 'speed_mm':
+    border_top_i = border_top * 200
+    dawn_border_bottom = dawn_border_bottom * 200
+    dusk_border_bottom = dusk_border_bottom * 200
+    peak_prom = 7
 
-# check what happens when that crepuscaulr period is missing!
-first_all= True
+
+# check what happens when that crepuscaulr period is missing!!!!!
+first_all = True
 for species_name in species:
     fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
         columns='FishID', values=feature, index='ts')
@@ -412,12 +326,12 @@ for species_name in species:
             x = fish_feature.iloc[epoques[j]:epoques[j+1], i]
             if x.size == 48:
                 #dawn peak
-                dawn_peak, dawn_peak_prop = find_peaks(x, distance=4, prominence=0.15,height=
-                (dawn_border_bottom[0:x.shape[0]], border_top[0:x.shape[0]]))
+                dawn_peak, dawn_peak_prop = find_peaks(x, distance=4, prominence=peak_prom, height=
+                (dawn_border_bottom[0:x.shape[0]], border_top_i[0:x.shape[0]]))
 
                 # duskpeak
-                dusk_peak, dusk_peak_prop = find_peaks(x, distance=4, prominence=0.15, height=
-                (dusk_border_bottom[0:x.shape[0]],border_top[0:x.shape[0]]))
+                dusk_peak, dusk_peak_prop = find_peaks(x, distance=4, prominence=peak_prom, height=
+                (dusk_border_bottom[0:x.shape[0]], border_top_i[0:x.shape[0]]))
 
                 # fig = plt.figure(figsize=(10, 5))
                 # plt.plot(x)
@@ -471,9 +385,6 @@ for species_name in species:
 all_peaks_df = all_peaks_df.reset_index(drop=True)
 all_peaks_df['peak'] = (all_peaks_df.peak_loc !=0)*1
 
-# fig = plt.figure(figsize=(10, 5))
-# sns.swarmplot(x='twilight', y='peak_amplitude', data=all_peaks_df, hue='peak')
-
 fig = plt.figure(figsize=(10, 5))
 sns.swarmplot(x='species', y='peak_amplitude', data=all_peaks_df, hue='peak')
 
@@ -503,9 +414,42 @@ for species_name in species:
     else:
         all_feature_combined = pd.concat([all_feature_combined, sp_feature_combined], axis=0)
 all_feature_combined = all_feature_combined.reset_index(drop=True)
+all_feature_combined = all_feature_combined.loc[:, ~all_feature_combined.columns.duplicated()]
+
+all_feature_combined['species_six'] = 'blank'
+for fish in fishes:
+    all_feature_combined.loc[all_feature_combined['FishID'] == fish, 'species_six'] = six_letter_sp_name(extract_meta(fish)['species'])[0]
 
 fig = plt.figure(figsize=(10, 5))
 sns.swarmplot(x='species', y='peak_amplitude', data=all_feature_combined, hue='twilight', dodge=True)
+
+g = sns.catplot(x='species_six', y='peak_amplitude', data=all_feature_combined.loc[all_feature_combined.species_six == 'Neosav'],
+                hue='peak',  palette='vlag', col="twilight", legend=False)
+for axes in g.axes.flat:
+    _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
+plt.tight_layout()
+
+sorted_index = all_feature_combined.groupby(by='species_six').mean().sort_values(by='peak_amplitude').index
+grped_bplot = sns.catplot(y='species_six',
+                          x='peak_amplitude',
+                          hue="twilight",
+                          kind="box",
+                          legend=False,
+                          height=6,
+                          aspect=1.3,
+                          data=all_feature_combined,
+                          fliersize=0,
+                          boxprops=dict(alpha=.3),
+                          order=sorted_index)
+plt.axvline(0, color='k', linestyle='--')
+grped_bplot = sns.stripplot(y='species_six',
+                            x='peak_amplitude',
+                            hue='twilight',
+                            jitter=True,
+                            dodge=True,
+                            marker='o',
+                            data=all_feature_combined,
+                            order=sorted_index)
 
 
 # # calculate ave and stdv
@@ -538,91 +482,3 @@ sns.swarmplot(x='species', y='peak_amplitude', data=all_feature_combined, hue='t
 # x = fish_feature.iloc[:, i]
 # plt.plot(fish_peaks[0, :], x[(fish_peaks[0, :]).astype(int)],  "x", color="k")
 
-fish_tracks_ds = fish_tracks_add_day_twilight_night(fish_tracks_ds)
-fish_tracks_ds = add_day_number_fish_tracks(fish_tracks_ds)
-fish_diel_patterns = diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='speed_mm')
-
-# add back 'species'
-fishes = fish_tracks_ds.FishID.unique()
-fish_diel_patterns['species_six'] = 'blank'
-for fish in fishes:
-    fish_diel_patterns.loc[fish_diel_patterns['FishID'] == fish, 'species_six'] = six_letter_sp_name(extract_meta(fish)['species'])
-
-# define species diel pattern
-states = ['nocturnal', 'diurnal', ]
-fish_diel_patterns['species_diel_pattern'] = 'undefined'
-for species_name in species_sixes:
-    for state in states:
-        if ((fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'diel_pattern'] == state)*1).mean() > 0.5:
-            fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'] = state
-    print("{} is {}".format(species_name, fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'].unique()))
-
-
-# row colours
-row_cols = []
-subset = fish_diel_patterns.loc[:, ['species_six', 'species_diel_pattern']].drop_duplicates(subset = ["species_six"])
-for index, row in subset.iterrows():
-    if row['species_diel_pattern'] == 'diurnal':
-        # row_cols.append(sns.color_palette()[1])
-        row_cols.append((255/255, 224/255, 179/255))
-    elif row['species_diel_pattern'] == 'nocturnal':
-        # row_cols.append(sns.color_palette()[0])
-        row_cols.append((153/255, 204/255, 255/255))
-    elif row['species_diel_pattern'] == 'undefined':
-        # row_cols.append(sns.color_palette()[2])
-        row_cols.append((179/255, 230/255, 179/255))
-
-clrs = [(sns.color_palette()[2]), sns.color_palette()[0], sns.color_palette()[1]]
-
-f, ax = plt.subplots(figsize=(5, 10))
-sns.boxplot(data=fish_diel_patterns, x='day_night_dif', y='species_six', palette=row_cols,  ax=ax, fliersize=0) #, color="gainsboro"
-sns.stripplot(data=fish_diel_patterns, x='day_night_dif', y='species_six', hue='diel_pattern', ax=ax, size=4, palette=clrs)
-ax.set(xlabel='Day mean - night mean', ylabel='Species')
-# ax.set(xlim=(-1, 1))
-ax = plt.axvline(0, ls='--', color='k')
-plt.tight_layout()
-
-
-# def day_night_ratio_individ_30min(fish_tracks_ds, feature='movement'):
-#     """ Find the day/night ratio of non-rest for the daily average rest trace of each individual fish
-#
-#     :param fish_tracks_ds:
-#     :return:
-#     """
-#     # all individuals
-#     night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID']].groupby('FishID').mean()
-#     day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID']].groupby('FishID').mean()
-#
-#     day_night_ratio = np.abs(1 - day) / np.abs(1 - night)
-#     day_night_ratio = day_night_ratio.rename(columns={feature: "ratio"})
-#     day_night_ratio = day_night_ratio.reset_index()
-#
-#     ax = sns.boxplot(data=day_night_ratio, y='FishID', x='ratio')
-#     ax = sns.swarmplot(data=day_night_ratio, y='FishID', x='ratio', color=".2")
-#     ax = plt.axvline(1, ls='--', color='k')
-#     plt.xlabel('Day/night ratio')
-#     plt.xscale('log')
-#     plt.tight_layout()
-#
-#     return day_night_ratio
-
-
-feature_dist_day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID', 'day_n']].groupby(['FishID', 'day_n']).mean().reset_index()
-feature_dist_night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID', 'day_n']].groupby(['FishID', 'day_n']).mean().reset_index()
-feature_dist_day = feature_dist_day.rename(columns={feature: "day"})
-feature_dist_night = feature_dist_night.rename(columns={feature: "night"})
-feature_dist = pd.merge(feature_dist_day, feature_dist_night, how='inner', on=["FishID", "day_n"])
-feature_dist['ratio'] = feature_dist.day/feature_dist.night
-
-daily_ratio_mean = feature_dist.loc[:, ['FishID', 'ratio']].groupby(['FishID']).mean().rename(columns={'ratio': "average"})
-daily_ratio_std = feature_dist.loc[:, ['FishID', 'ratio']].groupby(['FishID']).std().rename(columns={'ratio': "stdev"})
-daily_ratio = pd.merge(daily_ratio_mean, daily_ratio_std, how='inner', on=["FishID"])
-
-daily_ratio['corrected_low'] = daily_ratio.average - daily_ratio.stdev
-daily_ratio['corrected_high'] = daily_ratio.average + daily_ratio.stdev
-
-g = sns.catplot(x="ratio", y="FishID",  data=feature_dist)
-ax = plt.axvline(1, ls='--', color='k')
-
-plt.imshow(pd.concat([daily_ratio['corrected_low']*1>1,daily_ratio['corrected_high']*1<1], axis=1))
-plt.yticks(np.arange(0, len(daily_ratio)), daily_ratio.index)
