@@ -5,6 +5,9 @@ import seaborn as sns
 from scipy import stats
 import statsmodels.stats.multitest as smt
 
+from cichlidanalysis.utils.species_names import six_letter_sp_name
+from cichlidanalysis.io.meta import extract_meta
+
 
 def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
     """ To define if a fish is diurnal or nocturnal we use a paired t-test to find if day means are different from night
@@ -57,6 +60,11 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
                 df.loc[index_label, 'diel_pattern'] = 'diurnal'     # diurnal
             else:
                 df.loc[index_label, 'diel_pattern'] = 'nocturnal'     # nocturnal
+
+    fishes = fish_tracks_ds.FishID.unique()
+    df['species_six'] = 'blank'
+    for fish in fishes:
+        df.loc[df['FishID'] == fish, 'species_six'] = six_letter_sp_name(extract_meta(fish)['species'])
 
     return df
 

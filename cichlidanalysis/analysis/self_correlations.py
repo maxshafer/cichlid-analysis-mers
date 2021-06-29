@@ -10,7 +10,7 @@ import scipy.cluster.hierarchy as sch
 from cichlidanalysis.utils.species_names import six_letter_sp_name
 
 
-def fish_weekly_corr(fish_tracks_ds, feature, link_method):
+def fish_weekly_corr(rootdir, fish_tracks_ds, feature, link_method):
     """
 
     :param fish_tracks_ds:
@@ -73,7 +73,7 @@ def fish_weekly_corr(fish_tracks_ds, feature, link_method):
     return corr_vals
 
 
-def fish_daily_corr(averages_feature, feature, species_name, link_method='single'):
+def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_method='single', ):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -93,7 +93,7 @@ def fish_daily_corr(averages_feature, feature, species_name, link_method='single
 
 
 
-def species_daily_corr(averages_feature, feature, link_method='single'):
+def species_daily_corr(rootdir, averages_feature, feature, link_method='single'):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -109,7 +109,7 @@ def species_daily_corr(averages_feature, feature, link_method='single'):
     plt.close()
 
 
-def week_corr(fish_tracks_ds, feature):
+def week_corr(rootdir, fish_tracks_ds, feature):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:

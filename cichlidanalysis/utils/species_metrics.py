@@ -39,6 +39,7 @@ def tribe_cols():
                       'Lamprologini': (194/255, 136/255, 187/255),
                       'Bathybatini': (36/255, 38/255, 37/255),
                       'Trematocarini': (148/255, 142/255, 115/255),
-                      'Boulengerochromini': (90/255, 90/255, 90/255)})
+                      'Boulengerochromini': (90/255, 90/255, 90/255),
+                      'Eretmodini': (98/255, 54/255, 118/255)})
 
     return tribe_col
