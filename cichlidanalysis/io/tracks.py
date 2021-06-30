@@ -187,16 +187,9 @@ def load_als_files(folder, suffix="*als.csv"):
 
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
     data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
-    # also change how the csv is saved in run_fish_als.py
-
     data = data.drop(data[data.ts < dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S')].index)
     data = data.reset_index(drop=True)
     data = remove_cols(data, ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity'])
-
-    # # drop "not a time" columns - these occur when not the full data is  in the als files, no sure why this
-    # occiainsionally happens - add to issue #29
-    # print("dropping indices as they don't have a time {}".format(data[np.isnat(data.ts)].index))
-    # data = data.drop(data[np.isnat(data.ts)].index)
 
     print("All als.csv files loaded")
     return data

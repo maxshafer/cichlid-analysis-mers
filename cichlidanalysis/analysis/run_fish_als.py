@@ -346,10 +346,25 @@ def full_analysis(rootdir):
 
     track_als = np.vstack((tv[midnight:-1], speed_sm_mm_ps[midnight:, 0], x_nt[midnight:-1], y_nt[midnight:-1]))
 
+    filename = os.path.join(rootdir, "{}_als.csv".format(fish_ID))
     als_df = pd.DataFrame(track_als.T, columns=['tv_ns', 'speed_mm', 'x_nt', 'y_nt'],
                           index=pd.Index(np.arange(0, len(speed_sm_tbl_ps[midnight:]))))
-    als_df.to_csv(os.path.join(rootdir, "{}_als.csv".format(fish_ID)))
+    als_df.to_csv(filename, encoding='utf-8-sig', index=False)
     plt.close('all')
+
+    # test if saving file worked (issues with null bytes)
+    try:
+        data_b = pd.read_csv(filename, sep=',')
+    except pd.errors.ParserError:
+        print("problem parsing, probably null bytes error, trying to save with numpy instead ")
+        np.savetxt(filename, track_als.T, delimiter=',', header='tv_ns,speed_mm,x_nt,y_nt', comments='')
+
+    try:
+        data_b = pd.read_csv(filename, sep=',')
+    except pd.errors.ParserError:
+        print("still couldn't save it properly, report this!")
+        os.remove(filename)
+        return
 
 
 if __name__ == '__main__':
