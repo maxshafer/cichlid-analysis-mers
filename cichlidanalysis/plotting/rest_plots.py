@@ -205,7 +205,7 @@ def plot_rest_bout_lengths_dn(fish_bouts, rootdir):
 # hist_start_t = hist_start_t.fillna(0)
 
 # def get_bout_subset_count(fish_bouts_i, measure='rest_length'):
-# # geet total rest in 1 hour blocks
+# # get total rest in 1 hour blocks
 # fishes = fish_bouts['FishID'].unique()
 # hist_start_t = pd.Series(index=np.arange(0, 24, 1))
 # for fish_n, fish in enumerate(fishes):

@@ -216,9 +216,7 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
         short_name = six_letter_sp_name(species_name)
         ax_objs[-1].text(0.9, 0, short_name[0], fontweight="bold", fontsize=10, ha="right", rotation=-45)
         gs.update(hspace=-0.1)
-    plt.show()
-
     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_{1}.png".format(feature, dt.date.today())))
-    plt.close()
+    plt.close('all')
     aves_feature = pd.DataFrame(averages.T, columns=species, index=date_time_obj[0:averages.shape[1]])
     return aves_feature, date_time_obj, sp_feature_combined

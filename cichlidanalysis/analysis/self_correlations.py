@@ -103,7 +103,8 @@ def species_daily_corr(rootdir, averages_feature, feature, link_method='single')
 
     individ_corr = averages_feature.corr()
 
-    ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1, cmap='RdBu_r', yticklabels=True)
+    ax = sns.clustermap(individ_corr, figsize=(8, 7), method=link_method, metric='euclidean', vmin=-1, vmax=1,
+                        cmap='viridis', yticklabels=True, xticklabels=True)
     ax.fig.suptitle(feature)
     plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))
     plt.close()

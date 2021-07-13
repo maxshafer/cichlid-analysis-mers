@@ -1,8 +1,10 @@
 from tkinter.filedialog import askdirectory
 from tkinter import *
 import warnings
+import os
 
 import datetime as dt
+import pandas as pd
 
 from cichlidanalysis.io.tracks import load_ds_als_files
 from cichlidanalysis.utils.timings import load_timings
@@ -12,8 +14,7 @@ from cichlidanalysis.analysis.processing import feature_daily, species_feature_f
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
 from cichlidanalysis.analysis.diel_pattern import diel_pattern_ttest_individ_ds
 from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr
-from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks, crespuscular_daily_ave_fish, \
-    crespuscular_weekly_fish
+from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks
 from cichlidanalysis.plotting.cluster_plots import cluster_all_fish, cluster_species_daily
 from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box
 from cichlidanalysis.plotting.speed_plots import plot_spd_30min_combined
@@ -128,42 +129,18 @@ if __name__ == '__main__':
 
     plot_day_night_species(rootdir, fish_diel_patterns)
 
-# better crepuscular
-crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_ds, species)  # for plotting daily average for each species
-crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species)     # for plotting weekly data for each species
+    # better crepuscular
+    # feature = 'rest'
+    # crespuscular_daily_ave_fish(rootdir, feature, fish_tracks_ds, species)  # for plotting daily average for each species
+    # crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species)     # for plotting weekly data for each species
 
-cres_peaks = crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns)
-plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks)
+    feature = 'speed_mm'
+    cres_peaks = crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns)
+    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks)
 
-
-
-# # calculate ave and stdv
-# average = sp_feature.mean(axis=1)
-# averages[species_n, :] = average[0:303]
-#
-#
-#
-#     fig = plt.figure(figsize=(10, 5))
-#     plt.hist(species_peaks_df.peak_amplitude)
-#
-#     fig = plt.figure(figsize=(10, 5))
-#     plt.hist(species_peaks_df_dusk.loc[species_peaks_df_dusk.peak_loc == 0, 'peak_amplitude'])
-#
-#         x = fish_feature.iloc[:, i]
-#         fig = plt.figure(figsize=(10, 5))
-#         plt.plot(x)
-#         plt.plot(x.reset_index().index[fish_peaks[0, :].astype(int)].values, fish_peaks[1, :],   "o", color="r")
-#         plt.title(species_name)
-#         plt.show()
-
-# 	1. Find peaks in daily average of Individuals and  species
-# 	2. Find peaks across week
-# 	3. Find amplitude of peaks
-# For non-peaks -  take the most common peak bin
-#
-# feature_i.loc[feature_i.peak_loc > 0].groupby('FishID').mean().peak_loc
-# feature_i.loc[feature_i.peak_loc > 0].groupby('FishID').peak_loc.agg(pd.Series.mode)
-#
-# x = fish_feature.iloc[:, i]
-# plt.plot(fish_peaks[0, :], x[(fish_peaks[0, :]).astype(int)],  "x", color="k")
-
+    # make and save diel patterns csv
+    cresp_sp = cres_peaks.groupby(['species_six', 'species']).mean().reset_index(level=[1])
+    diel_sp = fish_diel_patterns.groupby('species_six').mean()
+    diel_patterns_df = pd.concat([cresp_sp, diel_sp.day_night_dif, ], axis=1).reset_index()
+    diel_patterns_df.to_csv(os.path.join(rootdir, "combined_diel_patterns_{}_dp.csv".format(dt.date.today())))
+    print("Finished saving out diel patter data")

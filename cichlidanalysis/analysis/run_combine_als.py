@@ -14,6 +14,7 @@ from tkinter.filedialog import askdirectory
 from tkinter import *
 import warnings
 import time
+import os
 
 import numpy as np
 
@@ -60,9 +61,11 @@ change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
 
 # add new column with Day or Night
 t2 = time.time()
-# fish_tracks['time_of_day_m'] = 0
+# fish_tracks['time_of_day_m'] = 0 # too slow!
 # for index, row in fish_tracks.ts.iteritems():
 #     fish_tracks.loc[index, 'time_of_day_m'] = int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:])
+# check if not a time exists! null = np.where(np.isnat(fish_tracks.ts))
+fish_tracks = fish_tracks.dropna() # drop only when
 fish_tracks['time_of_day_m'] = fish_tracks.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
 t3 = time.time()
 print("time to add time_of_day tracks {}".format(t3-t2))
@@ -179,6 +182,11 @@ plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
 # rest by sex
 plot_rest_sex(rootdir, fish_tracks_30m, change_times_d, fraction_threshold, time_window_s, "30m")
 print("Finished rest plots")
+
+# save out downsampled als
+for species in all_species:
+    fish_tracks_30m.to_csv(os.path.join(rootdir, "{}_als_30m.csv".format(species)))
+print("Finished saving out 30min data")
 
 # feature vectors: for each fish readout vector of feature values
 create_fv1(all_species, fish_IDs, fish_tracks, metat, rootdir)
