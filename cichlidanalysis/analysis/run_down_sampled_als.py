@@ -35,6 +35,7 @@ if __name__ == '__main__':
     fish_tracks_ds = fish_tracks_ds.reset_index(drop=True)
     fish_tracks_ds['time_of_day_dt'] = fish_tracks_ds.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
     fish_tracks_ds.loc[fish_tracks_ds.species == 'Aaltolamprologus calvus', 'species'] = 'Altolamprologus calvus'
+    fish_tracks_ds.FishID = fish_tracks_ds.FishID.str.replace('Aaltolamprologus', 'Altolamprologus')
 
     # get each fish ID and all species
     fish_IDs = fish_tracks_ds['FishID'].unique()
@@ -143,4 +144,4 @@ if __name__ == '__main__':
     diel_sp = fish_diel_patterns.groupby('species_six').mean()
     diel_patterns_df = pd.concat([cresp_sp, diel_sp.day_night_dif, ], axis=1).reset_index()
     diel_patterns_df.to_csv(os.path.join(rootdir, "combined_diel_patterns_{}_dp.csv".format(dt.date.today())))
-    print("Finished saving out diel patter data")
+    print("Finished saving out diel pattern data")

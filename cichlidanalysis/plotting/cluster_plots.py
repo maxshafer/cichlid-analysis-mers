@@ -5,6 +5,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.cm import hsv
 import pandas as pd
+import numpy as np
 
 from cichlidanalysis.io.meta import add_meta_from_name
 from cichlidanalysis.analysis.processing import species_feature_fish_daily_ave
@@ -54,7 +55,10 @@ def cluster_species_daily(rootdir, aves_ave_spd, aves_ave_vp, aves_ave_rest, ave
 
     row_cols = []
     for i in sp_metrics.tribe:
-        row_cols.append(tribe_col[i])
+        if str(i) == 'nan':
+            row_cols.append((0, 0, 0))
+        else:
+            row_cols.append(tribe_col[i])
 
     # row_cols_species = pd.DataFrame(row_cols, index=[aves_ave_spd.columns.tolist()]).apply(tuple, axis=1)
     row_cols_unnamed = pd.DataFrame(row_cols).apply(tuple, axis=1)

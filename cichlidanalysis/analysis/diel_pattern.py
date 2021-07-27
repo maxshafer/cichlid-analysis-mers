@@ -61,7 +61,6 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
             else:
                 df.loc[index_label, 'diel_pattern'] = 'nocturnal'     # nocturnal
 
-    fishes = fish_tracks_ds.FishID.unique()
     df['species_six'] = 'blank'
     for fish in fishes:
         df.loc[df['FishID'] == fish, 'species_six'] = six_letter_sp_name(extract_meta(fish)['species'])

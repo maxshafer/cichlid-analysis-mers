@@ -53,7 +53,7 @@ def six_letter_sp_name(species_full):
         else:
             print("problem, quitting")
             return False
-        shortened_sp_names.append(species_full[0:3] + species_full.split(splitting_by)[1][0:3])
+        shortened_sp_names.append(species_full[0:3] + species_full.replace('\'', '').split(splitting_by)[1][0:3])
 
     # if many species names
     else:
@@ -66,6 +66,6 @@ def six_letter_sp_name(species_full):
             return False
 
         for sp in species_full:
-            shortened_sp_names.append(sp[0:3] + sp.split(splitting_by)[1][0:3])
+            shortened_sp_names.append(sp[0:3] + sp.replace('\'', '').split(splitting_by)[1][0:3])
 
     return shortened_sp_names
