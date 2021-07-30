@@ -3,6 +3,7 @@ import os
 import datetime as dt
 import seaborn as sns
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 def plot_day_night_species(rootdir, fish_diel_patterns):
@@ -54,7 +55,7 @@ def plot_day_night_species(rootdir, fish_diel_patterns):
     sns.stripplot(data=fish_diel_patterns, x='species_six', y='day_night_dif', hue='diel_pattern', ax=ax, size=4,
                   palette=clrs, hue_order=hue_ordering, order=sorted_index)
     ax.set(ylabel='Day mean - night mean', xlabel='Species')
-    ax.set_xticklabels(labels=sorted_index, rotation=45)
+    ax.set_xticklabels(labels=sorted_index, rotation=90)
     ax = plt.axhline(0, ls='--', color='k')
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "species_diurnal-nocturnal_30min_median-value_{0}.png".format(dt.date.today())))
@@ -67,7 +68,7 @@ def plot_day_night_species(rootdir, fish_diel_patterns):
     sns.stripplot(data=fish_diel_patterns, x='species_six', y='day_night_dif', hue='diel_pattern', ax=ax, size=4,
                   palette=clrs, hue_order=hue_ordering, order=sorted_index)
     ax.set(ylabel='Day mean - night mean', xlabel='Species')
-    ax.set_xticklabels(labels=sorted_index, rotation=45)
+    ax.set_xticklabels(labels=sorted_index, rotation=90)
     ax = plt.axhline(0, ls='--', color='k')
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "species_diurnal-nocturnal_30min_diel-pattern{0}.png".format(dt.date.today())))
@@ -114,6 +115,21 @@ def plot_cre_dawn_dusk_strip_v(rootdir, all_feature_combined, feature):
     plt.savefig(os.path.join(rootdir, "species_crepuscularity_{0}_{1}.png".format(feature, dt.date.today())))
 
 
+def colors_from_values(values, palette_name):
+    """ https://stackoverflow.com/questions/36271302/changing-color-scale-in-seaborn-bar-plot
+
+    :param values:
+    :param palette_name:
+    :return:
+    """
+    # normalize the values to range [0, 1]
+    normalized = (values - min(values)) / (max(values) - min(values))
+    # convert to indices
+    indices = np.round(normalized * (len(values) - 1)).astype(np.int32)
+    # use the indices to get the colors
+    palette = sns.color_palette(palette_name, len(values))
+    return np.array(palette).take(indices, axis=0)
+
 
 def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i):
     """ Plot the crepuscular data as a strip and box plot
@@ -135,7 +151,7 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i):
                               data=cres_peaks_i,
                               order=sorted_index,
                               palette="flare")
-    grped_bplot.set_xticklabels(labels=sorted_index, rotation=45)
+    grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
     grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
     ax = plt.axhline(0, ls='--', color='k')
     plt.tight_layout()
@@ -152,7 +168,7 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i):
                               boxprops=dict(alpha=.3),
                               order=sorted_index,
                               palette="flare")
-    grped_bplot.set_xticklabels(labels=sorted_index, rotation=45)
+    grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
     grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
     ax = plt.axhline(0, ls='--', color='k')
 
@@ -163,17 +179,40 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i):
                                 order=sorted_index,
                                 palette="flare",
                                 size=3)
-    grped_bplot.set_xticklabels(labels=sorted_index, rotation=45)
+    grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
     grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
     ax = plt.axhline(0, ls='--', color='k')
     plt.tight_layout()
 
     plt.savefig(os.path.join(rootdir, "species_crepuscular_30min_box_{0}.png".format(dt.date.today())))
 
+    dawn_index = cres_peaks_i.groupby(by=['species_six', 'twilight']).median().reset_index()
+    sorted_index = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species_six').sort_values(by='peak_amplitude').index
+    twilights =['dawn', 'dusk']
+    for period in twilights:
+        grped_bplot = sns.catplot(x='species_six',
+                                  y='peak_amplitude',
+                                  kind="box",
+                                  legend=False,
+                                  height=5,
+                                  aspect=2,
+                                  data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
+                                  fliersize=0,
+                                  boxprops=dict(alpha=.3),
+                                  order=sorted_index,
+                                  palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period].
+                                    groupby('species_six').peak_amplitude.median().reindex(sorted_index), "flare"),
+                                  saturation=1)
 
-    # for one fish
-    # g = sns.catplot(x='species_six', y='peak_amplitude', data=all_feature_combined.loc[all_feature_combined.species_six == 'Neosav'],
-    #                 hue='peak',  palette='vlag', col="twilight", legend=False)
-    # for axes in g.axes.flat:
-    #     _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
-    # plt.tight_layout()
+        sns.stripplot(x='species_six', y='peak_amplitude',
+                                    data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
+                                    order=sorted_index,
+                                    palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period].
+                                                               groupby('species_six').peak_amplitude.median().
+                                                               reindex(sorted_index), "flare"),
+                                    size=3).set(title=period)
+        grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
+        grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
+        ax = plt.axhline(0, ls='--', color='k')
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "species_crepuscular_30min_box_sort_{0}_{1}.png".format(period, dt.date.today())))

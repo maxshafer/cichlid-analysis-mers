@@ -2,8 +2,11 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
+import datetime as dt
 
 from cichlidanalysis.io.meta import check_fish_species
+from cichlidanalysis.utils.species_names import six_letter_sp_name
 
 
 def spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir):
@@ -205,3 +208,77 @@ def plot_position_maps(meta, fish_tracks, rootdir):
             ax1[1, idx].set_ylabel("Night")
 
     fig1.savefig(os.path.join(rootdir, "xy_ave_DN_all.png"))
+
+
+def plot_combined_v_position(rootdir, fish_tracks_ds, fish_diel_patterns):
+    """ Bar plot of day and night vertical position means for each species sorted by the day/night preference
+
+    :param rootdir:
+    :param fish_tracks_ds:
+    :param fish_diel_patterns:
+    :return:
+    """
+    fish_tracks_dn = fish_tracks_ds.groupby(['daynight', 'FishID', 'species']).mean().reset_index()
+    fish_tracks_dn['species_six'] = six_letter_sp_name(fish_tracks_dn.species)
+
+    # dn_index = fish_tracks_dn.groupby(by=['species_six', 'daynight']).median().reset_index()
+    # sorted_index = dn_index.drop(dn_index[dn_index.daynight == 'd'].index).set_index('species_six').sort_values(by='vertical_pos').index
+    sorted_index = fish_diel_patterns.groupby('species_six').median().sort_values(by='day_night_dif').index
+
+    grped_bplot = sns.catplot(x='species_six',
+                              y='vertical_pos',
+                              kind="box",
+                              height=6,
+                              aspect=4,
+                              legend=False,
+                              hue='daynight',
+                              boxprops=dict(alpha=0.7),
+                              fliersize=1,
+                              order=sorted_index,
+                              data=fish_tracks_dn,
+                              palette="bwr_r")
+
+    cmap = plt.cm.get_cmap('bwr_r')
+    grped_bplot = sns.stripplot(x='species_six',
+                                y='vertical_pos',
+                                hue='daynight',
+                                data=fish_tracks_dn,
+                                order=sorted_index,
+                                palette=[cmap(0), cmap(1000)],
+                                size=3,
+                                dodge=True)
+    grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
+    grped_bplot.set(ylabel='Vertical position', xlabel='Species')
+    grped_bplot.set(ylim=[0, 1])
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "species_vertical_pos_30min_box_strip_{0}.png".format(dt.date.today())))
+
+    fish_tracks_dt = fish_tracks_ds.groupby(['daytime', 'FishID', 'species']).mean().reset_index()
+    fish_tracks_dt['species_six'] = six_letter_sp_name(fish_tracks_dt.species)
+    cmap_f = plt.cm.get_cmap('flare')
+    grped_bplot = sns.catplot(x='species_six',
+                              y='vertical_pos',
+                              kind="box",
+                              height=6,
+                              aspect=4,
+                              legend=False,
+                              hue='daytime',
+                              boxprops=dict(alpha=0.5),
+                              fliersize=1,
+                              order=sorted_index,
+                              data=fish_tracks_dt,
+                              palette=[cmap_f(20), cmap(0), cmap(1000)])
+
+    grped_bplot = sns.stripplot(x='species_six',
+                                y='vertical_pos',
+                                hue='daytime',
+                                data=fish_tracks_dt,
+                                order=sorted_index,
+                                palette=[cmap_f(20), cmap(0), cmap(1000)],
+                                size=3,
+                                dodge=True)
+    grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
+    grped_bplot.set(ylabel='Vertical position', xlabel='Species')
+    grped_bplot.set(ylim=[0, 1])
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "species_vertical_pos_30min_box_strip_day-night-cres_{0}.png".format(dt.date.today())))
