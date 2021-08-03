@@ -10,7 +10,7 @@ from tkinter import Tk
 import numpy as np
 
 from cichlidanalysis.io.meta import load_yaml, extract_meta
-from cichlidanalysis.io.tracks import load_track
+from cichlidanalysis.io.tracks import load_track, get_latest_tracks
 from cichlidanalysis.quality_control.split_tracking import background_vid_split
 from cichlidanalysis.tracking.offline_tracker import tracker
 
@@ -34,8 +34,9 @@ if __name__ == '__main__':
     video_name = os.path.split(video_path)[1]
 
     # load original track (need timestamps)
-    orig_file = glob.glob("*{}.csv".format(video_name[0:-4]))
-    na, track_single_orig = load_track(os.path.join(vid_folder_path, orig_file[0]))
+    # orig_file = glob.glob("*{}.csv".format(video_name[0:-4]))
+    _, latest_file = get_latest_tracks(vid_folder_path, video_name[0:-4])
+    na, track_single_orig = load_track(os.path.join(vid_folder_path, latest_file[0]))
 
     meta = load_yaml(vid_folder_path, "meta_data")
     rois = load_yaml(cam_folder_path, "roi_file")
@@ -69,6 +70,12 @@ if __name__ == '__main__':
     for chunk_n in np.arange(0, len(chunks)-1):
         split_ends = [chunks[chunk_n], chunks[chunk_n+1]]
         background = background_vid_split(video_path, 100, 90, split_ends)
+
+        # in case a new ROI has been used for tracking, use this.
+        crop_vid_rois = load_yaml(vid_folder_path, "roi_file")
+        if crop_vid_rois:
+            vid_rois = crop_vid_rois
+            print("tracking with new roi")
         tracker(video_path, background, vid_rois, threshold=thresh, display=False, area_size=area_s,
                 split_range=split_ends)
 

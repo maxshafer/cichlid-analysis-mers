@@ -72,7 +72,8 @@ def full_analysis(rootdir):
     x_n = int_nan_streches(track_full[:, 1])
     y_n = int_nan_streches(track_full[:, 2])
 
-    # replace bad track NaNs (-1) -> these are manually defined as artifacts by "split_tracking"
+    # replace bad track NaNs (-1) -> these are manually defined as artifacts    plt.xlabel("Time (h)")
+    #     ax2.invert_yaxis() by "split_tracking"
     x_n[np.where(x_n == -1)] = np.nan
     y_n[np.where(y_n == -1)] = np.nan
 
@@ -109,8 +110,7 @@ def full_analysis(rootdir):
 
     plt.close()
     fig2, ax2 = filled_plot(tv / 10 ** 9 / 60 / 60, y_bin[0:-1], change_times_h, day_ns / 10 ** 9 / 60 / 60)
-    plt.xlabel("Time (h)")
-    ax2.invert_yaxis()
+
     plt.ylabel("average y position")
     plt.title("Y position_{0}_smoothed_by_{1}".format(meta["species"], min_bins))
     plt.savefig(os.path.join(rootdir, "{0}_Y-position_{1}.png".format(fish_ID, meta["species"].replace(' ', '-'))))

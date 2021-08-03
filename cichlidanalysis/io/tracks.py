@@ -10,7 +10,7 @@ from cichlidanalysis.analysis.processing import remove_cols
 
 
 def load_track(csv_file_path):
-    """Takes file path, loads  the csv track, computes speed from this, returns both
+    """Takes file path, loads the csv track, computes speed from this, returns both
     """
     track_internal = np.genfromtxt(csv_file_path, delimiter=',')
 
