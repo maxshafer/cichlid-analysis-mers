@@ -19,7 +19,7 @@ import os
 import numpy as np
 
 from cichlidanalysis.io.meta import load_meta_files
-from cichlidanalysis.io.tracks import load_als_files
+from cichlidanalysis.io.als_files import load_als_files
 from cichlidanalysis.io.io_feature_vector import create_fv1, create_fv2
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
@@ -31,6 +31,7 @@ from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individual
     plot_bout_lengths_dn_move, plot_movement_30m_sex
 from cichlidanalysis.plotting.daily_plots import plot_daily
 from cichlidanalysis.plotting.rest_plots import plot_rest_ind, plot_rest_mstd, plot_rest_bout_lengths_dn, plot_rest_sex
+from cichlidanalysis.analysis.positions import hist_feature_rest
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -65,7 +66,7 @@ t2 = time.time()
 # for index, row in fish_tracks.ts.iteritems():
 #     fish_tracks.loc[index, 'time_of_day_m'] = int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:])
 # check if not a time exists! null = np.where(np.isnat(fish_tracks.ts))
-fish_tracks = fish_tracks.dropna() # drop only when
+# fish_tracks = fish_tracks.dropna() # drop only when
 fish_tracks['time_of_day_m'] = fish_tracks.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
 t3 = time.time()
 print("time to add time_of_day tracks {}".format(t3-t2))
@@ -191,3 +192,22 @@ print("Finished saving out 30min data")
 # feature vectors: for each fish readout vector of feature values
 create_fv1(all_species, fish_IDs, fish_tracks, metat, rootdir)
 create_fv2(all_species, fish_tracks, fish_bouts_move, fish_bouts_rest, fish_IDs, metat, fish_tracks_30m, rootdir)
+
+for species in all_species:
+    # vertical position for rest and non-rest
+    hist_feature_rest(rootdir, fish_tracks, species, feature='vertical_pos')
+    # vertical position for day, night and crepuscular?
+
+# import matplotlib.pyplot as plt
+# import seaborn as sns
+
+# seperated by rest state
+# fish_tracks_rs = fish_tracks.groupby(['FishID', 'rest']).mean().reset_index()
+# fish_tracks_rs.to_csv(os.path.join(rootdir, "{}_als_rs_mean.csv".format(species)))
+
+# bplot = sns.barplot(data=fish_tracks_rs, x='FishID',  y='vertical_pos', hue='rest')
+
+# sns.histplot(data=fish_tracks.loc[fish_tracks.rest == 0], y='vertical_pos', binwidth=0.1)
+# sns.histplot(data=fish_tracks, y='vertical_pos', binwidth=0.1, hue='rest', stat="density", common_norm=False)
+# get out histogram data for each individual for rest/non rest
+

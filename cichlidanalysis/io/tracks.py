@@ -4,9 +4,6 @@ import copy
 import datetime as dt
 
 import numpy as np
-import pandas as pd
-
-from cichlidanalysis.analysis.processing import remove_cols
 
 
 def load_track(csv_file_path):
@@ -159,67 +156,6 @@ def adjust_old_time(recname, timestamps):
     return adjusted_timestamps
 
 
-def load_als_files(folder, suffix="*als.csv"):
-    os.chdir(folder)
-    files = glob.glob(suffix)
-    files.sort()
-    first_done = 0
-
-    for file in files:
-        if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',', error_bad_lines=False, warn_bad_lines=True)
-            # data_s = pd.read_csv(os.path.join(folder, file), sep='/')
-            # str.split(',' expand = T)
-            # #, error_bad_lines=False, warn_bad_lines=True)
-            print("loaded file {}".format(file))
-            data_s['FishID'] = file[0:-8]
-            data_s['ts'] = adjust_old_time(file, pd.to_datetime(data_s['tv_ns'], unit='ns'))
-            data = pd.concat([data, data_s])
-
-        else:
-            # initiate data frames for each of the fish, beside the time series,
-            # also add in the species name and ID at the start
-            data = pd.read_csv(os.path.join(folder, file), sep=',', error_bad_lines=False, warn_bad_lines=True)
-            print("loaded file {}".format(file))
-            data['FishID'] = file[0:-8]
-            data['ts'] = adjust_old_time(file, pd.to_datetime(data['tv_ns'], unit='ns'))
-            first_done = 1
-
-    # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
-    data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
-    data = data.drop(data[data.ts < dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S')].index)
-    data = data.reset_index(drop=True)
-    data = remove_cols(data, ['vertical_pos', 'horizontal_pos', 'speed_bl', 'activity'])
-
-    print("All als.csv files loaded")
-    return data
-
-
-def load_ds_als_files(folder, suffix="*als.csv"):
-    os.chdir(folder)
-    files = glob.glob(suffix)
-    files.sort()
-    first_done = 0
-
-    for file in files:
-        if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
-            print("loaded file {}".format(file))
-            data = pd.concat([data, data_s])
-
-        else:
-            # initiate data frames for each of the fish, beside the time series,
-            data = pd.read_csv(os.path.join(folder, file), sep=',')
-            print("loaded file {}".format(file))
-            first_done = 1
-
-    # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
-    data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
-
-    print("All down sampled als.csv files loaded")
-    return data
-
-
 def save_fishtracks_30m(fish_tracks_30m, rootdir):
     """ Save out combined fish_tracks_30m
 
@@ -231,6 +167,22 @@ def save_fishtracks_30m(fish_tracks_30m, rootdir):
     # save out 30m data (all adjusted to 7am-7pm)
     fish_tracks_30m.to_csv(os.path.join(rootdir, "combined_{0}_als_30m.csv".format(date)))
     print("Finished saving out 30min data")
+
+
+def get_vid_paths_from_nums(rootdir, video_nums):
+    selecting_vids = video_nums.split(',')
+
+    os.chdir(rootdir)
+    files = glob.glob('*.mp4')
+    files.sort()
+
+    videos_path = []
+
+    for select_vid in selecting_vids:
+        for file in files:
+            if file.split("_")[1] == select_vid.replace(' ', ''):
+                videos_path.append(os.path.join(rootdir, file))
+    return videos_path
 
 
 if __name__ == '__main__':

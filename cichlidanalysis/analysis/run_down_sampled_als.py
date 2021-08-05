@@ -6,7 +6,7 @@ import os
 import datetime as dt
 import pandas as pd
 
-from cichlidanalysis.io.tracks import load_ds_als_files
+from cichlidanalysis.io.als_files import load_ds_als_files
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
 from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
