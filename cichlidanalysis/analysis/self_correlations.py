@@ -73,7 +73,7 @@ def fish_weekly_corr(rootdir, fish_tracks_ds, feature, link_method):
     return corr_vals
 
 
-def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_method='single', ):
+def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_method='single'):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:

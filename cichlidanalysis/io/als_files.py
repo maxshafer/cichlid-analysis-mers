@@ -5,6 +5,7 @@ import datetime as dt
 import pandas as pd
 
 from cichlidanalysis.analysis.processing import remove_cols
+from cichlidanalysis.io.tracks import adjust_old_time
 
 
 def load_als_files(folder, suffix="*als.csv"):
@@ -16,9 +17,6 @@ def load_als_files(folder, suffix="*als.csv"):
     for file in files:
         if first_done:
             data_s = pd.read_csv(os.path.join(folder, file), sep=',', error_bad_lines=False, warn_bad_lines=True)
-            # data_s = pd.read_csv(os.path.join(folder, file), sep='/')
-            # str.split(',' expand = T)
-            # #, error_bad_lines=False, warn_bad_lines=True)
             print("loaded file {}".format(file))
             data_s['FishID'] = file[0:-8]
             data_s['ts'] = adjust_old_time(file, pd.to_datetime(data_s['tv_ns'], unit='ns'))
@@ -121,6 +119,6 @@ def load_vertical_rest_als_files(folder, suffix="*als_vertical_pos_hist_rest-non
 
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
     data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
-
+    data = data.reset_index(drop=True)
     print("All down sampled als_vertical_pos_hist_rest-non-rest.csv files loaded")
     return data

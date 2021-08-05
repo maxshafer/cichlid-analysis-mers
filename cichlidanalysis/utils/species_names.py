@@ -69,3 +69,16 @@ def six_letter_sp_name(species_full):
             shortened_sp_names.append(sp[0:3] + sp.replace('\'', '').split(splitting_by)[1][0:3])
 
     return shortened_sp_names
+
+
+def add_species_from_FishID(df):
+    fishes = df.FishID
+    species = []
+    species_six = []
+    for fish in fishes:
+        sp = fish.split('_')[3].replace('-', ' ')
+        species.append(sp)
+        species_six.append(six_letter_sp_name(sp)[0])
+    df['species'] = species
+    df['species_six'] = species_six
+    return df

@@ -196,6 +196,7 @@ create_fv2(all_species, fish_tracks, fish_bouts_move, fish_bouts_rest, fish_IDs,
 for species in all_species:
     # vertical position for rest and non-rest
     hist_feature_rest(rootdir, fish_tracks, species, feature='vertical_pos')
+
     # vertical position for day, night and crepuscular?
 
 # import matplotlib.pyplot as plt

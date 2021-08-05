@@ -12,8 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator)
 import seaborn as sns
 
-
-from cichlidanalysis.utils.species_names import  six_letter_sp_name
+from cichlidanalysis.utils.species_names import six_letter_sp_name
 
 
 def daily_ave_spd(sp_spd_ave, sp_spd_ave_std, rootdir, species_f, change_times_unit):
@@ -151,6 +150,45 @@ def daily_ave_rest(sp_rest_ave, sp_rest_ave_std, rootdir, species_f, change_time
     return daily_rest
 
 
+def daily_ave_vp(rootdir, sp_vp_ave, sp_vp_ave_std, species_f, change_times_unit):
+
+    plt.figure(figsize=(6, 4))
+    for cols in np.arange(0, sp_vp_ave.columns.shape[0]):
+        ax = sns.lineplot(x=sp_vp_ave.index, y=(sp_vp_ave).iloc[:, cols])
+    ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[2], change_times_unit[3], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[3], 24 * 2, color='lightblue', alpha=0.5, linewidth=0)
+    ax.set_ylim([0, 1])
+    ax.set_xlim([0, 24 * 2])
+    plt.xlabel("Time (h:m)")
+    plt.ylabel("Vertical position")
+    ax.xaxis.set_major_locator(MultipleLocator(6))
+    plt.title(species_f)
+    plt.savefig(os.path.join(rootdir, "vp_30min_ave_individual{0}.png".format(species_f.replace(' ', '-'))))
+    plt.close()
+
+    # rest (30m bins daily average) for each fish (mean  +- std)
+    plt.figure(figsize=(6, 4))
+    daily_rest = sp_vp_ave.mean(axis=1)
+    ax = sns.lineplot(x=sp_vp_ave.index, y=(daily_rest + sp_vp_ave_std), color='lightgrey')
+    ax = sns.lineplot(x=sp_vp_ave.index, y=(daily_rest - sp_vp_ave_std), color='lightgrey')
+    ax = sns.lineplot(x=sp_vp_ave.index, y=(daily_rest))
+
+    ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[2], change_times_unit[3], color='wheat', alpha=0.5, linewidth=0)
+    ax.axvspan(change_times_unit[3], 24 * 2, color='lightblue', alpha=0.5, linewidth=0)
+    ax.set_ylim([0, 1])
+    ax.set_xlim([0, 24 * 2])
+    plt.xlabel("Time (h:m)")
+    plt.ylabel("Vertical position")
+    ax.xaxis.set_major_locator(MultipleLocator(6))
+    plt.title(species_f)
+    plt.savefig(os.path.join(rootdir, "vp_30min_ave_ave-stdev{0}.png".format(species_f.replace(' ', '-'))))
+    plt.close()
+    return daily_rest
+
 # make a new col where the daily timestamp is (no year/ month/ day)
 def plot_daily(fish_tracks_30m_i, change_times_unit, rootdir):
 
@@ -192,6 +230,18 @@ def plot_daily(fish_tracks_30m_i, change_times_unit, rootdir):
 
         # make the plots
         daily_ave_rest(sp_rest_ave, sp_rest_ave_std, rootdir, species_f, change_times_unit)
+
+        # ### vertical position ###
+        vertical_pos = fish_tracks_30m_i[fish_tracks_30m_i.species == species_f][['vertical_pos', 'FishID', 'ts']]
+        sp_vp = vertical_pos.pivot(columns='FishID', values='vertical_pos', index='ts')
+
+        # get time of day so that the same tod for each fish can be averaged
+        sp_vp['time_of_day'] = sp_vp.apply(lambda row: str(row.name)[11:16], axis=1)
+        sp_vp_ave = sp_vp.groupby('time_of_day').mean()
+        sp_vp_ave_std = sp_vp_ave.std(axis=1)
+
+        # make the plots
+        daily_ave_vp(rootdir, sp_vp_ave, sp_vp_ave_std, species_f, change_times_unit)
 
 #
 # def plot_daily_ridge_plot(rootdir, aves_ave_feature, feature, ymax, span_max, ylabeling, change_times_datetime_i):
