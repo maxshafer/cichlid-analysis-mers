@@ -12,7 +12,7 @@ import cv2
 from cichlidanalysis.io.meta import load_yaml
 
 def filled_plot(tv_internal, speed, change_times_unit, day_unit):
-    days_to_plot = math.ceil(tv_internal[-1]/day_unit)
+    days_to_plot = math.ceil(np.max(tv_internal)/day_unit)
     figa, ax = plt.subplots(figsize=(15, 5))
     ax.plot(tv_internal[0:-1], speed[:], color='black')
     for day_n in range(days_to_plot):

@@ -66,7 +66,7 @@ t2 = time.time()
 # for index, row in fish_tracks.ts.iteritems():
 #     fish_tracks.loc[index, 'time_of_day_m'] = int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:])
 # check if not a time exists! null = np.where(np.isnat(fish_tracks.ts))
-# fish_tracks = fish_tracks.dropna() # drop only when
+fish_tracks = fish_tracks.dropna() # occaisionally have NaTs in ts, this removes them.
 fish_tracks['time_of_day_m'] = fish_tracks.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
 t3 = time.time()
 print("time to add time_of_day tracks {}".format(t3-t2))

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import datetime as dt
 
+from cichlidanalysis.utils.species_names import add_species_from_FishID
 from cichlidanalysis.io.meta import check_fish_species
 from cichlidanalysis.utils.species_names import six_letter_sp_name
 
@@ -282,3 +283,54 @@ def plot_combined_v_position(rootdir, fish_tracks_ds, fish_diel_patterns):
     grped_bplot.set(ylim=[0, 1])
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "species_vertical_pos_30min_box_strip_day-night-cres_{0}.png".format(dt.date.today())))
+
+
+def plot_v_position_hists(rootdir, vp_hist):
+    vp_hist = add_species_from_FishID(vp_hist)
+
+    bins = np.arange(0, 1.1, 0.1)
+    bins = np.round(bins, 2).tolist()
+
+    yticks = np.linspace(0.5, 9.5, 10)
+    yticklabels = ['Top', '', '', '', '', '', '', '', '', 'Bottom']
+
+    # individial fish histograms
+    for state in ['rest', 'non_rest']:
+        fig, ax = plt.subplots()
+        plot = sns.heatmap(vp_hist.pivot('FishID', 'bin', state).T.iloc[::-1],
+                           yticklabels=(np.round(bins[0:-1], 2).tolist())[::-1],
+                           vmin=0, vmax=0.6,
+                           cmap='RdPu')
+        num_fish = np.shape(vp_hist.loc[vp_hist.bin == 0, 'species_six'])[0]
+        plot.set_xticks(np.linspace(0, num_fish -1, num_fish))
+        plot.set_xticklabels(labels=vp_hist.loc[vp_hist.bin == 0, 'species_six'], rotation=90)
+        plot.set_title(state.capitalize())
+        plot.set_yticks(yticks)
+        plot.set_yticklabels(labels=yticklabels, rotation=0)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "vp_{}_individuals.png".format(state)))
+
+    # averaged histograms
+    vp_hist_ave = vp_hist.groupby(['species_six', 'bin']).mean().reset_index()
+    for state in ['rest', 'non_rest']:
+        fig, ax = plt.subplots()
+        plot = sns.heatmap(vp_hist_ave.pivot('bin', 'species_six', state).iloc[::-1],
+                           yticklabels=(np.round(bins[0:-1], 2).tolist())[::-1],
+                           vmin=0, vmax=0.6,
+                           cmap='RdPu',
+                           cbar_kws={'label': 'Position frequency'})
+        num_species = vp_hist_ave.species_six.nunique()
+        plot.set_xticks(np.linspace(0.5, 0.5 + num_species -1, num_species))
+        plot.set_xticklabels(labels=vp_hist_ave.pivot('bin', 'species_six', state).columns, rotation=90)
+        plot.set_title(state.capitalize())
+        plot.set_yticks(yticks)
+        plot.set_yticklabels(labels=yticklabels, rotation=0)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "vp_{}_ave.png".format(state)))
+
+    # clustered heatmaps
+    for state in ['rest', 'non_rest']:
+        individ_corr = vp_hist.pivot('FishID', 'bin', state).T.corr()
+        ax = sns.clustermap(individ_corr, figsize=(7, 5), method='single', metric='euclidean', vmin=-1, vmax=1,
+                            cmap='RdBu_r', xticklabels=False, yticklabels=True)
+        ax.fig.suptitle(state)
