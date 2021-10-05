@@ -169,18 +169,28 @@ def save_fishtracks_30m(fish_tracks_30m, rootdir):
     print("Finished saving out 30min data")
 
 
-def get_vid_paths_from_nums(rootdir, video_nums):
+def get_file_paths_from_nums(rootdir, video_nums, file_format='*.mp4'):
     selecting_vids = video_nums.split(',')
 
+    empty = ['', ' ']
+    for i in empty:
+        if i in selecting_vids:
+            selecting_vids.remove(i)
+
     os.chdir(rootdir)
-    files = glob.glob('*.mp4')
+    files = glob.glob(file_format)
     files.sort()
 
     videos_path = []
 
     for select_vid in selecting_vids:
         for file in files:
-            if file.split("_")[1] == select_vid.replace(' ', ''):
+            movie_num = file.split("_")[1]
+            desired_movie_num = select_vid.replace(' ', '')
+            while len(movie_num) > len(desired_movie_num):
+                # add zeros to the start of number (padded in some videos)
+                desired_movie_num = '0' + desired_movie_num
+            if movie_num == desired_movie_num:
                 videos_path.append(os.path.join(rootdir, file))
     return videos_path
 

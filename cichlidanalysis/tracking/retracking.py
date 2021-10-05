@@ -17,7 +17,9 @@ from cichlidanalysis.tracking.offline_tracker import tracker
 from cichlidanalysis.tracking.helpers import correct_tags
 from cichlidanalysis.tracking.backgrounds import background_vid, update_background
 from cichlidanalysis.io.meta import extract_meta, load_yaml
-from cichlidanalysis.io.tracks import remove_tags
+from cichlidanalysis.io.tracks import remove_tags, get_file_paths_from_nums
+from cichlidanalysis.io.movies import get_movie_paths
+
 
 if __name__ == '__main__':
     background_update = 'm'
@@ -51,8 +53,8 @@ if __name__ == '__main__':
 
     if track_videos == 'y':
         track_all = 'm'
-        while track_all not in {'y', 'n'}:
-            track_all = input("Track all videos? y/n: \n")
+        while track_all not in {'y', 'n', 's'}:
+            track_all = input("Track all videos (y)? one video (n) or select videos (s): \n")
 
         if track_all == 'y':
             # Allows a user to select top directory
@@ -78,6 +80,16 @@ if __name__ == '__main__':
                 new_bgd = False
             backgrounds.sort()
 
+            rec_name = os.path.split(vid_dir)[1]
+
+        elif track_all == 's':
+            print("only works for remade backgrounds")
+            video_paths, vid_dir, video_nums = get_movie_paths()
+            video_files = []
+            for i in video_paths:
+                video_files.append(os.path.split(i)[1])
+            backgrounds = get_file_paths_from_nums(vid_dir, video_nums, file_format='*.png')
+            cam_dir = os.path.split(vid_dir)[0]
             rec_name = os.path.split(vid_dir)[1]
 
         elif track_all == 'n':

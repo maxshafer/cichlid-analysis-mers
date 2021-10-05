@@ -394,5 +394,11 @@ if __name__ == '__main__':
         for camera_folder in list_subfolders_with_paths:
             # find the camera roi folders
             list_subsubfolders_with_paths = [f.path for f in os.scandir(camera_folder) if f.is_dir()]
-            for roi_folder in list_subsubfolders_with_paths:
+            # for skipping folders with lights
+            list_subsubfolders_with_paths_without_lights = []
+            for i in list_subsubfolders_with_paths:
+                if i[-3:] != '_sl':
+                    list_subsubfolders_with_paths_without_lights.append(i)
+
+            for roi_folder in list_subsubfolders_with_paths_without_lights:
                 full_analysis(roi_folder)

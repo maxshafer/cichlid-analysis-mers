@@ -33,14 +33,18 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
 
     ttest_array = np.zeros([len(fishes), 6])
     for fish_n, fish in enumerate(fishes):
-        ttest_array[fish_n, 0] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'day'])[1]
-        ttest_array[fish_n, 1] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'night'])[1]
-        ttest_array[fish_n, 2:4] = stats.ttest_rel(feature_dist.loc[feature_dist.FishID == fish, 'day'],
-                                                   feature_dist.loc[feature_dist.FishID == fish, 'night'])
-        ttest_array[fish_n, 4] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() > \
-                                 feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
-        ttest_array[fish_n, 5] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() - \
-                                 feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
+        if len(feature_dist.loc[feature_dist.FishID == fish, 'day']) > 3:
+            ttest_array[fish_n, 0] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'day'])[1]
+            ttest_array[fish_n, 1] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'night'])[1]
+            ttest_array[fish_n, 2:4] = stats.ttest_rel(feature_dist.loc[feature_dist.FishID == fish, 'day'],
+                                                       feature_dist.loc[feature_dist.FishID == fish, 'night'])
+            ttest_array[fish_n, 4] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() > \
+                                     feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
+            ttest_array[fish_n, 5] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() - \
+                                     feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
+        else:
+            print("skipped {} as not enough timee points".format(fish))
+            ttest_array[fish_n, 0:] = np.NaN
 
     df = pd.DataFrame(ttest_array, columns=['norm_day', 'norm_night', 't_stat', 't_pval', 'day_higher', 'day_night_dif'])
     df['FishID'] = fishes

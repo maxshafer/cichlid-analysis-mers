@@ -5,12 +5,11 @@ import os
 import glob
 import datetime
 
-from tkinter.filedialog import askopenfilename, askdirectory
-from tkinter import Tk
 import numpy as np
 
 from cichlidanalysis.io.meta import load_yaml, extract_meta
-from cichlidanalysis.io.tracks import load_track, get_latest_tracks, get_vid_paths_from_nums
+from cichlidanalysis.io.tracks import load_track, get_latest_tracks
+from cichlidanalysis.io.movies import get_movie_paths
 from cichlidanalysis.quality_control.split_tracking import background_vid_split
 from cichlidanalysis.tracking.offline_tracker import tracker
 
@@ -86,27 +85,7 @@ if __name__ == '__main__':
     # Allows a user to select file
     fps = 10
 
-    one_or_more = 'm'
-    while one_or_more not in {'y', 'n'}:
-        one_or_more = input("More than one movie to divide? y/n: \n")
-
-    if one_or_more == 'y':
-        video_nums = input("Input video numbers like this: 7, 8, 10: \n")
-        root = Tk()
-        root.withdraw()
-        root.update()
-        rootdir = askdirectory(parent=root)
-        root.destroy()
-
-        videos_path = get_vid_paths_from_nums(rootdir, video_nums)
-
-    else:
-        root = Tk()
-        root.withdraw()
-        root.update()
-        videos_path = [askopenfilename(title="Select movie file",
-                                       filetypes=(("mp4 files", "*.mp4"), ("all files", "*.*")))]
-        root.destroy()
+    videos_path, _, _ = get_movie_paths()
 
     chunk_size = '11'
     while 60 % int(chunk_size) != 0:

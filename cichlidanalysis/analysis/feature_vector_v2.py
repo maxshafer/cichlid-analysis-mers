@@ -38,11 +38,8 @@ def subset_feature_plt(averages_i, features, labelling):
     """
     # fig = plt.figure(figsize=(5, 10))
     fig = sns.clustermap(averages_i.T.loc[:, features], col_cluster=False, yticklabels=True) #, cbar_kws=dict(use_gridspec=False,location="top")
-    fig.set_xticklabels(fig.get_xticklabels(), rotation=45,  ha='right', va='top')
-    fig.set_yticklabels(fig.get_yticklabels(), rotation=0)
-    fig.set(xlabel=labelling, ylabel='Species')
     plt.tight_layout(pad=2)
-
+    plt.close()
 
 feature_v = load_feature_vectors(rootdir, "*als_fv2.csv")
 
