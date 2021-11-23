@@ -76,7 +76,7 @@ if __name__ == '__main__':
             if len(backgrounds) < 1:
                 print("Didn't find remade background, will use original background in camera folder")
                 os.chdir(cam_dir)
-                backgrounds = glob.glob("*.png")
+                backgrounds = glob.glob("*background.png")
                 new_bgd = False
             backgrounds.sort()
 
@@ -90,6 +90,10 @@ if __name__ == '__main__':
                 video_files.append(os.path.split(i)[1])
             backgrounds = get_file_paths_from_nums(vid_dir, video_nums, file_format='*.png')
             cam_dir = os.path.split(vid_dir)[0]
+            if backgrounds == []:
+                print("couldn't  find backgrounds, looking at old backgrounds)")
+                new_bgd = False
+                backgrounds = get_file_paths_from_nums(cam_dir, video_nums, file_format='*.png')
             rec_name = os.path.split(vid_dir)[1]
 
         elif track_all == 'n':
@@ -184,10 +188,24 @@ if __name__ == '__main__':
             for idx, val in enumerate(video_files):
                 movie_n = val.split("_")[1]
                 background_of_movie = [i for i in backgrounds if (i.split('/')[-1]).split("_")[1] == movie_n]
-                print("tracking with background {}".format(background_of_movie))
+                print("tracking with background {}".format(background_of_movie[0]))
                 background = cv2.imread(background_of_movie[0], 0)
 
-                tracker(os.path.join(vid_dir, val), background, rois, threshold=35, display=False, area_size=100)
+                # check if using an old background (need to crop) or new
+                if new_bgd:
+                    background_crop = background
+                else:
+                    curr_roi_n = vid_dir.split("_")[-3][1]
+                    curr_roi = vid_rois['roi_{}'.format(curr_roi_n)]
+                    background_crop = background[curr_roi[1]:curr_roi[1] + curr_roi[3], curr_roi[0]:curr_roi[0] +
+                                                                                                 curr_roi[2]]
+                    # extremely rarely the background needs to be padded, this hack can be used
+                    # Used for:
+                    # FISH20211103_c5_r1_Lepidiolamprologus-elongatus_su, FISH20211006_c3_r0_Neolamprologus-brevis_su
+                    # import numpy as np
+                    # background_crop = np.vstack([background_crop, np.zeros([1, curr_roi[2]], dtype='uint8')])
+
+                tracker(os.path.join(vid_dir, val), background_crop, rois, threshold=35, display=False, area_size=100)
 
         # find cases where a movie has multiple csv files, add exclude tag to the ones from not today (date in file
         # names) and replace timestamps.

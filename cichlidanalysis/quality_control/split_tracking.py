@@ -226,7 +226,7 @@ if __name__ == '__main__':
 
     track_next_movie = 'm'
     while track_next_movie not in {'y', 'n'}:
-        track_next_movie  = input("Retrack the movie after the spilt movie? y/n: \n")
+        track_next_movie = input("Retrack the movie after the spilt movie? y/n: \n")
 
     if retrack == 'y':
         # remake backgrounds from the split.
@@ -287,7 +287,7 @@ if __name__ == '__main__':
             # track the next video (as median will be messed up if it's a background problem.
             # find next movie path
             next_movie_num = str(int(video_name.split("_")[1]) + 1)
-            find_next_movie = glob.glob("*{}_roi*.mp4".format(next_movie_num))
+            find_next_movie = glob.glob("*{}_roi*.mp4".format(next_movie_num.zfill(3)))
             if find_next_movie:
                 next_movie_name = find_next_movie[0]
 
