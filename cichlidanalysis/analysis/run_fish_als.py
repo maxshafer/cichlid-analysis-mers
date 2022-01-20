@@ -401,4 +401,5 @@ if __name__ == '__main__':
                     list_subsubfolders_with_paths_without_lights.append(i)
 
             for roi_folder in list_subsubfolders_with_paths_without_lights:
-                full_analysis(roi_folder)
+                if roi_folder.find('EXCLUDE') == -1:
+                    full_analysis(roi_folder)

@@ -64,7 +64,7 @@ def cluster_species_daily(rootdir, aves_ave_spd, aves_ave_vp, aves_ave_rest, ave
     row_cols_unnamed = pd.DataFrame(row_cols).apply(tuple, axis=1)
 
     # with species names
-    ax = sns.clustermap(aves_ave_spd.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation',
+    ax = sns.clustermap(aves_ave_spd.T, figsize=(7, 9), col_cluster=False, method='single', metric='correlation',
                         yticklabels=True)
     ax.fig.suptitle("Speed mm/s")
     plt.savefig(os.path.join(rootdir, "all_species_daily_clustered_30min_{0}_{1}.png".format("speed",
@@ -72,37 +72,37 @@ def cluster_species_daily(rootdir, aves_ave_spd, aves_ave_vp, aves_ave_rest, ave
     plt.close()
 
     # with tribe colours
-    ax = sns.clustermap(aves_ave_spd.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
+    ax = sns.clustermap(aves_ave_spd.T.reset_index(drop=True), figsize=(7, 9), col_cluster=False, method='single',
                         metric='correlation', row_colors=row_cols_unnamed)
     ax.fig.suptitle("Speed mm/s")
     plt.close()
 
-    ax = sns.clustermap(aves_ave_vp.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
+    ax = sns.clustermap(aves_ave_vp.T.reset_index(drop=True), figsize=(7, 9), col_cluster=False, method='single',
                         metric='correlation', row_colors=row_cols_unnamed)
     ax.fig.suptitle("Vertical position")
     plt.savefig(os.path.join(rootdir, "all_species_daily_clustered_30min_{0}_{1}.png".format("vertical-position",
                                                                                              dt.date.today())))
     plt.close()
 
-    ax = sns.clustermap(aves_ave_rest.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation',
+    ax = sns.clustermap(aves_ave_rest.T, figsize=(7, 9), col_cluster=False, method='single', metric='correlation',
                         yticklabels=True)
     ax.fig.suptitle("Rest")
     plt.savefig(os.path.join(rootdir, "all_species_daily_clustered_30min_{0}_{1}.png".format("rest", dt.date.today())))
     plt.close()
 
-    ax = sns.clustermap(aves_ave_rest.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
+    ax = sns.clustermap(aves_ave_rest.T.reset_index(drop=True), figsize=(7, 9), col_cluster=False, method='single',
                         metric='correlation', row_colors=row_cols_unnamed, yticklabels=True)
     ax.fig.suptitle("Rest")
     plt.close()
 
 
-    ax = sns.clustermap(aves_ave_move.T, figsize=(7, 5), col_cluster=False, method='single', metric='correlation',
+    ax = sns.clustermap(aves_ave_move.T, figsize=(7, 9), col_cluster=False, method='single', metric='correlation',
                         yticklabels=True)
     ax.fig.suptitle("Movement")
     plt.savefig(os.path.join(rootdir, "all_species_daily_clustered_30min_{0}_{1}.png".format("movement", dt.date.today())))
     plt.close()
 
-    ax = sns.clustermap(aves_ave_move.T.reset_index(drop=True), figsize=(7, 5), col_cluster=False, method='single',
+    ax = sns.clustermap(aves_ave_move.T.reset_index(drop=True), figsize=(7, 9), col_cluster=False, method='single',
                         metric='correlation', row_colors=row_cols_unnamed)
     ax.fig.suptitle("Movement")
     plt.close()

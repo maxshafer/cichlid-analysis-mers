@@ -6,13 +6,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_day_night_species(rootdir, fish_diel_patterns):
+def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day_night_dif'):
     """ Plots the individual fish diurnality as scatter and bar plot. Colouring indicates the species level call,
     species are reorder by mean
 
     :return:
     """
-    sorted_index = fish_diel_patterns.groupby('species_six').median().sort_values(by='day_night_dif').index
+    sorted_index = fish_diel_patterns.groupby('species_six').median().sort_values(by=input_type).index
 
     # clrs = [(sns.color_palette(palette='RdYlBu')[0]), sns.color_palette(palette='RdYlBu')[5], sns.color_palette(palette='RdYlBu')[-5]]
     clrs = [(sns.color_palette(palette='RdBu')[0]), sns.color_palette(palette='RdBu')[5], (128/255, 128/255, 128/255)] #(171/255, 221/255, 164/255)]
@@ -20,7 +20,7 @@ def plot_day_night_species(rootdir, fish_diel_patterns):
 
     # row colours by median value
     box_cols = []
-    sorted_day_night_dif = fish_diel_patterns.groupby('species_six').median().sort_values(by='day_night_dif').day_night_dif
+    sorted_day_night_dif = fish_diel_patterns.groupby('species_six').median().sort_values(by=input_type).loc[:, input_type]
     sorted_day_night_dif_scaled =(sorted_day_night_dif-sorted_day_night_dif.min())/(sorted_day_night_dif.max()-sorted_day_night_dif.min())
     for i in sorted_index:
         box_cols.append(plt.cm.get_cmap('bwr')(sorted_day_night_dif_scaled.loc[i]))
@@ -46,32 +46,40 @@ def plot_day_night_species(rootdir, fish_diel_patterns):
 
     # plotting horizontal
     f, ax = plt.subplots(figsize=(10, 5))
-    bp = sns.boxplot(data=fish_diel_patterns, x='species_six', y='day_night_dif', palette=box_cols, ax=ax,
+    bp = sns.boxplot(data=fish_diel_patterns, x='species_six', y=input_type, palette=box_cols, ax=ax,
                 order=sorted_index, fliersize=0, boxprops=dict(alpha=.7))
     for patch, color in zip(bp.artists, row_cols):
         patch.set_edgecolor(color)
         patch.set_linewidth(3)
         # patch.set_alpha(1)
-    sns.stripplot(data=fish_diel_patterns, x='species_six', y='day_night_dif', hue='diel_pattern', ax=ax, size=4,
+    sns.stripplot(data=fish_diel_patterns, x='species_six', y=input_type, hue='diel_pattern', ax=ax, size=4,
                   palette=clrs, hue_order=hue_ordering, order=sorted_index)
-    ax.set(ylabel='Day mean - night mean', xlabel='Species')
+    ax.set(ylabel=input_type, xlabel='Species')
     ax.set_xticklabels(labels=sorted_index, rotation=90)
-    ax = plt.axhline(0, ls='--', color='k')
+    if input_type == 'day_night_dif':
+        ax = plt.axhline(0, ls='--', color='k')
+    else:
+        ax = plt.axhline(1, ls='--', color='k')
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "species_diurnal-nocturnal_30min_median-value_{0}.png".format(dt.date.today())))
+    plt.savefig(os.path.join(rootdir, "species_diurnal-nocturnal_30min_median-value_{0}_{1}_{2}.png".format(feature,
+                             dt.date.today(), input_type)))
     plt.close()
 
     # plotting horizontal
     f, ax = plt.subplots(figsize=(10, 5))
-    sns.boxplot(data=fish_diel_patterns, x='species_six', y='day_night_dif', palette=row_cols, ax=ax,
+    sns.boxplot(data=fish_diel_patterns, x='species_six', y=input_type, palette=row_cols, ax=ax,
                 order=sorted_index, fliersize=0, boxprops=dict(alpha=.3))
-    sns.stripplot(data=fish_diel_patterns, x='species_six', y='day_night_dif', hue='diel_pattern', ax=ax, size=4,
+    sns.stripplot(data=fish_diel_patterns, x='species_six', y=input_type, hue='diel_pattern', ax=ax, size=4,
                   palette=clrs, hue_order=hue_ordering, order=sorted_index)
-    ax.set(ylabel='Day mean - night mean', xlabel='Species')
+    ax.set(ylabel=input_type, xlabel='Species')
     ax.set_xticklabels(labels=sorted_index, rotation=90)
-    ax = plt.axhline(0, ls='--', color='k')
+    if input_type == 'day_night_dif':
+        ax = plt.axhline(0, ls='--', color='k')
+    else:
+        ax = plt.axhline(1, ls='--', color='k')
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "species_diurnal-nocturnal_30min_diel-pattern{0}.png".format(dt.date.today())))
+    plt.savefig(os.path.join(rootdir, "species_diurnal-nocturnal_30min_diel-pattern_{0}_{1}_{2}.png".format(feature,
+                                                                                        dt.date.today(), input_type)))
     plt.close()
 
     # plotting vertical

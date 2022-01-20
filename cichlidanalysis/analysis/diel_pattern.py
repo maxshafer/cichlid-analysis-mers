@@ -27,11 +27,13 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
     feature_dist_night = feature_dist_night.rename(columns={feature: "night"})
     feature_dist = pd.merge(feature_dist_day, feature_dist_night, how='inner', on=["FishID", "day_n"])
 
+    # as rest is opposite valence (high = low activity) we switch it for consistent colour of plotting
+    # (blue = more nocturnal)
     if feature == 'rest':
         feature_dist['day'] = np.abs(feature_dist['day']-1)
         feature_dist['night'] = np.abs(feature_dist['night'] - 1)
 
-    ttest_array = np.zeros([len(fishes), 6])
+    ttest_array = np.zeros([len(fishes), 7])
     for fish_n, fish in enumerate(fishes):
         if len(feature_dist.loc[feature_dist.FishID == fish, 'day']) > 3:
             ttest_array[fish_n, 0] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'day'])[1]
@@ -42,14 +44,17 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
                                      feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
             ttest_array[fish_n, 5] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() - \
                                      feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
+            ttest_array[fish_n, 6] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() / \
+                                     feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
         else:
-            print("skipped {} as not enough timee points".format(fish))
+            print("skipped {} as not enough time points".format(fish))
             ttest_array[fish_n, 0:] = np.NaN
 
-    df = pd.DataFrame(ttest_array, columns=['norm_day', 'norm_night', 't_stat', 't_pval', 'day_higher', 'day_night_dif'])
+    df = pd.DataFrame(ttest_array, columns=['norm_day', 'norm_night', 't_stat', 't_pval', 'day_higher', 'day_night_dif',
+                                            'day_night_ratio'])
     df['FishID'] = fishes
 
-    # multiple testsing correction
+    # multiple testing correction
     # ### bonferroni
     # corrected_alpha = 0.05 / len(df['t_pval'])
     # df['t_pval_corr_sig2'] = df['t_pval'] < corrected_alpha

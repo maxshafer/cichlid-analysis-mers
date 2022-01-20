@@ -112,6 +112,7 @@ if __name__ == '__main__':
     # correlations for species
     species_daily_corr(rootdir, aves_ave_spd, 'speed_mm', 'single')
     species_daily_corr(rootdir, aves_ave_rest, 'rest', 'single')
+    species_daily_corr(rootdir, aves_ave_move, 'movement', 'single')
 
     # ###########################
     # ### Define diel pattern ###
@@ -128,7 +129,17 @@ if __name__ == '__main__':
                 fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'] = state
         print("{} is {}".format(species_name, fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'].unique()))
 
-    plot_day_night_species(rootdir, fish_diel_patterns)
+    plot_day_night_species(rootdir, fish_diel_patterns, 'rest', 'day_night_ratio')
+
+    fish_diel_patterns_move = diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement')
+    fish_diel_patterns_move['species_diel_pattern'] = 'undefined'
+    plot_day_night_species(rootdir, fish_diel_patterns_move, 'movement')
+    plot_day_night_species(rootdir, fish_diel_patterns_move, 'movement', 'day_night_ratio')
+
+    fish_diel_patterns_spd = diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='speed_mm')
+    fish_diel_patterns_spd['species_diel_pattern'] = 'undefined'
+    plot_day_night_species(rootdir, fish_diel_patterns_spd, 'speed_mm')
+    plot_day_night_species(rootdir, fish_diel_patterns_spd, 'speed_mm', 'day_night_ratio')
 
     # better crepuscular
     # feature = 'rest'

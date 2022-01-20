@@ -155,9 +155,15 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
 
         # calculate ave and stdv
         average = sp_feature.mean(axis=1)
-        averages[species_n, :] = average[0:303]
-        stdv = sp_feature.std(axis=1)
+        if np.shape(average)[0] > 303:
+            averages[species_n, :] = average[0:303]
+        else:
+            # if data short then pad the data end with np.NaNs
+            data_len = np.shape(average)[0]
+            averages[species_n, :] = np.pad(average[0:data_len], (0, 303-data_len), 'constant',
+                                            constant_values=(np.NaN, np.NaN))
 
+        stdv = sp_feature.std(axis=1)
         # create time vector in datetime format
         # tv = fish_tracks_ds.loc[fish_tracks_ds.FishID == fish_IDs[0], 'ts']
         date_time_obj = []

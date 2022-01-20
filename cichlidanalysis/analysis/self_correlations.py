@@ -82,11 +82,12 @@ def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_metho
     :param link_method:
     :return:
     """
-
-    individ_corr = averages_feature.corr()
-
+    # issue with some columns being all zeros and messing up correlation so drop these columns
+    averages_feature_dropped = averages_feature.loc[(averages_feature.sum(axis=1) != 0), (averages_feature.sum(axis=0) != 0)]
+    individ_corr = averages_feature_dropped.corr()
     ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1,
                         cmap='RdBu_r', xticklabels=False, yticklabels=False)
+
     ax.fig.suptitle(feature)
     plt.savefig(os.path.join(rootdir, "fish_of_{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_name, feature, dt.date.today(), link_method)))
     plt.close()

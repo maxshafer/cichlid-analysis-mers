@@ -59,7 +59,10 @@ sp_metrics = add_metrics(feature_v.species_six.unique(), metrics_path)
 
 feature_v['tribe'] = 'undefined'
 for species_n in feature_v.species_six.unique():
-    feature_v.loc[feature_v['species_six'] == species_n, 'tribe'] = \
+    if sp_metrics.loc[sp_metrics['species_abbreviation'] == species_n, 'tribe'].empty:
+        feature_v.loc[feature_v['species_six'] == species_n, 'tribe'] = 'undefined'
+    else:
+        feature_v.loc[feature_v['species_six'] == species_n, 'tribe'] = \
         sp_metrics.loc[sp_metrics['species_abbreviation'] == species_n, 'tribe'].values[0]
 
 # make species average
@@ -111,8 +114,12 @@ feature_v_mean = feature_v.groupby('species_six').mean()
 feature_v_mean = feature_v_mean.reset_index()
 feature_v_mean['tribe'] = 'undefined'
 for row in feature_v_mean['species_six']:
-    feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = \
-        sp_metrics.loc[sp_metrics['species_abbreviation'] == row, 'tribe'].values[0]
+    if sp_metrics.loc[sp_metrics['species_abbreviation'] == species_n, 'tribe'].empty:
+        feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = 'undefined'
+    else:
+        feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = \
+        sp_metrics.loc[sp_metrics['species_abbreviation'] == species_n, 'tribe'].values[0]
+
 
 fig = plt.figure(figsize=(5, 10))
 sns.histplot(data=feature_v_mean, x='total_rest', binwidth=1, hue='tribe', multiple="stack")

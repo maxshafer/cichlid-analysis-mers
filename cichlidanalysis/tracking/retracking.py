@@ -76,7 +76,7 @@ if __name__ == '__main__':
             if len(backgrounds) < 1:
                 print("Didn't find remade background, will use original background in camera folder")
                 os.chdir(cam_dir)
-                backgrounds = glob.glob("*background.png")
+                backgrounds = glob.glob("*ackground.png")
                 new_bgd = False
             backgrounds.sort()
 
