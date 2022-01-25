@@ -4,6 +4,7 @@ import copy
 import datetime as dt
 
 import numpy as np
+import pandas as pd
 
 
 def load_track(csv_file_path):
@@ -79,7 +80,7 @@ def extract_tracks_from_fld(folder, file_ending):
 
     file_cleaned, files = get_latest_tracks(folder, file_ending)
 
-    # prioritise range version of these files
+    # prioritise range version of these files (retracked)
     files_split = glob.glob("*Range*_.csv")
     files_split.sort()
 
@@ -88,9 +89,15 @@ def extract_tracks_from_fld(folder, file_ending):
         if file_split in files:
             movie_nums.append(file_split.split("_")[1])
 
+    # get all files and their movie numbers
+    all_files = glob.glob("*.csv")
+    all_files_df = pd.DataFrame(all_files, columns=['file_name'])
+    all_files_df.file_name.str.split('_',  expand=True)
+    all_files_df["movie_n"] = all_files_df.file_name.str.split('_',  expand=True).iloc[:, 1]
+
     # need to extract the movie name which was spilt and replace it with all the "range" files
     for movie in set(movie_nums):
-        all_with_movie_num = glob.glob("*_{}_*.csv".format(movie))
+        all_with_movie_num = all_files_df.loc[all_files_df["movie_n"] == movie].file_name.to_list()
         select_with_movie_num = copy.copy(all_with_movie_num)
         movies_with_range = []
         for file_with_movie_num in all_with_movie_num:
@@ -98,11 +105,11 @@ def extract_tracks_from_fld(folder, file_ending):
                 movies_with_range.append(select_with_movie_num.pop(select_with_movie_num.index(file_with_movie_num)))
         movies_with_range.sort()
 
-        #but also remove the ones with "exclude" tag
+        # but also remove the ones with "exclude" tag
         select_with_movie_num = remove_tags(select_with_movie_num, ["exclude"])
 
         if len(select_with_movie_num) > 1:
-            print("two  options for replacement for split movie... exiting")
+            print("two options for replacement for split movie... exiting")
             return False
 
         replacing_movie_idx = files.index(select_with_movie_num[0])
