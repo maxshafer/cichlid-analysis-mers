@@ -11,14 +11,19 @@ def add_metrics(species_sixes, metrics_path):
 
     # get only metrics for given species
     first = True
+    species_to_add_at_end = []
     for species_s_i in species_sixes:
         if (metrics.loc[metrics.species_abbreviation == species_s_i, 'species_abbreviation']).empty:
+            species_to_add_at_end.append(species_s_i)
             print('Did not find {}'.format(species_s_i))
         if first:
             sp_metrics = metrics.loc[metrics.species_abbreviation == species_s_i]
             first = False
         else:
             sp_metrics = pd.concat([sp_metrics, metrics.loc[metrics.species_abbreviation == species_s_i]])
+
+    for species_missing in species_to_add_at_end:
+        sp_metrics = pd.concat([sp_metrics, pd.DataFrame({'species_abbreviation': species_missing, 'tribe': 'other'}, index=[0])])
     sp_metrics = sp_metrics.reset_index(drop=True)
     return sp_metrics
 
@@ -40,6 +45,7 @@ def tribe_cols():
                       'Bathybatini': (36/255, 38/255, 37/255),
                       'Trematocarini': (148/255, 142/255, 115/255),
                       'Boulengerochromini': (90/255, 90/255, 90/255),
-                      'Eretmodini': (98/255, 54/255, 118/255)})
+                      'Eretmodini': (98/255, 54/255, 118/255),
+                      'other': (192/255, 192/255, 192/255)})
 
     return tribe_col

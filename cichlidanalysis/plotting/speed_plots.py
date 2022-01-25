@@ -226,3 +226,116 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
     plt.close('all')
     aves_feature = pd.DataFrame(averages.T, columns=species, index=date_time_obj[0:averages.shape[1]])
     return aves_feature, date_time_obj, sp_feature_combined
+
+
+def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, ylabeling, change_times_datetime_i,
+                                  rootdir, sp_metrics, tribe_col):
+    """  Plot ridge plot of each species from a down sampled fish_tracks pandas structure
+
+    :param fish_tracks_ds_i:
+    :param feature:
+    :param ymax:
+    :param span_max:
+    :param ylabeling:
+    :return: averages: average speed for each
+    inspiration from https://matplotlib.org/matplotblog/posts/create-ridgeplots-in-matplotlib/
+    """
+    fish_IDs = fish_tracks_ds_i['FishID'].unique()
+    species = fish_tracks_ds_i['species'].unique()
+    date_form = DateFormatter('%H:%M:%S')
+
+    gs = grid_spec.GridSpec(len(species), 1)
+    fig = plt.figure(figsize=(4, 14))
+    ax_objs = []
+
+    # order species by clustering
+    species_df = pd.DataFrame(data=species, columns=['species'])
+    species_df["tribe"] = "other"
+    # sort  by tribe
+
+    for index, row in species_df.iterrows():
+        if row[0] in sp_metrics.full_name.to_list():
+            species_df.iloc[index, 1] = sp_metrics.loc[sp_metrics.full_name == row[0], 'tribe'].item()
+    species_sort = species_df.sort_values('tribe').species.to_list()
+
+    first = 1
+    for species_n, species_name in enumerate(species_sort):
+        if species_name in sp_metrics.full_name.to_list():
+            tribe_n = sp_metrics.loc[sp_metrics.full_name == species_name, 'tribe'].item()
+        else:
+            tribe_n = "other"
+
+        # # get speeds for each individual for a given species
+        spd = fish_tracks_ds_i[fish_tracks_ds_i.species == species_name][[feature, 'FishID', 'ts']]
+        sp_spd = spd.pivot(columns='FishID', values=feature, index='ts')
+
+        # get time of day so that the same tod for each fish can be averaged
+        sp_spd['time_of_day'] = sp_spd.apply(lambda row: str(row.name)[11:16], axis=1)
+        sp_spd_ave = sp_spd.groupby('time_of_day').mean()
+        sp_spd_ave_std = sp_spd_ave.std(axis=1)
+        daily_feature = sp_spd_ave.mean(axis=1)
+
+        # create time vector in datetime format
+        date_time_obj = []
+        for i in daily_feature.index:
+            date_time_obj.append(dt.datetime.strptime(i, '%H:%M')+timedelta(days=(365.25*70), hours=12))
+
+        #  add first point at end so that there is plotting until midnight
+        daily_feature = pd.concat([daily_feature, pd.Series(data=daily_feature.iloc[0], index=['24:00'])])
+        date_time_obj.append(date_time_obj[-1]+timedelta(hours=0.5))
+
+        # creating new axes object
+        ax_objs.append(fig.add_subplot(gs[species_n:species_n + 1, 0:]))
+        # days_to_plot = (date_time_obj[-1] - date_time_obj[0]).days + 1
+        day_n = 0
+        # for day_n in range(days_to_plot):
+        ax_objs[-1].fill_between([dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S')+timedelta(days=day_n),
+                                  change_times_datetime_i[0]+timedelta(days=day_n)], [span_max, span_max], 0,
+                                 color='lightblue', alpha=0.5, linewidth=0, zorder=1)
+        ax_objs[-1].fill_between([change_times_datetime_i[0]+timedelta(days=day_n),
+                                  change_times_datetime_i[1]+timedelta(days=day_n)], [span_max, span_max], 0,  color='wheat',
+                                 alpha=0.5, linewidth=0)
+        ax_objs[-1].fill_between([change_times_datetime_i[2]+timedelta(days=day_n), change_times_datetime_i[3]+timedelta
+        (days=day_n)], [span_max, span_max], 0, color='wheat', alpha=0.5, linewidth=0)
+        ax_objs[-1].fill_between([change_times_datetime_i[3]+timedelta(days=day_n), change_times_datetime_i[4]+timedelta
+        (days=day_n)], [span_max, span_max], 0, color='lightblue', alpha=0.5, linewidth=0)
+
+        # plotting the distribution
+        ax_objs[-1].plot(date_time_obj, daily_feature, lw=1, color='w')
+        ax_objs[-1].fill_between(date_time_obj, daily_feature, 0, color=tribe_col[tribe_n], zorder=2)
+
+        # setting uniform x and y lims
+        ax_objs[-1].set_xlim(min(date_time_obj), dt.datetime.strptime("1970-1-3 00:00:00", '%Y-%m-%d %H:%M:%S'))
+        ax_objs[-1].set_ylim(0, ymax)
+
+        # make background transparent
+        rect = ax_objs[-1].patch
+        rect.set_alpha(0)
+
+        if species_n == len(species) - 1:
+            ax_objs[-1].set_xlabel("Time", fontsize=10, fontweight="bold")
+            ax_objs[-1].xaxis.set_major_locator(MultipleLocator(20))
+            ax_objs[-1].xaxis.set_major_formatter(date_form)
+            ax_objs[-1].yaxis.tick_right()
+            ax_objs[-1].yaxis.set_label_position("right")
+            ax_objs[-1].set_ylabel(ylabeling)
+
+        else:
+            # remove borders, axis ticks, and labels
+            ax_objs[-1].set_xticklabels([])
+            ax_objs[-1].set_xticks([])
+            ax_objs[-1].set_yticks([])
+            ax_objs[-1].set_yticklabels([])
+            ax_objs[-1].set_ylabel('')
+
+        spines = ["top", "right", "left", "bottom"]
+        for s in spines:
+            ax_objs[-1].spines[s].set_visible(False)
+
+        short_name = six_letter_sp_name(species_name)
+        ax_objs[-1].text(1, 0, short_name[0], fontweight="bold", fontsize=10, ha="right", rotation=-45)
+        gs.update(hspace=-0.1)
+    plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_daily_{1}.png".format(feature, dt.date.today())))
+    plt.close('all')
+    # aves_feature = pd.DataFrame(averages.T, columns=species, index=date_time_obj[0:averages.shape[1]])
+    return

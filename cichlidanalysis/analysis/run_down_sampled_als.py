@@ -17,7 +17,7 @@ from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_
 from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks
 from cichlidanalysis.plotting.cluster_plots import cluster_all_fish, cluster_species_daily
 from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box
-from cichlidanalysis.plotting.speed_plots import plot_spd_30min_combined
+from cichlidanalysis.plotting.speed_plots import plot_spd_30min_combined, plot_spd_30min_combined_daily
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -63,6 +63,9 @@ if __name__ == '__main__':
 
     # ###########################
     # ## ridge plots for each feature ###
+    feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
+    averages_spd, _, sp_spd_combined = plot_spd_30min_combined_daily(fish_tracks_ds, feature, ymax, span_max,
+                                                               ylabeling, change_times_datetime, rootdir, sp_metrics, tribe_col)
     feature, ymax, span_max, ylabeling = 'vertical_pos', 1, 0.8, 'Vertical position'
     averages_vp, date_time_obj_vp, sp_vp_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                             ylabeling, change_times_datetime, rootdir)

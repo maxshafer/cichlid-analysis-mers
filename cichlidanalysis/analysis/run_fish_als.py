@@ -68,7 +68,7 @@ def full_analysis(rootdir):
         tv_24h_sec[np.where(tv_24h_sec > day_ns / 10 ** 9)] -= day_ns / 10 ** 9
     min_bins = 30
 
-    # interpolate between NaN streches
+    # interpolate between NaN stretches
     x_n = int_nan_streches(track_full[:, 1])
     y_n = int_nan_streches(track_full[:, 2])
 
