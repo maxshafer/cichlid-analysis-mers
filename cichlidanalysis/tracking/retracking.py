@@ -90,6 +90,7 @@ if __name__ == '__main__':
                 video_files.append(os.path.split(i)[1])
             backgrounds = get_file_paths_from_nums(vid_dir, video_nums, file_format='*.png')
             cam_dir = os.path.split(vid_dir)[0]
+            new_bgd = True
             if backgrounds == []:
                 print("couldn't  find backgrounds, looking at old backgrounds)")
                 new_bgd = False

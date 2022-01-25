@@ -10,8 +10,9 @@ import numpy as np
 from cichlidanalysis.io.meta import load_yaml, extract_meta
 from cichlidanalysis.io.tracks import load_track, get_latest_tracks
 from cichlidanalysis.io.movies import get_movie_paths
-from cichlidanalysis.quality_control.split_tracking import background_vid_split
+from cichlidanalysis.quality_control.video_tools import background_vid_split
 from cichlidanalysis.tracking.offline_tracker import tracker
+
 
 def divide_video(video_path, chunk_size=20, fps=10):
 
@@ -27,17 +28,13 @@ def divide_video(video_path, chunk_size=20, fps=10):
     _, latest_file = get_latest_tracks(vid_folder_path, video_name[0:-4])
     na, track_single_orig = load_track(os.path.join(vid_folder_path, latest_file[0]))
 
-    meta = load_yaml(vid_folder_path, "meta_data")
     rois = load_yaml(cam_folder_path, "roi_file")
-    config = load_yaml(cam_folder_path, "config")
     fish_data = extract_meta(vid_folder_name)
 
     os.chdir(cam_folder_path)
     files = glob.glob("*.png")
     files.sort()
     files.insert(0, files.pop(files.index(min(files, key=len))))
-
-    roi_n = rois["roi_" + fish_data['roi'][1]]
 
     # make the chunks
     chunks = np.arange(0, track_single_orig.shape[0]+1, int(chunk_size)*fps*60)
@@ -83,8 +80,6 @@ def divide_video(video_path, chunk_size=20, fps=10):
 if __name__ == '__main__':
     # find file path for video and load track
     # Allows a user to select file
-    fps = 10
-
     videos_path, _, _ = get_movie_paths()
 
     chunk_size = '11'
@@ -93,4 +88,3 @@ if __name__ == '__main__':
 
     for video_path in videos_path:
         divide_video(video_path, chunk_size)
-
