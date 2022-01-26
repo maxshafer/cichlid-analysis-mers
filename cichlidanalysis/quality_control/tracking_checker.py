@@ -287,8 +287,8 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
 
         values = spd_sm_mm_ps[win_min:win_max]
         values_2 = displacement_i_mm_s[win_min:win_max]
-        plt.plot(values)
         plt.plot(values_2)
+        plt.plot(values, linewidth=3)
         # plt.plot([0, 400], [thresh, thresh])
         plt.plot([0, 400], [15, 15])
 
@@ -296,7 +296,7 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
         ax.set_xlim([0, 400])
         ax.set_aspect('auto')
         # ax.legend(["current frame", "speed_sm_mm_ps", "thresh 15mm/s"])
-        ax.legend(["current frame", "speed_sm_mm_ps", "speed_raw_mm_ps", "threshold (0.25 bl)"])
+        ax.legend(["current frame", "speed_raw_mm_ps", "speed_sm_mm_ps", "threshold (0.25 bl)"])
         plt.ylabel("mm/s")
 
         k = cv2.waitKey(33)
@@ -337,6 +337,7 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
     video.release()
     cv2.destroyAllWindows()
     return False
+
 
 def run_tracker_checker():
     """ For running the tracker checker. Allows you to define the movie number and folder
