@@ -7,7 +7,7 @@
 
 # importing libraries
 from tkinter import Tk
-from tkinter.filedialog import askopenfilename
+from tkinter.filedialog import askdirectory
 import os
 import sys
 import glob
@@ -17,7 +17,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from cichlidanalysis.io.meta import load_yaml, extract_meta
-from cichlidanalysis.io.tracks import extract_tracks_from_fld
+from cichlidanalysis.io.tracks import extract_tracks_from_fld, get_file_paths_from_nums
 from cichlidanalysis.analysis.processing import int_nan_streches, remove_high_spd_xy, smooth_speed
 
 
@@ -338,15 +338,29 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
     cv2.destroyAllWindows()
     return False
 
+def run_tracker_checker():
+    """ For running the tracker checker. Allows you to define the movie number and folder
 
-if __name__ == '__main__':
-    # find file path for video and load track
-    # Allows a user to select file
+    :return:
+    """
+    # define movie number to check
+    video_num = '-1'
+    while int(video_num) == -1:
+        video_num = input("What is the number of the movie you would like to check?:")
+
+    # Allows a user to select folder
     root = Tk()
     root.withdraw()
     root.update()
-    video_path = askopenfilename(title="Select movie file", filetypes=(("mp4 files", "*.mp4"), ("all files", "*.*")))
+    video_folder_path = askdirectory(parent=root, title="Select movie file")
     root.destroy()
+
+    video_path = get_file_paths_from_nums(video_folder_path, video_num, file_format='*.mp4')
+    if len(video_path):
+        video_path = video_path[0]
+    else:
+        print("Couldn't find the movie. Exiting")
+        return
 
     next_vid = True
 
@@ -364,3 +378,7 @@ if __name__ == '__main__':
         for vid in video_files:
             if next_movie_n in vid:
                 video_path = os.path.join(os.path.split(video_path)[0], vid)
+
+
+if __name__ == '__main__':
+    run_tracker_checker()
