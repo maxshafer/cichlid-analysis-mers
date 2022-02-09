@@ -63,9 +63,18 @@ if __name__ == '__main__':
 
     # ###########################
     # ## ridge plots for each feature ###
+    # daily
     feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
-    averages_spd, _, sp_spd_combined = plot_spd_30min_combined_daily(fish_tracks_ds, feature, ymax, span_max,
-                                                               ylabeling, change_times_datetime, rootdir, sp_metrics, tribe_col)
+    plot_spd_30min_combined_daily(fish_tracks_ds, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                  sp_metrics, tribe_col)
+    feature, ymax, span_max, ylabeling = 'movement', 1, 0.8, 'Movement'
+    plot_spd_30min_combined_daily(fish_tracks_ds, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                              sp_metrics, tribe_col)
+    feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
+    plot_spd_30min_combined_daily(fish_tracks_ds, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                              sp_metrics, tribe_col)
+
+    # weekly
     feature, ymax, span_max, ylabeling = 'vertical_pos', 1, 0.8, 'Vertical position'
     averages_vp, date_time_obj_vp, sp_vp_combined = plot_spd_30min_combined(fish_tracks_ds, feature, ymax, span_max,
                                                                             ylabeling, change_times_datetime, rootdir)

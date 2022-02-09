@@ -258,7 +258,6 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
             species_df.iloc[index, 1] = sp_metrics.loc[sp_metrics.full_name == row[0], 'tribe'].item()
     species_sort = species_df.sort_values('tribe').species.to_list()
 
-    first = 1
     for species_n, species_name in enumerate(species_sort):
         if species_name in sp_metrics.full_name.to_list():
             tribe_n = sp_metrics.loc[sp_metrics.full_name == species_name, 'tribe'].item()
@@ -337,5 +336,4 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
         gs.update(hspace=-0.1)
     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_daily_{1}.png".format(feature, dt.date.today())))
     plt.close('all')
-    # aves_feature = pd.DataFrame(averages.T, columns=species, index=date_time_obj[0:averages.shape[1]])
     return
