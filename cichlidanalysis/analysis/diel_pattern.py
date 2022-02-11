@@ -234,15 +234,15 @@ def make_fish_peaks_df(fish_peaks, fish_id):
     return fish_peaks_df
 
 
-# def day_night_ratio_individ_30min(fish_tracks_ds, feature='movement'):
+# def day_night_ratio_individ_30min(fish_tracks_bin, feature='movement'):
 #     """ Find the day/night ratio of non-rest for the daily average rest trace of each individual fish
 #
-#     :param fish_tracks_ds:
+#     :param fish_tracks_bin:
 #     :return:
 #     """
 #     # all individuals
-#     night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID']].groupby('FishID').mean()
-#     day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID']].groupby('FishID').mean()
+#     night = fish_tracks_bin.loc[fish_tracks_bin.daytime == 'n', [feature, 'FishID']].groupby('FishID').mean()
+#     day = fish_tracks_bin.loc[fish_tracks_bin.daytime == 'd', [feature, 'FishID']].groupby('FishID').mean()
 #
 #     day_night_ratio = np.abs(1 - day) / np.abs(1 - night)
 #     day_night_ratio = day_night_ratio.rename(columns={feature: "ratio"})

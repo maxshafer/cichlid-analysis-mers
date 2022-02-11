@@ -165,7 +165,7 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
 
         stdv = sp_feature.std(axis=1)
         # create time vector in datetime format
-        # tv = fish_tracks_ds.loc[fish_tracks_ds.FishID == fish_IDs[0], 'ts']
+        # tv = fish_tracks_bin.loc[fish_tracks_bin.FishID == fish_IDs[0], 'ts']
         date_time_obj = []
         for i in sp_feature.index:
             date_time_obj.append(dt.datetime.strptime(i, '%Y-%m-%d %H:%M:%S'))
@@ -240,7 +240,6 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
     :return: averages: average speed for each
     inspiration from https://matplotlib.org/matplotblog/posts/create-ridgeplots-in-matplotlib/
     """
-    fish_IDs = fish_tracks_ds_i['FishID'].unique()
     species = fish_tracks_ds_i['species'].unique()
     date_form = DateFormatter('%H:%M:%S')
 
@@ -248,21 +247,12 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
     fig = plt.figure(figsize=(4, 14))
     ax_objs = []
 
-    # order species by clustering
-    species_df = pd.DataFrame(data=species, columns=['species'])
-    species_df["tribe"] = "other"
-    # sort  by tribe
+    # order species by clustering, sort  by tribe
+    species_sort = fish_tracks_ds_i.loc[:, ['species', 'tribe']].drop_duplicates().sort_values('tribe').species.to_list()
 
-    for index, row in species_df.iterrows():
-        if row[0] in sp_metrics.full_name.to_list():
-            species_df.iloc[index, 1] = sp_metrics.loc[sp_metrics.full_name == row[0], 'tribe'].item()
-    species_sort = species_df.sort_values('tribe').species.to_list()
 
     for species_n, species_name in enumerate(species_sort):
-        if species_name in sp_metrics.full_name.to_list():
-            tribe_n = sp_metrics.loc[sp_metrics.full_name == species_name, 'tribe'].item()
-        else:
-            tribe_n = "other"
+        tribe = fish_tracks_ds_i.loc[fish_tracks_ds_i["species"] == species_name].tribe.unique()[0]
 
         # # get speeds for each individual for a given species
         spd = fish_tracks_ds_i[fish_tracks_ds_i.species == species_name][[feature, 'FishID', 'ts']]
@@ -301,7 +291,7 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
 
         # plotting the distribution
         ax_objs[-1].plot(date_time_obj, daily_feature, lw=1, color='w')
-        ax_objs[-1].fill_between(date_time_obj, daily_feature, 0, color=tribe_col[tribe_n], zorder=2)
+        ax_objs[-1].fill_between(date_time_obj, daily_feature, 0, color=tribe_col[tribe], zorder=2)
 
         # setting uniform x and y lims
         ax_objs[-1].set_xlim(min(date_time_obj), dt.datetime.strptime("1970-1-3 00:00:00", '%Y-%m-%d %H:%M:%S'))

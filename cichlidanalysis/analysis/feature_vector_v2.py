@@ -167,6 +167,16 @@ averages_norm = averages.div(averages.sum(axis=1), axis=0)
 # ax = plt.axvline(12, ls='--', color='k')
 # plt.savefig(os.path.join(rootdir, "total_rest_{0}.png".format(datetime.date.today())))
 
+### summary statistics #####
+# N per species histogram
+fig = plt.figure(figsize=(5, 5))
+ax = feature_v["species"].value_counts(sort=False).plot.hist()
+ax.set_xlabel("Individuals for a species")
+ax.set_xlim([0, 12])
+
+# number of species
+# feature_v["species"].value_counts().index
+
 # total rest ordered by mean, coloured by tribe
 fig = plt.figure(figsize=(5, 10))
 ax = sns.boxplot(data=feature_v, y='species_six', x='total_rest', hue='tribe', dodge=False, showfliers=False,

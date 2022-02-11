@@ -62,7 +62,7 @@ def load_ds_als_files(folder, suffix="*als.csv"):
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
     data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
 
-    print("All down sampled als.csv files loaded")
+    print("All binned als.csv files loaded")
     return data
 
 
@@ -87,7 +87,7 @@ def load_vertical_rest_als_files(folder, suffix="*als_vertical_pos_hist_rest-non
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
     data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
 
-    print("All down sampled als.csv files loaded")
+    print("All binned als.csv files loaded")
     return data
 
 
@@ -120,5 +120,5 @@ def load_vertical_rest_als_files(folder, suffix="*als_vertical_pos_hist_rest-non
     # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
     data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
     data = data.reset_index(drop=True)
-    print("All down sampled als_vertical_pos_hist_rest-non-rest.csv files loaded")
+    print("All binned als_vertical_pos_hist_rest-non-rest.csv files loaded")
     return data
