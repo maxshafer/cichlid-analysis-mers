@@ -179,3 +179,48 @@ if __name__ == '__main__':
     ax = sns.displot(pd.melt(aves_ave_move.reset_index(), id_vars='time_of_day'), x='time_of_day', y='value')
     for axes in ax.axes.flat:
         _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
+
+
+# clusters from daily averages
+# https://joernhees.de/blog/2015/08/26/scipy-hierarchical-clustering-and-dendrogram-tutorial/
+from matplotlib import pyplot as plt
+from scipy.cluster.hierarchy import dendrogram, linkage, fcluster, cophenet
+import numpy as np
+from scipy.spatial.distance import pdist
+
+individ_corr = aves_ave_spd.corr(method='pearson')
+Z = linkage(individ_corr, 'single')
+
+plt.figure()
+plt.figure(figsize=(25, 10))
+plt.title('Hierarchical Clustering Dendrogram')
+plt.xlabel('sample index')
+plt.ylabel('distance')
+dendrogram(
+    Z,
+    leaf_rotation=90.,  # rotates the x axis labels
+    leaf_font_size=8.,  # font size for the x axis labels
+)
+plt.show()
+
+# check copheneticcorrelation coefficient, The closer the value is to 1, the better the clustering preserves the
+# original distances
+c, coph_dists = cophenet(Z, pdist(aves_ave_spd))
+print(c)
+
+max_d = 1.3
+clusters = fcluster(Z, max_d, criterion='distance')
+d = {'species_six': individ_corr.index, "cluster": clusters}
+df = pd.DataFrame(d)
+df = df.sort_values(by="cluster")
+
+# make average of each cluster
+from cichlidanalysis.plotting.daily_plots import daily_ave_spd
+
+change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
+for i in df.cluster.unique():
+    species_subset = df.loc[df.cluster == i, 'species_six'].tolist()
+    subset = aves_ave_spd[species_subset]
+    cluster_mean = subset.mean(axis=1)
+    cluster_std = subset.std(axis=1)
+    daily_ave_spd(subset, cluster_std, rootdir, 'cluster_{}'.format(i), change_times_unit)
