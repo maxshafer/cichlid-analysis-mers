@@ -355,6 +355,9 @@ def full_analysis(rootdir):
     # test if saving file worked (issues with null bytes)
     try:
         data_b = pd.read_csv(filename, sep=',')
+        # check if all data is as expected
+        if data_b.shape != als_df.shape:
+            raise Exception("Saving didn't work properly as the saved csv is too short! Report this bug!")
     except pd.errors.ParserError:
         print("problem parsing, probably null bytes error, trying to save with numpy instead ")
         np.savetxt(filename, track_als.T, delimiter=',', header='tv_ns,speed_mm,x_nt,y_nt', comments='')
