@@ -22,6 +22,6 @@ Now you can run
 run_combine_fish.als (creates combined data and bins data for that species, generates the _als_30m.csv and _als_fv2.csv files)
 
 You can move the _als_30m.csv and _als_fv2.csv files to a folder which has these files for all species. This will allow you to run:
-run_down_sampled.py (for plots and analysis across fish species using the _als_30m.csv data)
+run_binned.py (for plots and analysis across fish species using the _als_30m.csv data)
 and
 feature_vector_v2.py (for plots and analysis across fish species using the _als_fv2.csv data)
