@@ -15,6 +15,45 @@ from cichlidanalysis.plotting.single_plots import fill_plot_ts
 from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
 
 
+def plot_ridge_plots(fish_tracks_bin, change_times_datetime, rootdir, sp_metrics, tribe_col):
+    """ Plot ridge plots and get averages of each feature
+
+    :param fish_tracks_bin:
+    :param change_times_datetime:
+    :param rootdir:
+    :param sp_metrics:
+    :param tribe_col:
+    :return:
+    """
+    # daily
+    feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
+    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                  sp_metrics, tribe_col)
+    feature, ymax, span_max, ylabeling = 'movement', 1, 0.8, 'Movement'
+    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                  sp_metrics, tribe_col)
+    feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
+    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                  sp_metrics, tribe_col)
+
+    # weekly
+    feature, ymax, span_max, ylabeling = 'vertical_pos', 1, 0.8, 'Vertical position'
+    averages_vp, date_time_obj_vp, sp_vp_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                            ylabeling, change_times_datetime, rootdir)
+    feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
+    averages_spd, _, sp_spd_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                               ylabeling, change_times_datetime, rootdir)
+    feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
+    averages_rest, _, sp_rest_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                 ylabeling, change_times_datetime, rootdir)
+    feature, ymax, span_max, ylabeling = 'movement', 1, 0.8, 'Movement'
+    averages_move, _, sp_move_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                 ylabeling, change_times_datetime, rootdir)
+
+    return averages_vp, date_time_obj_vp, sp_vp_combined, averages_spd, sp_spd_combined, averages_rest, \
+           sp_rest_combined, averages_move, sp_move_combined
+
+
 # speed_mm (30m bins) for each fish (individual lines)
 def plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d):
     if not fish_tracks_30m.dtypes['ts'] == np.dtype('datetime64[ns]'):

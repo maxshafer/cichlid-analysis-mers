@@ -9,8 +9,8 @@ from cichlidanalysis.utils.species_names import six_letter_sp_name
 from cichlidanalysis.io.meta import extract_meta
 
 
-def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
-    """ To define if a fish is diurnal or nocturnal we use a paired t-test to find if day means are different from night
+def diel_pattern_stats_individ_bin(fish_tracks_ds, feature='movement'):
+    """ To define if a fish is diurnal or nocturnal we use a wilcoxon test to find if day means are different from night
     means
 
     :param fish_tracks_ds:
@@ -33,24 +33,30 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
         feature_dist['day'] = np.abs(feature_dist['day']-1)
         feature_dist['night'] = np.abs(feature_dist['night'] - 1)
 
-    ttest_array = np.zeros([len(fishes), 7])
+    stats_array = np.zeros([len(fishes), 7])
     for fish_n, fish in enumerate(fishes):
         if len(feature_dist.loc[feature_dist.FishID == fish, 'day']) > 3:
-            ttest_array[fish_n, 0] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'day'])[1]
-            ttest_array[fish_n, 1] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'night'])[1]
-            ttest_array[fish_n, 2:4] = stats.ttest_rel(feature_dist.loc[feature_dist.FishID == fish, 'day'],
+            stats_array[fish_n, 0] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'day'])[1]
+            stats_array[fish_n, 1] = stats.shapiro(feature_dist.loc[feature_dist.FishID == fish, 'night'])[1]
+            # stats_array[fish_n, 2:4] = stats.ttest_rel(feature_dist.loc[feature_dist.FishID == fish, 'day'],
+            #                                            feature_dist.loc[feature_dist.FishID == fish, 'night'])
+            try:
+                # as wilcoxon can't handle a total difference == 0 catch these cases
+                stats_array[fish_n, 2:4] = stats.wilcoxon(feature_dist.loc[feature_dist.FishID == fish, 'day'],
                                                        feature_dist.loc[feature_dist.FishID == fish, 'night'])
-            ttest_array[fish_n, 4] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() > \
+            except:
+                stats_array[fish_n, 2:4] = np.NaN
+            stats_array[fish_n, 4] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() > \
                                      feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
-            ttest_array[fish_n, 5] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() - \
+            stats_array[fish_n, 5] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() - \
                                      feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
-            ttest_array[fish_n, 6] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() / \
+            stats_array[fish_n, 6] = feature_dist.loc[feature_dist.FishID == fish, 'day'].mean() / \
                                      feature_dist.loc[feature_dist.FishID == fish, 'night'].mean()
         else:
             print("skipped {} as not enough time points".format(fish))
-            ttest_array[fish_n, 0:] = np.NaN
+            stats_array[fish_n, 0:] = np.NaN
 
-    df = pd.DataFrame(ttest_array, columns=['norm_day', 'norm_night', 't_stat', 't_pval', 'day_higher', 'day_night_dif',
+    df = pd.DataFrame(stats_array, columns=['norm_day', 'norm_night', 't_stat', 't_pval', 'day_higher', 'day_night_dif',
                                             'day_night_ratio'])
     df['FishID'] = fishes
 
@@ -60,7 +66,9 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
     # df['t_pval_corr_sig2'] = df['t_pval'] < corrected_alpha
 
     # ### FDR Benjamini/Hochberg
-    df['t_pval_corr_sig'] = smt.fdrcorrection(df.t_pval, alpha=0.05, method='indep', is_sorted=False)[1]
+    t_vals = df.t_pval.replace(np.NaN, 1)
+    df['t_pval_corr_sig'] = smt.fdrcorrection(t_vals, alpha=0.05, method='indep', is_sorted=False)[1]
+    df.loc[df.t_pval == np.NaN, 't_pval_corr_sig'] = np.nan
 
     df['diel_pattern'] = 'undefined'
     for (index_label, row_series) in df.iterrows():
@@ -76,6 +84,74 @@ def diel_pattern_ttest_individ_ds(fish_tracks_ds, feature='movement'):
 
     return df
 
+
+def diel_pattern_stats_species_bin(fish_tracks_ds, feature='movement'):
+    """ To define if a species is diurnal or nocturnal we use the wilcoxon test to find if day means are different from
+    night means
+
+    :param fish_tracks_ds:
+    :param feature:
+    :return:
+    """
+    fishes = fish_tracks_ds.FishID.unique()
+    all_species = fish_tracks_ds.species.unique()
+
+    feature_dist_day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID', 'species']].groupby(
+        ['species', 'FishID']).mean().reset_index()
+    feature_dist_night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID', 'species']].groupby(
+        ['species', 'FishID']).mean().reset_index()
+    feature_dist_day = feature_dist_day.rename(columns={feature: "day"})
+    feature_dist_night = feature_dist_night.rename(columns={feature: "night"})
+    feature_dist = pd.merge(feature_dist_day, feature_dist_night, how='inner', on=["FishID", "species"])
+
+    # as rest is opposite valence (high = low activity) we switch it for consistent colour of plotting
+    # (blue = more nocturnal)
+    if feature == 'rest':
+        feature_dist['day'] = np.abs(feature_dist['day']-1)
+        feature_dist['night'] = np.abs(feature_dist['night'] - 1)
+
+    stats_array = np.zeros([len(all_species), 7])
+    for species_n, species in enumerate(all_species):
+        if len(feature_dist.loc[feature_dist.species == species, 'day']) > 3:
+            stats_array[species_n, 0] = stats.shapiro(feature_dist.loc[feature_dist.species == species, 'day'])[1]
+            stats_array[species_n, 1] = stats.shapiro(feature_dist.loc[feature_dist.species == species, 'night'])[1]
+            # stats_array[fish_n, 2:4] = stats.ttest_rel(feature_dist.loc[feature_dist.FishID == fish, 'day'],
+            #                                            feature_dist.loc[feature_dist.FishID == fish, 'night'])
+            try:
+                # as wilcoxon can't handle a total difference == 0 catch these cases
+                stats_array[species_n, 2:4] = stats.wilcoxon(feature_dist.loc[feature_dist.species == species, 'day'],
+                                                          feature_dist.loc[feature_dist.species == species, 'night'])
+            except:
+                stats_array[species_n, 2:4] = np.NaN
+            stats_array[species_n, 4] = feature_dist.loc[feature_dist.species == species, 'day'].mean() > \
+                                     feature_dist.loc[feature_dist.species == species, 'night'].mean()
+            stats_array[species_n, 5] = feature_dist.loc[feature_dist.species == species, 'day'].mean() - \
+                                     feature_dist.loc[feature_dist.species == species, 'night'].mean()
+            stats_array[species_n, 6] = feature_dist.loc[feature_dist.species == species, 'day'].mean() / \
+                                     feature_dist.loc[feature_dist.species == species, 'night'].mean()
+        else:
+            print("skipped {} as not enough time points".format(species))
+            stats_array[species_n, 0:] = np.NaN
+
+    df = pd.DataFrame(stats_array, columns=['norm_day', 'norm_night', 't_stat', 't_pval', 'day_higher', 'day_night_dif',
+                                            'day_night_ratio'])
+    df['species'] = all_species
+
+    # ### FDR Benjamini/Hochberg
+    # as FDR can't deal with NaNs replace with 1
+    t_vals = df.t_pval.replace(np.NaN, 1)
+    df['t_pval_corr_sig'] = smt.fdrcorrection(t_vals, alpha=0.05, method='indep', is_sorted=False)[1]
+    df.loc[df.t_pval == np.NaN, 't_pval_corr_sig'] = np.nan
+
+    df['diel_pattern'] = 'undefined'
+    for (index_label, row_series) in df.iterrows():
+        if row_series.t_pval_corr_sig < 0.05:
+            if row_series.day_higher == 1:
+                df.loc[index_label, 'diel_pattern'] = 'diurnal'     # diurnal
+            else:
+                df.loc[index_label, 'diel_pattern'] = 'nocturnal'     # nocturnal
+
+    return df
 
 def daily_more_than_pattern_individ(feature_v, species, plot=False):
     """ Daily activity pattern for individuals of all fish

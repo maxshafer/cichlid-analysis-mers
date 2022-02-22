@@ -41,7 +41,7 @@ if __name__ == '__main__':
             all_day_lens.extend(species_day_lens)
             all_fishIDs.extend(fish_tracks.FishID.unique().tolist())
 
-        # save every ten fish (as it takes a long time to run)
+        # save every tenth fish (as it takes a long time to run)
         counter = counter + 1
         if counter == 10:
             dic = {"fishID": all_fishIDs, "day_lens": all_day_lens}
