@@ -38,18 +38,18 @@ if __name__ == '__main__':
 
             print("Species {} data is spread from {} to {}  days".format(fish.split('_')[3], np.min(species_day_lens),
                                                                          np.max(species_day_lens)))
-            all_day_lens.append(species_day_lens)
-            all_fishIDs.append(fish_tracks.FishID.unique().tolist())
+            all_day_lens.extend(species_day_lens)
+            all_fishIDs.extend(fish_tracks.FishID.unique().tolist())
 
         # save every ten fish (as it takes a long time to run)
         counter = counter + 1
         if counter == 10:
-            dic = {"fishID": all_fishIDs[0], "day_lens": all_day_lens[0]}
+            dic = {"fishID": all_fishIDs, "day_lens": all_day_lens}
             df = pd.DataFrame(data=dic)
-            df.to_csv(os.join(topdir, "lengths_of_recordings.csv"))
+            df.to_csv(os.path.join(topdir, "_lengths_of_recordings.csv"))
             counter = 0
 
     # final save
-    dic = {"fishID": all_fishIDs[0], "day_lens": all_day_lens[0]}
+    dic = {"fishID": all_fishIDs, "day_lens": all_day_lens}
     df = pd.DataFrame(dic)
-    df.to_csv(os.join(topdir, "lengths_of_recordings.csv"))
+    df.to_csv(os.path.join(topdir, "_lengths_of_recordings.csv"))
