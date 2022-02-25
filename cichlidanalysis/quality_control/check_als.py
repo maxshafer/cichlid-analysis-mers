@@ -1,7 +1,8 @@
 import os
+
 from tkinter.filedialog import askdirectory
 from tkinter import Tk
-
+import datetime as dt
 import numpy as np
 import pandas as pd
 
@@ -46,10 +47,10 @@ if __name__ == '__main__':
         if counter == 10:
             dic = {"fishID": all_fishIDs, "day_lens": all_day_lens}
             df = pd.DataFrame(data=dic)
-            df.to_csv(os.path.join(topdir, "_lengths_of_recordings.csv"))
+            df.to_csv(os.path.join(topdir, "_lengths_of_recordings_{}.csv".format(dt.date.today())))
             counter = 0
 
     # final save
     dic = {"fishID": all_fishIDs, "day_lens": all_day_lens}
     df = pd.DataFrame(dic)
-    df.to_csv(os.path.join(topdir, "_lengths_of_recordings.csv"))
+    df.to_csv(os.path.join(topdir, "_lengths_of_recordings_{}.csv".format(dt.date.today())))
