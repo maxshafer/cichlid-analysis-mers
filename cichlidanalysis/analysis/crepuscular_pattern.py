@@ -110,12 +110,12 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
             ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * i) + 0.5, "o", color="r")
 
 
-def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
-    """ Uses borders to find peaks in the twilight periods (2h -/+ of sunup/down). Finds peak position  and height.
-    Uses the defined diel pattern to define baseline, nocturnal = night, diurnal = day, undefined = mean od day and
+def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns_sp):
+    """ Uses borders to find peaks in the twilight periods (2h -/+ of sunup/down). Finds peak position and height.
+    Uses the defined diel pattern to define baseline, nocturnal = night, diurnal = day, undefined = mean of day and
     night
 
-    # Returns: peak height, peak location, dawn/dusk, max day/night for that day, if  peak missing, find most common
+    # Returns: peak height, peak location, dawn/dusk, max day/night for that day, if peak missing, find most common
     peak, if all peaks missing use average of the whole period location and use the value of that bin.
     Find amplitude of peaks
 
@@ -162,6 +162,7 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
             fish_peaks_dawn = np.zeros([4, int(np.floor(fish_feature.iloc[:, i].reset_index().shape[0] / 48))])
             fish_peaks_dusk = np.zeros([4, int(np.floor(fish_feature.iloc[:, i].reset_index().shape[0] / 48))])
 
+            # for each epoque (48 time points for 30min binned data) find the peaks in dawn and dusk
             for j in np.arange(0, int(np.ceil(fish_feature.shape[0] / 48))):
                 x = fish_feature.iloc[epoques[j]:epoques[j + 1], i]
                 if x.size == 48:
@@ -187,9 +188,11 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
                     night_mean = np.round(x[night_border.astype(int) == 1].mean(), 2)
                     daynight_mean = np.round(x[(night_border + day_border).astype(int) == 1].mean(), 2)
 
-                    # how the baseline is chosen is dependent on the diel pattern of the fish (predefined)
-                    pattern = fish_diel_patterns.loc[fish_diel_patterns.FishID == fish_feature.columns[i],
-                                                     'species_diel_pattern'].values[0]
+                    # how the baseline is chosen is dependent on the diel pattern of the species of the fish
+                    # pattern = fish_diel_patterns.loc[fish_diel_patterns.FishID == fish_feature.columns[i],
+                    #                                  'species_diel_pattern'].values[0]
+                    pattern = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species == species_name,
+                                                        'diel_pattern'].values[0]
                     if pattern == 'nocturnal':
                         fish_peaks_dawn[3, j] = fish_peaks_dawn[2, j] - night_mean
                         fish_peaks_dusk[3, j] = fish_peaks_dusk[2, j] - night_mean
