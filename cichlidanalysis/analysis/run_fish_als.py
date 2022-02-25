@@ -263,7 +263,7 @@ def full_analysis(rootdir):
     plt.title("Speed_{0}_smoothed_by_{1}".format(meta["species"], min_bins))
     plt.savefig(os.path.join(rootdir, "{0}_speed_{1}_30m_spt.png".format(fish_ID, meta["species"].replace(' ', '-'))))
 
-    # win_size = fps * sec/min * mins (was 30*60)heatm
+    # win_size = fps * sec/min * mins (was 30*60)
     smooth_win = 10 * 60 * min_bins
     speed_sm_mm_bin = smooth_speed(speed_sm_mm_ps, win_size=smooth_win)
     plt.close()
