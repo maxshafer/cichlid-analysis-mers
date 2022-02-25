@@ -9,19 +9,19 @@ from cichlidanalysis.utils.species_names import six_letter_sp_name
 from cichlidanalysis.io.meta import extract_meta
 
 
-def diel_pattern_stats_individ_bin(fish_tracks_ds, feature='movement'):
+def diel_pattern_stats_individ_bin(fish_tracks_bin, feature='movement'):
     """ To define if a fish is diurnal or nocturnal we use a wilcoxon test to find if day means are different from night
     means
 
-    :param fish_tracks_ds:
+    :param fish_tracks_bin:
     :param feature:
     :return:
     """
-    fishes = fish_tracks_ds.FishID.unique()
+    fishes = fish_tracks_bin.FishID.unique()
 
-    feature_dist_day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID', 'day_n', 'species']].groupby(
+    feature_dist_day = fish_tracks_bin.loc[fish_tracks_bin.daytime == 'd', [feature, 'FishID', 'day_n', 'species']].groupby(
         ['FishID', 'day_n']).mean().reset_index()
-    feature_dist_night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID', 'day_n']].groupby(
+    feature_dist_night = fish_tracks_bin.loc[fish_tracks_bin.daytime == 'n', [feature, 'FishID', 'day_n']].groupby(
         ['FishID', 'day_n']).mean().reset_index()
     feature_dist_day = feature_dist_day.rename(columns={feature: "day"})
     feature_dist_night = feature_dist_night.rename(columns={feature: "night"})
@@ -66,9 +66,18 @@ def diel_pattern_stats_individ_bin(fish_tracks_ds, feature='movement'):
     # df['t_pval_corr_sig2'] = df['t_pval'] < corrected_alpha
 
     # ### FDR Benjamini/Hochberg
-    t_vals = df.t_pval.replace(np.NaN, 1)
-    df['t_pval_corr_sig'] = smt.fdrcorrection(t_vals, alpha=0.05, method='indep', is_sorted=False)[1]
-    df.loc[df.t_pval == np.NaN, 't_pval_corr_sig'] = np.nan
+    dropped_indices = df.index[df.t_pval.isna()].tolist()
+    t_vals = df.t_pval.dropna()
+    t_vals_sig = smt.fdrcorrection(t_vals, alpha=0.05, method='indep', is_sorted=False)[1]
+
+    # create df with the excluded indices = NaN
+    nan_array = np.empty((len(dropped_indices), 1))
+    nan_array[:] = np.NaN
+    nan_filler = pd.DataFrame(nan_array, columns=['t_pval_corr_sig'], index=dropped_indices)
+    t_vals_sig = pd.DataFrame(t_vals_sig, columns=['t_pval_corr_sig'], index=t_vals.index)
+    # concatenate and sort the index
+    t_vals_sig = pd.concat([t_vals_sig, nan_filler]).sort_index()
+    df['t_pval_corr_sig'] = t_vals_sig
 
     df['diel_pattern'] = 'undefined'
     for (index_label, row_series) in df.iterrows():
@@ -82,23 +91,31 @@ def diel_pattern_stats_individ_bin(fish_tracks_ds, feature='movement'):
     for fish in fishes:
         df.loc[df['FishID'] == fish, 'species_six'] = six_letter_sp_name(extract_meta(fish)['species'])
 
+    # define species diel pattern
+    states = ['nocturnal', 'diurnal']
+    df['species_diel_pattern'] = 'undefined'
+    for species_name in df['species_six'].unique():
+        for state in states:
+            if ((df.loc[df.species_six == species_name, 'diel_pattern'] == state)*1).mean() > 0.5:
+                df.loc[df.species_six == species_name, 'species_diel_pattern'] = state
+        print("{} is {}".format(species_name, df.loc[df.species_six == species_name, 'species_diel_pattern'].unique()))
     return df
 
 
-def diel_pattern_stats_species_bin(fish_tracks_ds, feature='movement'):
+def diel_pattern_stats_species_bin(fish_tracks_bin, feature='movement'):
     """ To define if a species is diurnal or nocturnal we use the wilcoxon test to find if day means are different from
     night means
 
-    :param fish_tracks_ds:
+    :param fish_tracks_bin:
     :param feature:
     :return:
     """
-    fishes = fish_tracks_ds.FishID.unique()
-    all_species = fish_tracks_ds.species.unique()
+    fishes = fish_tracks_bin.FishID.unique()
+    all_species = fish_tracks_bin.species.unique()
 
-    feature_dist_day = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'd', [feature, 'FishID', 'species']].groupby(
+    feature_dist_day = fish_tracks_bin.loc[fish_tracks_bin.daytime == 'd', [feature, 'FishID', 'species']].groupby(
         ['species', 'FishID']).mean().reset_index()
-    feature_dist_night = fish_tracks_ds.loc[fish_tracks_ds.daytime == 'n', [feature, 'FishID', 'species']].groupby(
+    feature_dist_night = fish_tracks_bin.loc[fish_tracks_bin.daytime == 'n', [feature, 'FishID', 'species']].groupby(
         ['species', 'FishID']).mean().reset_index()
     feature_dist_day = feature_dist_day.rename(columns={feature: "day"})
     feature_dist_night = feature_dist_night.rename(columns={feature: "night"})
@@ -138,10 +155,18 @@ def diel_pattern_stats_species_bin(fish_tracks_ds, feature='movement'):
     df['species'] = all_species
 
     # ### FDR Benjamini/Hochberg
-    # as FDR can't deal with NaNs replace with 1
-    t_vals = df.t_pval.replace(np.NaN, 1)
-    df['t_pval_corr_sig'] = smt.fdrcorrection(t_vals, alpha=0.05, method='indep', is_sorted=False)[1]
-    df.loc[df.t_pval == np.NaN, 't_pval_corr_sig'] = np.nan
+    dropped_indices = df.index[df.t_pval.isna()].tolist()
+    t_vals = df.t_pval.dropna()
+    t_vals_sig = smt.fdrcorrection(t_vals, alpha=0.05, method='indep', is_sorted=False)[1]
+
+    # create df with the excluded indices = NaN
+    nan_array = np.empty((len(dropped_indices), 1))
+    nan_array[:] = np.NaN
+    nan_filler = pd.DataFrame(nan_array, columns=['t_pval_corr_sig'], index=dropped_indices)
+    t_vals_sig = pd.DataFrame(t_vals_sig, columns=['t_pval_corr_sig'], index=t_vals.index)
+    # concatenate and sort the index
+    t_vals_sig = pd.concat([t_vals_sig, nan_filler]).sort_index()
+    df['t_pval_corr_sig'] = t_vals_sig
 
     df['diel_pattern'] = 'undefined'
     for (index_label, row_series) in df.iterrows():
@@ -150,6 +175,10 @@ def diel_pattern_stats_species_bin(fish_tracks_ds, feature='movement'):
                 df.loc[index_label, 'diel_pattern'] = 'diurnal'     # diurnal
             else:
                 df.loc[index_label, 'diel_pattern'] = 'nocturnal'     # nocturnal
+
+    df['species_six'] = 'blank'
+    for sp_name in all_species:
+        df.loc[df['species'] == sp_name, 'species_six'] = six_letter_sp_name(sp_name)
 
     return df
 
