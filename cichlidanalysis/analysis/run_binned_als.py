@@ -14,13 +14,14 @@ from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_n
 from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
 from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave, \
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
-from cichlidanalysis.analysis.diel_pattern import diel_pattern_stats_individ_bin
+from cichlidanalysis.analysis.diel_pattern import diel_pattern_stats_individ_bin, diel_pattern_stats_species_bin
 from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr
 from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks
 from cichlidanalysis.plotting.cluster_plots import cluster_all_fish, cluster_species_daily
-from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box
+from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box, \
+    plot_day_night_species_ave
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
-from cichlidanalysis.analysis.clustering_patterns import run_species_pattern_cluster
+from cichlidanalysis.analysis.clustering_patterns import run_species_pattern_cluster_daily, run_species_pattern_cluster_weekly
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -129,7 +130,7 @@ if __name__ == '__main__':
         plt.savefig(os.path.join(rootdir, "daily_fish_corr_coefs_{0}_{1}.png".format(feature, dt.date.today())))
         plt.close()
 
-        # # correlations for individuals across week !!! need to fix short recordings!
+        # correlations for individuals across week
         # _ = fish_weekly_corr(rootdir, fish_tracks_bin, feature, 'single')
 
     # correlations for species and clusters
@@ -137,37 +138,30 @@ if __name__ == '__main__':
     species_daily_corr(rootdir, aves_ave_rest, 'rest', 'single')
     species_daily_corr(rootdir, aves_ave_move, 'movement', 'single')
 
-    species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster(aves_ave_spd,
+    species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster_daily(aves_ave_spd,
                                                                                                   aves_ave_move,
                                                                                                   aves_ave_rest,
+                                                                                                  rootdir)
+    species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster_weekly(averages_spd,
+                                                                                                  averages_move,
+                                                                                                  averages_rest,
                                                                                                   rootdir)
 
     # ###########################
     # ### Define diel pattern ###
     fish_tracks_bin = fish_tracks_add_day_twilight_night(fish_tracks_bin)
-    # fish_tracks_bin = add_day_number_fish_tracks(fish_tracks_bin)
     fish_diel_patterns = diel_pattern_stats_individ_bin(fish_tracks_bin, feature='rest')
+    fish_diel_patterns_sp = diel_pattern_stats_species_bin(fish_tracks_bin, feature='rest')
 
-    # define species diel pattern
-    states = ['nocturnal', 'diurnal']
-    fish_diel_patterns['species_diel_pattern'] = 'undefined'
-    for species_name in species_sixes:
-        for state in states:
-            if ((fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'diel_pattern'] == state)*1).mean() > 0.5:
-                fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'] = state
-        print("{} is {}".format(species_name, fish_diel_patterns.loc[fish_diel_patterns.species_six == species_name, 'species_diel_pattern'].unique()))
-
-    plot_day_night_species(rootdir, fish_diel_patterns, 'rest', 'day_night_dif')
+    plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_sp, feature='rest')
 
     fish_diel_patterns_move = diel_pattern_stats_individ_bin(fish_tracks_bin, feature='movement')
-    fish_diel_patterns_move['species_diel_pattern'] = 'undefined'
-    plot_day_night_species(rootdir, fish_diel_patterns_move, 'movement')
-    plot_day_night_species(rootdir, fish_diel_patterns_move, 'movement', 'day_night_dif')
+    fish_diel_patterns_move_sp = diel_pattern_stats_species_bin(fish_tracks_bin, feature='movement')
+    plot_day_night_species_ave(rootdir, fish_diel_patterns_move, fish_diel_patterns_move_sp, feature="movement")
 
     fish_diel_patterns_spd = diel_pattern_stats_individ_bin(fish_tracks_bin, feature='speed_mm')
-    fish_diel_patterns_spd['species_diel_pattern'] = 'undefined'
-    plot_day_night_species(rootdir, fish_diel_patterns_spd, 'speed_mm')
-    plot_day_night_species(rootdir, fish_diel_patterns_spd, 'speed_mm', 'day_night_dif')
+    fish_diel_patterns_spd_sp = diel_pattern_stats_species_bin(fish_tracks_bin, feature='speed_mm')
+    plot_day_night_species_ave(rootdir, fish_diel_patterns_spd, fish_diel_patterns_spd_sp, feature='speed_mm')
 
     # better crepuscular
     # feature = 'rest'
@@ -175,13 +169,15 @@ if __name__ == '__main__':
     # crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, species)     # for plotting weekly data for each species
 
     feature = 'speed_mm'
-    cres_peaks = crepuscular_peaks(feature, fish_tracks_bin, species, fish_diel_patterns)
-    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks)
+    cres_peaks = crepuscular_peaks(feature, fish_tracks_bin, species, fish_diel_patterns_sp)
+    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature)
 
     # make and save diel patterns csv
     cresp_sp = cres_peaks.groupby(['species_six', 'species']).mean().reset_index(level=[1])
     diel_sp = fish_diel_patterns.groupby('species_six').mean()
     diel_patterns_df = pd.concat([cresp_sp, diel_sp.day_night_dif, ], axis=1).reset_index()
+    diel_patterns_df = diel_patterns_df.merge(species_cluster_spd, on="species_six")
+
     diel_patterns_df.to_csv(os.path.join(rootdir, "combined_diel_patterns_{}_dp.csv".format(dt.date.today())))
     print("Finished saving out diel pattern data")
 
