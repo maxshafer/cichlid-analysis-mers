@@ -6,6 +6,7 @@
 
 import datetime
 import os
+import time
 
 import cv2.cv2 as cv2
 import numpy as np
@@ -136,7 +137,17 @@ def tracker(video_path, background_full, rois, threshold=5, display=True, area_s
                                                                                                 area_size, range_s,
                                                                                                 range_e)
         os.makedirs(os.path.dirname(filename), exist_ok=True)
-        np.savetxt(filename, datanp, delimiter=",")
+        try:
+            # os.path.isdir(os.path.dirname(filename))
+            np.savetxt(filename, datanp, delimiter=",")
+        except:
+            print("issue with saving,trying again")
+            time.sleep(2)
+            os.path.isdir(os.path.dirname(filename))
+            try:
+                np.savetxt(filename, datanp, delimiter=",")
+            except:
+                print('trying to save after 2s failed')
 
     print("Tracking finished on video cleaning up")
     cv2.destroyAllWindows()

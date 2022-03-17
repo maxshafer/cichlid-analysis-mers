@@ -97,7 +97,7 @@ def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_metho
                         cmap='RdBu_r', xticklabels=False, yticklabels=False)
 
     ax.fig.suptitle(feature)
-    plt.savefig(os.path.join(rootdir, "fish_of_{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_name, feature, dt.date.today(), link_method)))
+    # plt.savefig(os.path.join(rootdir, "fish_of_{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_name, feature, dt.date.today(), link_method)))
     plt.close()
     return corr_vals
 
@@ -113,7 +113,7 @@ def species_daily_corr(rootdir, averages_feature, feature, link_method='single')
 
     individ_corr = averages_feature.corr()
 
-    ax = sns.clustermap(individ_corr, figsize=(9, 8), method=link_method, metric='euclidean', vmin=-1, vmax=1,
+    ax = sns.clustermap(individ_corr, figsize=(10, 9), method=link_method, metric='euclidean', vmin=-1, vmax=1,
                         cmap='viridis', yticklabels=True, xticklabels=True)
     ax.fig.suptitle(feature)
     plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))

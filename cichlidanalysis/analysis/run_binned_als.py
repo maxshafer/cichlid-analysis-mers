@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 
 from cichlidanalysis.io.als_files import load_ds_als_files
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
+from cichlidanalysis.utils.species_names import six_letter_sp_name
 from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
 from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave, \
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
@@ -142,10 +142,8 @@ if __name__ == '__main__':
                                                                                                   aves_ave_move,
                                                                                                   aves_ave_rest,
                                                                                                   rootdir)
-    species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster_weekly(averages_spd,
-                                                                                                  averages_move,
-                                                                                                  averages_rest,
-                                                                                                  rootdir)
+    species_cluster_spd_wk, species_cluster_move_wk, species_cluster_rest_wk = run_species_pattern_cluster_weekly(
+        averages_spd, averages_move, averages_rest, rootdir)
 
     # ###########################
     # ### Define diel pattern ###
@@ -175,15 +173,13 @@ if __name__ == '__main__':
     # make and save diel patterns csv
     cresp_sp = cres_peaks.groupby(['species_six', 'species']).mean().reset_index(level=[1])
     diel_sp = fish_diel_patterns.groupby('species_six').mean()
-    diel_patterns_df = pd.concat([cresp_sp, diel_sp.day_night_dif, ], axis=1).reset_index()
+    diel_patterns_df = pd.concat([cresp_sp, diel_sp.day_night_dif], axis=1).reset_index()
     diel_patterns_df = diel_patterns_df.merge(species_cluster_spd, on="species_six")
 
     diel_patterns_df.to_csv(os.path.join(rootdir, "combined_diel_patterns_{}_dp.csv".format(dt.date.today())))
     print("Finished saving out diel pattern data")
 
-    ## feature vs time of day density plot
-    import seaborn as sns
-    ax = sns.displot(pd.melt(aves_ave_move.reset_index(), id_vars='time_of_day'), x='time_of_day', y='value')
-    for axes in ax.axes.flat:
-        _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
-
+    # ## feature vs time of day density plot
+    # ax = sns.displot(pd.melt(aves_ave_move.reset_index(), id_vars='time_of_day'), x='time_of_day', y='value')
+    # for axes in ax.axes.flat:
+    #     _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)

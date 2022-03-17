@@ -217,7 +217,7 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
 
     # max_sp = int(np.nanpercentile(speed_sm, 99) + 5)
     max_sp = np.nanmax(spd_sm_mm_ps)
-    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+    fig, ax = plt.subplots()
     plt.ion()
     plt.show()
     playing = 1
@@ -262,7 +262,7 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
                 cv2.circle(frame_delta, (int(x_nt[int(curr_frame)]), int(y_nt[int(curr_frame)])), 4, (0, 255, 255), 4)
                 cv2.circle(frame_delta, (cX, cY), 4, (0, 0, 255), 2)
             except:
-                cv2.rectangle(frame, 0, 10, 255, 1)
+                cv2.rectangle(img=frame, pt1=(0, 0), pt2=(10, 10), color=(0, 0, 255), thickness=-1)
 
             cv2.rectangle(frame_delta, start_point, end_point, 220, 2)
             cv2.imshow("Background subtraction of {}".format(vid_name), frame_delta)

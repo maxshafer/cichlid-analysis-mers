@@ -112,6 +112,8 @@ if __name__ == '__main__':
     feature_v = feature_v.replace('Aalcal', 'Altcal')
     feature_v = feature_v.replace('Aaltolamprologus-calvus', 'Altolamprologus-calvus')
 
+    feature_v = feature_v.merge(diel_patterns, on="species_six")
+
     species = feature_v['species'].unique()
 
     tribe_col = tribe_cols()
@@ -176,13 +178,14 @@ if __name__ == '__main__':
     ax = feature_v["species"].value_counts(sort=False).plot.hist()
     ax.set_xlabel("Individuals for a species")
     ax.set_xlim([0, 12])
+    plt.close()
 
     # number of species
     # feature_v["species"].value_counts().index
 
     # total rest ordered by mean, coloured by tribe
     fig = plt.figure(figsize=(5, 10))
-    ax = sns.boxplot(data=feature_v, y='species_six', x='total_rest', color='skyblue', dodge=False, showfliers=False,
+    ax = sns.boxplot(data=feature_v, y='species_six', x='total_rest', hue="cluster", dodge=False, showfliers=False,
                      order=feature_v.groupby('species_six').mean().sort_values("total_rest").index.to_list())
     ax = sns.swarmplot(data=feature_v, y='species_six', x='total_rest', color=".2", size=4,
                        order=feature_v.groupby('species_six').mean().sort_values("total_rest").index.to_list())
@@ -196,21 +199,17 @@ if __name__ == '__main__':
     # histogram of total rest
     feature_v_mean = feature_v.groupby('species_six').mean()
     feature_v_mean = feature_v_mean.reset_index()
-    feature_v_mean['tribe'] = 'undefined'
-    for row in feature_v_mean['species_six']:
-        if sp_metrics.loc[sp_metrics['species_six'] == row, 'tribe'].empty:
-            feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = 'undefined'
-        else:
-            feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = \
-                sp_metrics.loc[sp_metrics['species_six'] == row, 'tribe'].values[0]
+    # feature_v_mean['tribe'] = 'undefined'
+    # for row in feature_v_mean['species_six']:
+    #     if sp_metrics.loc[sp_metrics['species_six'] == row, 'tribe'].empty:
+    #         feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = 'undefined'
+    #     else:
+    #         feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = \
+    #             sp_metrics.loc[sp_metrics['species_six'] == row, 'tribe'].values[0]
 
     fig = plt.figure(figsize=(10, 5))
-    sns.histplot(data=feature_v_mean, x='total_rest', binwidth=1, hue='tribe', multiple="stack")
-    plt.close()
-
-    # total rest vs fish length
-    fig = plt.figure(figsize=(5, 5))
-    sns.regplot(data=feature_v, x='total_rest', y='fish_length_mm')
+    sns.histplot(data=feature_v, x='total_rest', binwidth=1, multiple="stack", color='skyblue')
+    sns.histplot(data=feature_v_mean, x='total_rest', binwidth=1, multiple="stack", color='royalblue')
     plt.close()
 
     # total rest vs day speed
@@ -219,31 +218,37 @@ if __name__ == '__main__':
                                            feature_v['spd_mean_dusk'], feature_v['spd_mean_postdusk']], axis=1).max(axis=1)
 
     fig = plt.figure(figsize=(5, 5))
-    sns.scatterplot(data=feature_v, x='total_rest', y='spd_mean_day', hue='tribe')
+    sns.scatterplot(data=feature_v, x='total_rest', y='spd_mean_day')
     fig = plt.figure(figsize=(5, 5))
-    sns.scatterplot(data=feature_v, x='total_rest', y='spd_mean_night', hue='tribe')
+    sns.scatterplot(data=feature_v, x='total_rest', y='spd_mean_night')
     fig = plt.figure(figsize=(5, 5))
     sns.regplot(data=feature_v, x='total_rest', y='spd_max_mean')
 
     # # bout lengths rest
     fig = plt.figure(figsize=(5, 10))
-    ax = sns.boxplot(data=feature_v, y='species_six', x='rest_bout_mean_day', fliersize=1)
-    ax = sns.swarmplot(data=feature_v, y='species_six', x='rest_bout_mean_day', color=".2", size=3)
+    ax = sns.boxplot(data=feature_v, y='species_six', x='rest_bout_mean_day', fliersize=1, hue="cluster",
+                     order=diel_patterns.sort_values(by="cluster").species_six, dodge=False)
+    ax = sns.swarmplot(data=feature_v, y='species_six', x='rest_bout_mean_day', color=".2", size=3,
+                       order=diel_patterns.sort_values(by="cluster").species_six)
     ax.set(xlim=(0, 1250))
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "rest_bout_mean_day_{0}.png".format(datetime.date.today())))
 
     fig = plt.figure(figsize=(5, 10))
-    ax = sns.boxplot(data=feature_v, y='species_six', x='rest_bout_mean_night', fliersize=1)
-    ax = sns.swarmplot(data=feature_v, y='species_six', x='rest_bout_mean_night', color=".2", size=3)
+    ax = sns.boxplot(data=feature_v, y='species_six', x='rest_bout_mean_night', fliersize=1, hue="cluster",
+                     order=diel_patterns.sort_values(by="cluster").species_six, dodge=False)
+    ax = sns.swarmplot(data=feature_v, y='species_six', x='rest_bout_mean_night', color=".2", size=3,
+                       order=diel_patterns.sort_values(by="cluster").species_six)
     ax.set(xlim=(0, 1250))
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "rest_bout_mean_night_{0}.png".format(datetime.date.today())))
 
     feature_v['rest_bout_mean_dn_dif'] = feature_v['rest_bout_mean_day'] - feature_v['rest_bout_mean_night']
     fig = plt.figure(figsize=(5, 10))
-    ax = sns.boxplot(data=feature_v, y='species_six', x='rest_bout_mean_dn_dif', fliersize=1)
-    ax = sns.swarmplot(data=feature_v, y='species_six', x='rest_bout_mean_dn_dif', color=".2", size=3)
+    ax = sns.boxplot(data=feature_v, y='species_six', x='rest_bout_mean_dn_dif', fliersize=1, hue="cluster",
+                     order=diel_patterns.sort_values(by="cluster").species_six, dodge=False)
+    ax = sns.swarmplot(data=feature_v, y='species_six', x='rest_bout_mean_dn_dif', color=".2", size=3,
+                       order=diel_patterns.sort_values(by="cluster").species_six)
     plt.axvline(0, ls='--', color='k')
     ax.set(xlim=(-750, 600))
     plt.tight_layout()
@@ -251,23 +256,29 @@ if __name__ == '__main__':
 
     # # bout lengths non-rest
     fig = plt.figure(figsize=(5, 10))
-    ax = sns.boxplot(data=feature_v, y='species_six', x='nonrest_bout_mean_day', fliersize=1)
-    ax = sns.swarmplot(data=feature_v, y='species_six', x='nonrest_bout_mean_day', color=".2", size=3)
+    ax = sns.boxplot(data=feature_v, y='species_six', x='nonrest_bout_mean_day', fliersize=1, hue="cluster",
+                     order=diel_patterns.sort_values(by="cluster").species_six, dodge=False)
+    ax = sns.swarmplot(data=feature_v, y='species_six', x='nonrest_bout_mean_day', color=".2", size=3,
+                       order=diel_patterns.sort_values(by="cluster").species_six)
     ax.set(xlim=(0, 1250))
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_day_{0}.png".format(datetime.date.today())))
 
     fig = plt.figure(figsize=(5, 10))
-    ax = sns.boxplot(data=feature_v, y='species_six', x='nonrest_bout_mean_night', fliersize=1)
-    ax = sns.swarmplot(data=feature_v, y='species_six', x='nonrest_bout_mean_night', color=".2", size=3)
+    ax = sns.boxplot(data=feature_v, y='species_six', x='nonrest_bout_mean_night', fliersize=1, hue="cluster",
+                     order=diel_patterns.sort_values(by="cluster").species_six, dodge=False)
+    ax = sns.swarmplot(data=feature_v, y='species_six', x='nonrest_bout_mean_night', color=".2", size=3,
+                       order=diel_patterns.sort_values(by="cluster").species_six)
     ax.set(xlim=(0, 1250))
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_night_{0}.png".format(datetime.date.today())))
 
     feature_v['nonrest_bout_mean_dn_dif'] = feature_v['nonrest_bout_mean_day'] - feature_v['nonrest_bout_mean_night']
     fig = plt.figure(figsize=(5, 10))
-    ax = sns.boxplot(data=feature_v, y='species_six', x='nonrest_bout_mean_dn_dif', fliersize=1)
-    ax = sns.swarmplot(data=feature_v, y='species_six', x='nonrest_bout_mean_dn_dif', color=".2", size=3)
+    ax = sns.boxplot(data=feature_v, y='species_six', x='nonrest_bout_mean_dn_dif', fliersize=1, hue="cluster",
+                     order=diel_patterns.sort_values(by="cluster").species_six, dodge=False)
+    ax = sns.swarmplot(data=feature_v, y='species_six', x='nonrest_bout_mean_dn_dif', color=".2", size=3,
+                       order=diel_patterns.sort_values(by="cluster").species_six)
     plt.axvline(0, ls='--', color='k')
     ax.set(xlim=(-4000, 3000))
     plt.tight_layout()
@@ -277,11 +288,11 @@ if __name__ == '__main__':
     feature_v_mean['nonrest_bout_mean_dn_dif'] = feature_v_mean['nonrest_bout_mean_day'] - feature_v_mean[
         'nonrest_bout_mean_night']
     fig = plt.figure(figsize=(5, 10))
-    sns.histplot(data=feature_v_mean, x='rest_bout_mean_dn_dif', hue='tribe', multiple="stack")
+    sns.histplot(data=feature_v_mean, x='rest_bout_mean_dn_dif', hue='cluster', multiple="stack")
     fig = plt.figure(figsize=(5, 10))
-    sns.histplot(data=feature_v_mean, x='rest_bout_mean_night', hue='tribe', multiple="stack")
+    sns.histplot(data=feature_v_mean, x='rest_bout_mean_night', hue='cluster', multiple="stack")
     fig = plt.figure(figsize=(5, 10))
-    sns.histplot(data=feature_v_mean, x='rest_bout_mean_day', hue='tribe', multiple="stack")
+    sns.histplot(data=feature_v_mean, x='rest_bout_mean_day', hue='cluster', multiple="stack")
 
     data_names = ['spd_mean', 'move_mean', 'rest_mean', 'y_mean', 'spd_std', 'move_std', 'rest_std', 'y_std',
                   'move_bout_mean', 'nonmove_bout_mean', 'rest_bout_mean', 'nonrest_bout_mean', 'move_bout_std',
@@ -363,7 +374,8 @@ if __name__ == '__main__':
 
     #### draw convex hull for each temporal guild ####
     # speed_mm guilds 24.02.2022
-    dic = {'diurnal': [3], 'nocturnal': [1], 'crepuscular': [7, 8, 9, 10, 11], 'undefined': [2, 4, 5, 6, 12, 13]}
+    # dic = {'diurnal': [3], 'nocturnal': [1], 'crepuscular': [7, 8, 9, 10, 11], 'undefined': [2, 4, 5, 6, 12, 13]}
+    dic = {'diurnal': [1], 'nocturnal': [8], 'crepuscular': [5, 6, 7], 'undefined': [2, 3, 4, 9, 10, 11, 12]}
     col_dic = {'diurnal': 'gold', 'nocturnal': 'royalblue', 'crepuscular': 'mediumorchid', 'undefined': 'black'}
 
     fig = plt.figure(figsize=(3, 3))
