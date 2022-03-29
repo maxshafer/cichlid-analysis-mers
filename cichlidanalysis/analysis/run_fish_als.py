@@ -242,7 +242,7 @@ def full_analysis(rootdir):
     super_threshold_indices_bin = smooth_speed(fraction_active, 10 * 60 * min_bins)
 
     # filled plot in s
-    plt.close()
+    plt.close('all')
     fig1, ax1 = filled_plot(tv / 10 ** 9 / 60 / 60, super_threshold_indices_bin, change_times_h,
                             day_ns / 10 ** 9 / 60 / 60)
     ax1.set_ylim([0, 1])
@@ -252,7 +252,7 @@ def full_analysis(rootdir):
     plt.title("Fraction_active_{}_thresh_{}_mmps".format(meta["species"], move_thresh))
     plt.savefig(os.path.join(rootdir, "{0}_wake_{1}_spt.png".format(fish_ID, meta["species"].replace(' ', '-'))))
 
-    # win_size = fps * sec/min * mins (was 30*60)heatm
+    # win_size = fps * sec/min * mins (was 30*60)
     smooth_win = 10 * 60 * min_bins
     speed_sm_bin = smooth_speed(speed_sm_tbl_ps, win_size=smooth_win)
     plt.close()

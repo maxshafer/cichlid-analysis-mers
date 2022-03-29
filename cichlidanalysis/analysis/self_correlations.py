@@ -103,7 +103,7 @@ def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_metho
 
 
 
-def species_daily_corr(rootdir, averages_feature, feature, link_method='single'):
+def species_daily_corr(rootdir, averages_feature, feature, label, link_method='single'):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -116,7 +116,7 @@ def species_daily_corr(rootdir, averages_feature, feature, link_method='single')
     ax = sns.clustermap(individ_corr, figsize=(10, 9), method=link_method, metric='euclidean', vmin=-1, vmax=1,
                         cmap='viridis', yticklabels=True, xticklabels=True)
     ax.fig.suptitle(feature)
-    plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))
+    plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}_{3}.png".format(label, feature, dt.date.today(), link_method)))
     plt.close()
 
 

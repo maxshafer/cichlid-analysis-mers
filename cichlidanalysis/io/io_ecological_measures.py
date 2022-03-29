@@ -3,7 +3,7 @@ from tkinter.filedialog import askdirectory, askopenfilename
 from tkinter import Tk
 
 
-def get_ronco_paths():
+def get_meta_paths():
     """ Hard coded paths for Ronco data on Annika's macbook
 
     :return:
@@ -12,6 +12,9 @@ def get_ronco_paths():
     ronco_data_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/Fig2_data.csv"
     # https://www.nature.com/articles/s41586-020-2930-4#Sec30
 
+    # path for cichlid meta
+    cichlid_meta_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/cichlid_meta.csv"
+
     # voucher_key_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/01_specimen_voucher_key.csv"
     # pigmentation_pattern_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/06_scores_pigmentation_pattern.csv"
     # stable_isotope_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/06_stable_isotope_data.csv"
@@ -19,11 +22,11 @@ def get_ronco_paths():
     # lower_pharyngeal_jaw_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/06_landmark_data_lower_pharyngeal_jaw.tps"
     # body_shape_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/06_landmark_data_body_shape.tps"
 
-    return ronco_data_path
+    return ronco_data_path, cichlid_meta_path
 
 
 if __name__ == '__main__':
-    ronco_data_path = get_ronco_paths()
+    ronco_data_path = get_meta_paths()
 
     root = Tk()
     root.withdraw()

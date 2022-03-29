@@ -134,9 +134,17 @@ if __name__ == '__main__':
         # _ = fish_weekly_corr(rootdir, fish_tracks_bin, feature, 'single')
 
     # correlations for species and clusters
-    species_daily_corr(rootdir, aves_ave_spd, 'speed_mm', 'single')
-    species_daily_corr(rootdir, aves_ave_rest, 'rest', 'single')
-    species_daily_corr(rootdir, aves_ave_move, 'movement', 'single')
+    species_daily_corr(rootdir, aves_ave_spd, 'ave','speed_mm', 'single')
+    species_daily_corr(rootdir, aves_ave_rest, 'ave', 'rest', 'single')
+    species_daily_corr(rootdir, aves_ave_move, 'ave', 'movement', 'single')
+
+    # figurre 1
+    individ_corr = aves_ave_spd.corr()
+    ax = sns.clustermap(individ_corr, figsize=(10, 9), method=link_method, metric='euclidean', vmin=-1, vmax=1,
+                        cmap='viridis', yticklabels=True, xticklabels=True)
+    ax.fig.suptitle(feature)
+    plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}_{3}.png".format('ave', 'speed_mm', dt.date.today(), 'single')))
+    plt.close()
 
     species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster_daily(aves_ave_spd,
                                                                                                   aves_ave_move,
