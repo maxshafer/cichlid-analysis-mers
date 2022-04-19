@@ -8,8 +8,6 @@ def get_movie_paths():
 
     video_nums = input("Input video numbers like this: 7, 8, 10: \n")
     root = Tk()
-    root.withdraw()
-    root.update()
     rootdir = askdirectory(parent=root)
     root.destroy()
 

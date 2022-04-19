@@ -135,7 +135,7 @@ def tracker_checker_inputs(video_path_i):
     spd_sm_mm = spd_sm * config["mm_per_pixel"]
     spd_sm_mm_ps = spd_sm_mm * config['fps']
 
-    thresh = 0.25 * meta["fish_length_mm"]
+    thresh = 15
 
     # Make a list of ranges, by extracting it from the previous_median_name (s)
     if isinstance(previous_bgd_name, list) and len(previous_bgd_name) > 1:
@@ -296,7 +296,7 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
         ax.set_xlim([0, 400])
         ax.set_aspect('auto')
         # ax.legend(["current frame", "speed_sm_mm_ps", "thresh 15mm/s"])
-        ax.legend(["current frame", "speed_raw_mm_ps", "speed_sm_mm_ps", "threshold (0.25 bl)"])
+        ax.legend(["current frame", "speed_raw_mm_ps", "speed_sm_mm_ps", "threshold {}".format(thresh)])
         plt.ylabel("mm/s")
 
         k = cv2.waitKey(33)
@@ -349,10 +349,8 @@ def run_tracker_checker():
     while int(video_num) == -1:
         video_num = input("What is the number of the movie you would like to check?:")
 
-    # Allows a user to select folder
+    # Allows a user to select folder138
     root = Tk()
-    root.withdraw()
-    root.update()
     video_folder_path = askdirectory(parent=root, title="Select movie file")
     root.destroy()
 

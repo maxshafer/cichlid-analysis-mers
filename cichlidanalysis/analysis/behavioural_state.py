@@ -60,7 +60,7 @@ def define_long_states(fish_tracks_i, change_times_d, time_window_s=[5, 15, 30, 
     return fish_tracks_i
 
 
-def define_rest(fish_tracks_i, time_window_s=60, fraction_threshold=0.05):
+def define_rest(fish_tracks_i, time_window_s=60, fraction_threshold=0.05, fps=10):
     """ Defines behavioural state by thresholding on a window
     Sleep  as defined by movement below Y% in X seconds
 
@@ -70,7 +70,7 @@ def define_rest(fish_tracks_i, time_window_s=60, fraction_threshold=0.05):
     :return:
     """
 
-    fish_tracks_i["rest"] = ((fish_tracks_i.groupby("FishID")['movement'].transform(lambda s: s.rolling(10 *
+    fish_tracks_i["rest"] = ((fish_tracks_i.groupby("FishID")['movement'].transform(lambda s: s.rolling(fps *
                               time_window_s).mean())) < fraction_threshold) * 1
     return fish_tracks_i
 
