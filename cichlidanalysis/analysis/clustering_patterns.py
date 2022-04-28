@@ -54,9 +54,9 @@ def plot_bin_cluster(rootdir, subset, cluster_n, change_times_d, feature):
     return
 
 
-def cluster_patterns(data_feature, rootdir, feature, max_d=1.3, label='feature'):
+def cluster_patterns(data_feature, rootdir, feature, max_d=1.3, label='feature', link_method='single'):
     individ_corr = data_feature.corr(method='pearson')
-    z = linkage(individ_corr, 'single')
+    z = linkage(individ_corr, link_method)
 
     plt.figure(figsize=[8, 5])
     plt.title('Hierarchical Clustering Dendrogram')
@@ -90,7 +90,7 @@ def run_species_pattern_cluster_daily(aves_ave_spd, aves_ave_move, aves_ave_rest
 
     change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
 
-    species_cluster_spd = cluster_patterns(aves_ave_spd, rootdir, feature="speed", max_d=1.3, label='daily')
+    species_cluster_spd = cluster_patterns(aves_ave_spd, rootdir, feature="speed", max_d=1.4, label='daily')
     species_cluster_move = cluster_patterns(aves_ave_move, rootdir, feature="movement", max_d=1.2,  label='daily')
     species_cluster_rest = cluster_patterns(aves_ave_rest, rootdir, feature="rest", max_d=1.05,  label='daily')
 
@@ -115,7 +115,7 @@ def run_species_pattern_cluster_daily(aves_ave_spd, aves_ave_move, aves_ave_rest
 def run_species_pattern_cluster_weekly(averages_spd, averages_move, averages_rest, rootdir):
 
     # set sunrise, day, sunset, night times (ns, s, m, h) and set day length in ns
-    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d = output_timings()
+    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, _, _ = output_timings()
 
     species_cluster_spd = cluster_patterns(averages_spd, rootdir, feature="speed", max_d=1.25, label='weekly')
     species_cluster_move = cluster_patterns(averages_move, rootdir, feature="movement", max_d=1.2, label='weekly')

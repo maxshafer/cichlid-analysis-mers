@@ -55,22 +55,15 @@ def setup_run_binned(rootdir):
 if __name__ == '__main__':
     # Allows user to select top directory and load all als files here
     root = Tk()
-    root.withdraw()
-    root.update()
     rootdir = askdirectory(parent=root)
     root.destroy()
 
     fish_tracks_bin, sp_metrics, tribe_col, species_sixes, species, fish_IDs = setup_run_binned(rootdir)
 
     # get timings
-    fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, day_ns, day_s, \
-    change_times_d, change_times_m = load_timings(fish_tracks_bin[fish_tracks_bin.FishID == fish_IDs[0]].shape[0])
-    change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
-    change_times_datetime = [dt.datetime.strptime("1970-1-2 07:00:00", '%Y-%m-%d %H:%M:%S'),
-                             dt.datetime.strptime("1970-1-2 07:30:00", '%Y-%m-%d %H:%M:%S'),
-                             dt.datetime.strptime("1970-1-2 18:30:00", '%Y-%m-%d %H:%M:%S'),
-                             dt.datetime.strptime("1970-1-2 19:00:00", '%Y-%m-%d %H:%M:%S'),
-                             dt.datetime.strptime("1970-1-3 00:00:00", '%Y-%m-%d %H:%M:%S')]
+    fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, \
+    day_ns, day_s, change_times_d, change_times_m, change_times_datetime, change_times_unit\
+        = load_timings(fish_tracks_bin[fish_tracks_bin.FishID == fish_IDs[0]].shape[0])
     day_unit = dt.datetime.strptime("1970:1", "%Y:%d")
 
     # ###########################
@@ -138,27 +131,18 @@ if __name__ == '__main__':
     species_daily_corr(rootdir, aves_ave_rest, 'ave', 'rest', 'single')
     species_daily_corr(rootdir, aves_ave_move, 'ave', 'movement', 'single')
 
-    # figurre 1
-    individ_corr = aves_ave_spd.corr()
-    ax = sns.clustermap(individ_corr, figsize=(10, 9), method=link_method, metric='euclidean', vmin=-1, vmax=1,
-                        cmap='viridis', yticklabels=True, xticklabels=True)
-    ax.fig.suptitle(feature)
-    plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}_{3}.png".format('ave', 'speed_mm', dt.date.today(), 'single')))
-    plt.close()
-
     species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster_daily(aves_ave_spd,
                                                                                                   aves_ave_move,
                                                                                                   aves_ave_rest,
                                                                                                   rootdir)
-    species_cluster_spd_wk, species_cluster_move_wk, species_cluster_rest_wk = run_species_pattern_cluster_weekly(
-        averages_spd, averages_move, averages_rest, rootdir)
+    # species_cluster_spd_wk, species_cluster_move_wk, species_cluster_rest_wk = run_species_pattern_cluster_weekly(
+    #     averages_spd, averages_move, averages_rest, rootdir)
 
     # ###########################
     # ### Define diel pattern ###
     fish_tracks_bin = fish_tracks_add_day_twilight_night(fish_tracks_bin)
     fish_diel_patterns = diel_pattern_stats_individ_bin(fish_tracks_bin, feature='rest')
     fish_diel_patterns_sp = diel_pattern_stats_species_bin(fish_tracks_bin, feature='rest')
-
     plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_sp, feature='rest')
 
     fish_diel_patterns_move = diel_pattern_stats_individ_bin(fish_tracks_bin, feature='movement')

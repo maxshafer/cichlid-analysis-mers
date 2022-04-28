@@ -47,7 +47,7 @@ def full_analysis(rootdir):
     start_total_sec = (int(start_time[0:2]) * 60 * 60 + int(start_time[2:4]) * 60 + int(start_time[4:]))
 
     # set sunrise, day, sunset, night times (ns, s, m, h) and set day length in ns
-    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d = output_timings()
+    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, _, _ = output_timings()
 
     # set time vector
     if track_full[0, 0] == 0:
@@ -363,7 +363,7 @@ def full_analysis(rootdir):
             if data_b.shape != als_df.shape:
                 raise Exception("Saving didn't work properly as the saved csv is too short! Report this bug!")
             else:
-                print("could save  a np")
+                print("could save as np")
     except pd.errors.ParserError:
         print("problem parsing, probably null bytes error, trying to save with numpy instead ")
         np.savetxt(filename, track_als.T, delimiter=',', header='tv_ns,speed_mm,x_nt,y_nt', comments='')
@@ -371,7 +371,7 @@ def full_analysis(rootdir):
         if data_b.shape != als_df.shape:
             raise Exception("Saving didn't work properly as the saved csv is too short! Report this bug!")
         else:
-            print("could save  a np")
+            print("could save as np")
 
     try:
         data_b = pd.read_csv(filename, sep=',')

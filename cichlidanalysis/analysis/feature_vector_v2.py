@@ -18,6 +18,7 @@ from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
 from cichlidanalysis.analysis.diel_pattern import daily_more_than_pattern_individ, daily_more_than_pattern_species, \
     day_night_ratio_individ, day_night_ratio_species
 from cichlidanalysis.io.io_ecological_measures import get_meta_paths
+from cichlidanalysis.plotting.figure_1 import cluster_dics
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -93,8 +94,6 @@ if __name__ == '__main__':
     # pick folder
     # Allows user to select top directory and load all als files here
     root = Tk()
-    root.withdraw()
-    root.update()
     rootdir = askdirectory(parent=root)
     root.destroy()
 
@@ -136,12 +135,13 @@ if __name__ == '__main__':
                 sp_metrics.loc[sp_metrics['species_six'] == species_n, 'tribe'].values[0]
 
     # add column for cluster, hardcoded!!!!
-    dic = {'diurnal': [1], 'nocturnal': [8], 'crepuscular': [5, 6, 7], 'undefined': [2, 3, 4, 9, 10, 11, 12]}
-    col_dic = {'diurnal': 'gold', 'nocturnal': 'royalblue', 'crepuscular': 'mediumorchid', 'undefined': 'black'}
+    dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
+    # dic = {'diurnal': [7], 'nocturnal': [1], 'crepuscular': [2, 3, 5, 6, 8, 9], 'undefined': [4, 10, 11, 12]}
+    # col_dic = {'diurnal': 'gold', 'nocturnal': 'royalblue', 'crepuscular': 'mediumorchid', 'undefined': 'black'}
     feature_v['cluster_pattern'] = 'placeholder'
-    for key in dic:
-        # find the species which are in diel group
-        sp_diel_group = set(diel_patterns.loc[diel_patterns.cluster.isin(dic[key]), 'species_six'].to_list())
+    for key in dic_simple:
+        # find the species which are in diel cluster group
+        sp_diel_group = set(diel_patterns.loc[diel_patterns.cluster.isin(dic_simple[key]), 'species_six'].to_list())
         feature_v.loc[feature_v.species_six.isin(sp_diel_group), 'cluster_pattern'] = key
 
     # make species average
@@ -193,14 +193,14 @@ if __name__ == '__main__':
     fig = plt.figure(figsize=(5, 5))
     ax = feature_v["species"].value_counts(sort=False).plot.hist()
     ax.set_xlabel("Individuals for a species")
-    ax.set_xlim([0, 12])
+    ax.set_xlim([0, 14])
     plt.close()
 
     # number of species
     # feature_v["species"].value_counts().index
 
     # total rest ordered by mean, coloured by temporal guild
-    colors = ['royalblue', 'mediumorchid', 'silver', 'gold']
+    colors = ['royalblue', 'mediumorchid', 'gold', 'silver']
     customPalette = sns.set_palette(sns.color_palette(colors))
     fig = plt.figure(figsize=(5, 10))
     ax = sns.boxplot(data=feature_v, y='species_six', x='total_rest', hue="cluster_pattern", dodge=False, showfliers=False,
@@ -406,23 +406,24 @@ if __name__ == '__main__':
     #### draw convex hull for each temporal guild ####
     # speed_mm guilds 24.02.2022
     # dic = {'diurnal': [3], 'nocturnal': [1], 'crepuscular': [7, 8, 9, 10, 11], 'undefined': [2, 4, 5, 6, 12, 13]}
-    dic = {'diurnal': [1], 'nocturnal': [8], 'crepuscular': [5, 6, 7], 'undefined': [2, 3, 4, 9, 10, 11, 12]}
-    col_dic = {'diurnal': 'gold', 'nocturnal': 'royalblue', 'crepuscular': 'mediumorchid', 'undefined': 'black'}
+    # dic = {'diurnal': [1], 'nocturnal': [8], 'crepuscular': [5, 6, 7], 'undefined': [2, 3, 4, 9, 10, 11, 12]}
+    # col_dic = {'diurnal': 'gold', 'nocturnal': 'royalblue', 'crepuscular': 'mediumorchid', 'undefined': 'black'}
+
 
     # pelagic and trophic levels
     fig = plt.figure(figsize=(3, 3))
     ax = sns.scatterplot(df.loc[:, 'd13C'], df.loc[:, 'd15N'], color='silver', s=12)
-    for key in dic:
+    for key in dic_simple:
         # find the species which are in diel group
-        overlap_species = list(set(diel_patterns.loc[diel_patterns.cluster.isin(dic[key]), 'species_six'].to_list()) &
+        overlap_species = list(set(diel_patterns.loc[diel_patterns.cluster.isin(dic_simple[key]), 'species_six'].to_list()) &
              set(sub_df.index.to_list()))
         points = sub_df.loc[overlap_species, ['d13C', 'd15N']]
         points = points.to_numpy()
-        plt.scatter(points[:, 0], points[:, 1],  color=col_dic[key], s=12)
+        plt.scatter(points[:, 0], points[:, 1],  color=col_dic_simple[key], s=12)
         if key in ['diurnal', 'nocturnal', 'crepuscular']:
             hull = ConvexHull(points)
             for simplex in hull.simplices:
-                ax.plot(points[simplex, 0], points[simplex, 1], color=col_dic[key])
+                ax.plot(points[simplex, 0], points[simplex, 1], color=col_dic_simple[key])
     ax.set_xlabel('$\delta^{13} C$')
     ax.set_ylabel('$\delta^{15} N$')
     sns.despine(top=True, right=True)
@@ -440,7 +441,7 @@ if __name__ == '__main__':
         guild_species = set(df.loc[df.Diet == key, 'species_six'].unique())
         points = sub_df.loc[guild_species, ['d13C', 'd15N']]
         points = points.to_numpy()
-        plt.scatter(points[:, 0], points[:, 1],  color=col_dic[key], s=12)
+        plt.scatter(points[:, 0], points[:, 1],  color=col_dic_simple[key], s=12)
     ax.set_xlabel('$\delta^{13} C$')
     ax.set_ylabel('$\delta^{15} N$')
     sns.despine(top=True, right=True)
@@ -448,10 +449,9 @@ if __name__ == '__main__':
     plt.savefig(os.path.join(rootdir, "d15N_d13C_diet-guilds_{0}.png".format(datetime.date.today())))
     plt.close()
 
-    dic = {'diurnal': [1], 'nocturnal': [8], 'crepuscular': [5, 6, 7], 'undefined': [2, 3, 4, 9, 10, 11, 12]}
     first = True
-    for key in dic:
-        cluster_sp = diel_patterns.loc[diel_patterns.cluster.isin(dic[key]), 'species_six'].to_list()
+    for key in dic_simple:
+        cluster_sp = diel_patterns.loc[diel_patterns.cluster.isin(dic_simple[key]), 'species_six'].to_list()
         new_df = df.loc[df.species_six.isin(cluster_sp), ['species_six', 'Diet']].drop_duplicates().Diet.value_counts()
         new_df = new_df.reset_index()
         new_df['daytime'] = key
