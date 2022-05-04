@@ -12,14 +12,14 @@ def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_s
 
     :return:
     """
-    sorted_index = fish_diel_patterns.groupby('species_six').median().sort_values(by=input_type).index
+    sorted_index = fish_diel_patterns.groupby('species').median().sort_values(by=input_type).index
 
     # clrs = [(sns.color_palette(palette='RdBu')[0]), sns.color_palette(palette='RdBu')[5], (128/255, 128/255, 128/255)]
     # hue_ordering = ['diurnal', 'nocturnal', 'undefined']
 
     # row colours by median value
     box_cols = []
-    sorted_day_night_dif = fish_diel_patterns.groupby('species_six').median().sort_values(by=input_type).loc[:,
+    sorted_day_night_dif = fish_diel_patterns.groupby('species').median().sort_values(by=input_type).loc[:,
                            input_type]
     sorted_day_night_dif_scaled = (sorted_day_night_dif-sorted_day_night_dif.min())/(sorted_day_night_dif.max() -
                                                                                      sorted_day_night_dif.min())
@@ -29,7 +29,7 @@ def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_s
     # row colours by diel pattern
     row_cols = []
     for i in sorted_index:
-        sp_pattern = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species_six == i, "diel_pattern"].values[0]
+        sp_pattern = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species == i, "diel_pattern"].values[0]
         if sp_pattern == 'diurnal':
             row_cols.append('gold')
         elif sp_pattern == 'nocturnal':
@@ -39,9 +39,9 @@ def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_s
 
     # Simplified
     f, ax = plt.subplots(figsize=(10, 5))
-    bp = sns.boxplot(data=fish_diel_patterns, x='species_six', y=input_type, palette=box_cols, ax=ax,
+    bp = sns.boxplot(data=fish_diel_patterns, x='species', y=input_type, palette=box_cols, ax=ax,
                      order=sorted_index, fliersize=0, boxprops=dict(alpha=.7))
-    sns.stripplot(data=fish_diel_patterns, x='species_six', y=input_type, ax=ax, size=4, order=sorted_index, color='k')
+    sns.stripplot(data=fish_diel_patterns, x='species', y=input_type, ax=ax, size=4, order=sorted_index, color='k')
     ax.set(ylabel=input_type, xlabel='Species')
     ax.set_xticklabels(labels=sorted_index, rotation=90)
     ax.tick_params(left=True, bottom=False)
@@ -49,7 +49,7 @@ def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_s
     # statistical annotation
     y, h, col = fish_diel_patterns[input_type].max(), 2, 'k'
     for species_n, species_i in enumerate(sorted_index):
-        sig = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species_six == species_i, 't_pval_corr_sig'].values[0]
+        sig = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species == species_i, 't_pval_corr_sig'].values[0]
         if sig < 0.05:
             plt.text(species_n, y*1.05, "*", ha='center', va='bottom', color=col)
     if input_type == 'day_night_dif':
@@ -107,7 +107,7 @@ def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day
 
     :return:
     """
-    sorted_index = fish_diel_patterns.groupby('species_six').median().sort_values(by=input_type).index
+    sorted_index = fish_diel_patterns.groupby('species').median().sort_values(by=input_type).index
 
     # clrs = [(sns.color_palette(palette='RdYlBu')[0]), sns.color_palette(palette='RdYlBu')[5], sns.color_palette(palette='RdYlBu')[-5]]
     clrs = [(sns.color_palette(palette='RdBu')[0]), sns.color_palette(palette='RdBu')[5], (128/255, 128/255, 128/255)] #(171/255, 221/255, 164/255)]
@@ -115,16 +115,16 @@ def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day
 
     # row colours by median value
     box_cols = []
-    sorted_day_night_dif = fish_diel_patterns.groupby('species_six').median().sort_values(by=input_type).loc[:, input_type]
+    sorted_day_night_dif = fish_diel_patterns.groupby('species').median().sort_values(by=input_type).loc[:, input_type]
     sorted_day_night_dif_scaled =(sorted_day_night_dif-sorted_day_night_dif.min())/(sorted_day_night_dif.max()-sorted_day_night_dif.min())
     for i in sorted_index:
         box_cols.append(plt.cm.get_cmap('bwr')(sorted_day_night_dif_scaled.loc[i]))
 
     # row colours by diel pattern
     row_cols = []
-    subset = fish_diel_patterns.loc[:, ['species_six', 'species_diel_pattern']].drop_duplicates(subset=["species_six"])
+    subset = fish_diel_patterns.loc[:, ['species', 'species_diel_pattern']].drop_duplicates(subset=["species"])
     for i in sorted_index:
-        sp_pattern = subset.loc[subset.species_six == i, "species_diel_pattern"].values[0]
+        sp_pattern = subset.loc[subset.species == i, "species_diel_pattern"].values[0]
         if sp_pattern == 'diurnal':
             # row_cols.append((255 / 255, 224 / 255, 179 / 255))
             # row_cols.append(clrs[0])
@@ -141,13 +141,13 @@ def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day
 
     # plotting horizontal
     f, ax = plt.subplots(figsize=(10, 5))
-    bp = sns.boxplot(data=fish_diel_patterns, x='species_six', y=input_type, palette=box_cols, ax=ax,
+    bp = sns.boxplot(data=fish_diel_patterns, x='species', y=input_type, palette=box_cols, ax=ax,
                 order=sorted_index, fliersize=0, boxprops=dict(alpha=.7))
     for patch, color in zip(bp.artists, row_cols):
         patch.set_edgecolor(color)
         patch.set_linewidth(3)
         # patch.set_alpha(1)
-    sns.stripplot(data=fish_diel_patterns, x='species_six', y=input_type, hue='diel_pattern', ax=ax, size=4,
+    sns.stripplot(data=fish_diel_patterns, x='species', y=input_type, hue='diel_pattern', ax=ax, size=4,
                   palette=clrs, hue_order=hue_ordering, order=sorted_index)
     ax.set(ylabel=input_type, xlabel='Species')
     ax.set_xticklabels(labels=sorted_index, rotation=90)
@@ -162,9 +162,9 @@ def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day
 
     # plotting horizontal
     f, ax = plt.subplots(figsize=(10, 5))
-    sns.boxplot(data=fish_diel_patterns, x='species_six', y=input_type, palette=row_cols, ax=ax,
+    sns.boxplot(data=fish_diel_patterns, x='species', y=input_type, palette=row_cols, ax=ax,
                 order=sorted_index, fliersize=0, boxprops=dict(alpha=.3))
-    sns.stripplot(data=fish_diel_patterns, x='species_six', y=input_type, hue='diel_pattern', ax=ax, size=4,
+    sns.stripplot(data=fish_diel_patterns, x='species', y=input_type, hue='diel_pattern', ax=ax, size=4,
                   palette=clrs, hue_order=hue_ordering, order=sorted_index)
     ax.set(ylabel=input_type, xlabel='Species')
     ax.set_xticklabels(labels=sorted_index, rotation=90)
@@ -191,8 +191,8 @@ def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day
 
 def plot_cre_dawn_dusk_strip_v(rootdir, all_feature_combined, feature):
 
-    sorted_index = all_feature_combined.groupby(by='species_six').mean().sort_values(by='peak_amplitude').index
-    grped_bplot = sns.catplot(y='species_six',
+    sorted_index = all_feature_combined.groupby(by='species').mean().sort_values(by='peak_amplitude').index
+    grped_bplot = sns.catplot(y='species',
                               x='peak_amplitude',
                               hue="twilight",
                               kind="box",
@@ -205,7 +205,7 @@ def plot_cre_dawn_dusk_strip_v(rootdir, all_feature_combined, feature):
                               order=sorted_index,
                               palette="flare")
     plt.axvline(0, color='k', linestyle='--')
-    grped_bplot = sns.stripplot(y='species_six',
+    grped_bplot = sns.stripplot(y='species',
                                 x='peak_amplitude',
                                 hue='twilight',
                                 jitter=True,
@@ -242,7 +242,7 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature):
     :param feature:
     :return:
     """
-    sorted_index = cres_peaks_i.groupby(by='species_six').mean().sort_values(by='peak_amplitude').index
+    sorted_index = cres_peaks_i.groupby(by='species').mean().sort_values(by='peak_amplitude').index
 
     # grped_bplot = sns.catplot(x='species_six',
     #                           y='peak_amplitude',
@@ -291,11 +291,11 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature):
     # plt.savefig(os.path.join(rootdir, "species_crepuscular_30min_box_{0}_{1}.png".format(dt.date.today(), feature)))
     # plt.close()
 
-    dawn_index = cres_peaks_i.groupby(by=['species_six', 'twilight']).median().reset_index()
-    sorted_index = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species_six').sort_values(by='peak_amplitude').index
-    twilights =['dawn', 'dusk']
+    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
+    sorted_index = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by='peak_amplitude').index
+    twilights = ['dawn', 'dusk']
     for period in twilights:
-        grped_bplot = sns.catplot(x='species_six',
+        grped_bplot = sns.catplot(x='species',
                                   y='peak_amplitude',
                                   kind="box",
                                   legend=False,
@@ -306,14 +306,14 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature):
                                   boxprops=dict(alpha=.3),
                                   order=sorted_index,
                                   palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period].
-                                    groupby('species_six').peak_amplitude.median().reindex(sorted_index), "flare"),
+                                    groupby('species').peak_amplitude.median().reindex(sorted_index), "flare"),
                                   saturation=1)
 
-        sns.stripplot(x='species_six', y='peak_amplitude',
+        sns.stripplot(x='species', y='peak_amplitude',
                                     data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
                                     order=sorted_index,
                                     palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period].
-                                                               groupby('species_six').peak_amplitude.median().
+                                                               groupby('species').peak_amplitude.median().
                                                                reindex(sorted_index), "flare"),
                                     size=3).set(title=period)
         grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)

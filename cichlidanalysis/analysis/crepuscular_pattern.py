@@ -110,7 +110,7 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
             ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * i) + 0.5, "o", color="r")
 
 
-def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns_sp):
+def crepuscular_peaks(feature, fish_tracks_ds, fish_diel_patterns_sp):
     """ Uses borders to find peaks in the twilight periods (2h -/+ of sunup/down). Finds peak position and height.
     Uses the defined diel pattern to define baseline, nocturnal = night, diurnal = day, undefined = mean of day and
     night
@@ -121,7 +121,6 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns_sp):
 
     :param feature:
     :param fish_tracks_ds:
-    :param species:
     :param fish_diel_patterns: df with: 'FishID', 'peak_amplitude', 'peak', 'twilight', 'species', 'species_six'
     :return:
     """
@@ -151,7 +150,7 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns_sp):
         peak_prom = 7
 
     first_all = True
-    for species_name in species:
+    for species_name in fish_tracks_ds.species.unique():
         fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
             columns='FishID', values=feature, index='ts')
         first = True
@@ -235,7 +234,7 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns_sp):
     # average for each fish for dawn and dusk for 'peak_amplitude', peaks/(peaks+nonpeaks)
     periods = ['dawn', 'dusk']
     first_all = True
-    for species_name in species:
+    for species_name in fish_tracks_ds.species.unique():
         first = True
         for period in periods:
             feature_i = all_peaks_df[(all_peaks_df['species'] == species_name) & (all_peaks_df['twilight'] == period)][
@@ -258,10 +257,5 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns_sp):
             all_feature_combined = pd.concat([all_feature_combined, sp_feature_combined], axis=0)
     all_feature_combined = all_feature_combined.reset_index(drop=True)
     all_feature_combined = all_feature_combined.loc[:, ~all_feature_combined.columns.duplicated()]
-
-    all_feature_combined['species_six'] = 'blank'
-    for fish in fishes:
-        all_feature_combined.loc[all_feature_combined['FishID'] == fish, 'species_six'] = six_letter_sp_name(
-            extract_meta(fish)['species'])[0]
 
     return all_feature_combined

@@ -79,7 +79,7 @@ def cluster_patterns(data_feature, rootdir, feature, max_d=1.3, label='feature',
           "preserves the original distances".format(round(c, 2)))
 
     clusters = fcluster(z, max_d, criterion='distance')
-    d = {'species_six': individ_corr.index, "cluster": clusters}
+    d = {'species': individ_corr.index, "cluster": clusters}
     species_cluster = pd.DataFrame(d)
     species_cluster = species_cluster.sort_values(by="cluster")
 
@@ -95,17 +95,17 @@ def run_species_pattern_cluster_daily(aves_ave_spd, aves_ave_move, aves_ave_rest
     species_cluster_rest = cluster_patterns(aves_ave_rest, rootdir, feature="rest", max_d=1.05,  label='daily')
 
     for i in species_cluster_spd.cluster.unique():
-        species_subset = species_cluster_spd.loc[species_cluster_spd.cluster == i, 'species_six'].tolist()
+        species_subset = species_cluster_spd.loc[species_cluster_spd.cluster == i, 'species'].tolist()
         subset = aves_ave_spd[species_subset]
         daily_ave_spd(subset, subset.std(axis=1), rootdir, 'cluster_{}'.format(i), change_times_unit)
 
     for i in species_cluster_move.cluster.unique():
-        species_subset = species_cluster_move.loc[species_cluster_move.cluster == i, 'species_six'].tolist()
+        species_subset = species_cluster_move.loc[species_cluster_move.cluster == i, 'species'].tolist()
         subset = aves_ave_move[species_subset]
         daily_ave_move(subset, subset.std(axis=1), rootdir, 'cluster_{}'.format(i), change_times_unit)
 
     for i in species_cluster_rest.cluster.unique():
-        species_subset = species_cluster_rest.loc[species_cluster_rest.cluster == i, 'species_six'].tolist()
+        species_subset = species_cluster_rest.loc[species_cluster_rest.cluster == i, 'species'].tolist()
         subset = aves_ave_rest[species_subset]
         daily_ave_rest(subset, subset.std(axis=1), rootdir, 'cluster_{}'.format(i), change_times_unit)
 

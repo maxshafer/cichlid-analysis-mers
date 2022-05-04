@@ -87,18 +87,18 @@ def diel_pattern_stats_individ_bin(fish_tracks_bin, feature='movement'):
             else:
                 df.loc[index_label, 'diel_pattern'] = 'nocturnal'     # nocturnal
 
-    df['species_six'] = 'blank'
+    df['species'] = 'blank'
     for fish in fishes:
-        df.loc[df['FishID'] == fish, 'species_six'] = six_letter_sp_name(extract_meta(fish)['species'])
+        df.loc[df['FishID'] == fish, 'species'] = fish_tracks_bin.loc[fish_tracks_bin.FishID == fish, 'species'].iloc[0]
 
     # define species diel pattern
     states = ['nocturnal', 'diurnal']
     df['species_diel_pattern'] = 'undefined'
-    for species_name in df['species_six'].unique():
+    for species_name in df['species'].unique():
         for state in states:
-            if ((df.loc[df.species_six == species_name, 'diel_pattern'] == state)*1).mean() > 0.5:
-                df.loc[df.species_six == species_name, 'species_diel_pattern'] = state
-        print("{} is {}".format(species_name, df.loc[df.species_six == species_name, 'species_diel_pattern'].unique()))
+            if ((df.loc[df.species == species_name, 'diel_pattern'] == state)*1).mean() > 0.5:
+                df.loc[df.species == species_name, 'species_diel_pattern'] = state
+        print("{} is {}".format(species_name, df.loc[df.species == species_name, 'species_diel_pattern'].unique()))
     return df
 
 
@@ -175,11 +175,6 @@ def diel_pattern_stats_species_bin(fish_tracks_bin, feature='movement'):
                 df.loc[index_label, 'diel_pattern'] = 'diurnal'     # diurnal
             else:
                 df.loc[index_label, 'diel_pattern'] = 'nocturnal'     # nocturnal
-
-    df['species_six'] = 'blank'
-    for sp_name in all_species:
-        df.loc[df['species'] == sp_name, 'species_six'] = six_letter_sp_name(sp_name)
-
     return df
 
 def daily_more_than_pattern_individ(feature_v, species, plot=False):
@@ -272,10 +267,10 @@ def day_night_ratio_individ(feature_v):
     day_night_ratio = np.abs(1 - day) / np.abs(1 - night)
     day_night_ratio = day_night_ratio.rename('ratio')
     day_night_ratio = day_night_ratio.to_frame()
-    day_night_ratio["species_six"] = feature_v.species_six
+    day_night_ratio["species"] = feature_v.species
 
-    ax = sns.boxplot(data=day_night_ratio, y='species_six', x='ratio')
-    ax = sns.swarmplot(data=day_night_ratio, y='species_six', x='ratio', color=".2")
+    ax = sns.boxplot(data=day_night_ratio, y='species', x='ratio')
+    ax = sns.swarmplot(data=day_night_ratio, y='species', x='ratio', color=".2")
     ax = plt.axvline(1, ls='--', color='k')
     plt.xlabel('Day/night ratio')
     plt.xscale('log')

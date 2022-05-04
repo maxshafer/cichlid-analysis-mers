@@ -91,7 +91,7 @@ def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_metho
     mask = np.ones(individ_corr.shape, dtype='bool')
     mask[np.triu_indices(len(individ_corr))] = False
     corr_val_f = individ_corr.values[mask]
-    corr_vals = pd.DataFrame(corr_val_f, columns=[six_letter_sp_name(species_name)[0]])
+    corr_vals = pd.DataFrame(corr_val_f, columns=[species_name])
 
     ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1,
                         cmap='RdBu_r', xticklabels=False, yticklabels=False)

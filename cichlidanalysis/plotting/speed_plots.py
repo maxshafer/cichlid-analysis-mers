@@ -258,8 +258,7 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
         for s in spines:
             ax_objs[-1].spines[s].set_visible(False)
 
-        short_name = six_letter_sp_name(species_name)
-        ax_objs[-1].text(0.9, 0, short_name[0], fontweight="bold", fontsize=10, ha="right", rotation=-45)
+        ax_objs[-1].text(0.9, 0, species_name, fontweight="bold", fontsize=10, ha="right", rotation=-45)
         gs.update(hspace=-0.1)
     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_{1}.png".format(feature, dt.date.today())))
     plt.close('all')
@@ -286,9 +285,8 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
     fig = plt.figure(figsize=(4, 14))
     ax_objs = []
 
-    # order species by clustering, sort  by tribe
+    # order species by clustering, sort by tribe
     species_sort = fish_tracks_ds_i.loc[:, ['species', 'tribe']].drop_duplicates().sort_values('tribe').species.to_list()
-
 
     for species_n, species_name in enumerate(species_sort):
         tribe = fish_tracks_ds_i.loc[fish_tracks_ds_i["species"] == species_name].tribe.unique()[0]
@@ -360,8 +358,7 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
         for s in spines:
             ax_objs[-1].spines[s].set_visible(False)
 
-        short_name = six_letter_sp_name(species_name)
-        ax_objs[-1].text(1, 0, short_name[0], fontweight="bold", fontsize=10, ha="right", rotation=-45)
+        ax_objs[-1].text(1, 0, species_name, fontweight="bold", fontsize=10, ha="right", rotation=-45)
         gs.update(hspace=-0.1)
     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_daily_{1}.png".format(feature, dt.date.today())))
     plt.close('all')

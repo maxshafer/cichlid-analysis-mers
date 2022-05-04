@@ -9,9 +9,9 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from cichlidanalysis.io.als_files import load_ds_als_files
+from cichlidanalysis.io.io_ecological_measures import get_meta_paths
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.utils.species_names import six_letter_sp_name
-from cichlidanalysis.utils.species_metrics import add_metrics, tribe_cols
+from cichlidanalysis.utils.species_metrics import tribe_cols
 from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave, \
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
 from cichlidanalysis.analysis.diel_pattern import diel_pattern_stats_individ_bin, diel_pattern_stats_species_bin
@@ -31,25 +31,24 @@ def setup_run_binned(rootdir):
     fish_tracks_bin = load_ds_als_files(rootdir, "*als_30m.csv")
     fish_tracks_bin = fish_tracks_bin.reset_index(drop=True)
     fish_tracks_bin['time_of_day_dt'] = fish_tracks_bin.ts.apply(lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
-    fish_tracks_bin.loc[fish_tracks_bin.species == 'Aaltolamprologus calvus', 'species'] = 'Altolamprologus calvus'
-    fish_tracks_bin.FishID = fish_tracks_bin.FishID.str.replace('Aaltolamprologus', 'Altolamprologus')
+    _, cichlid_meta_path = get_meta_paths()
+    sp_metrics = pd.read_csv(cichlid_meta_path)
+
+    # getting extra data (colours for plotting, species metrics)
+    tribe_col = tribe_cols()
+
+    # add species six names, tribe and other meta data
+    fish_tracks_bin = fish_tracks_bin.rename(columns={"species": "species_our_names"})
+    fish_tracks_bin = fish_tracks_bin.merge(sp_metrics, on='species_our_names')
+    fish_tracks_bin = add_day_number_fish_tracks(fish_tracks_bin)
+    fish_tracks_bin = fish_tracks_bin.rename(columns={"six_letter_name_Ronco": "species"})
 
     # get each fish ID and all species
     fish_IDs = fish_tracks_bin['FishID'].unique()
-    species = fish_tracks_bin['species'].unique()
+    species_true = fish_tracks_bin['species_our_names'].unique()
+    species_sixes = fish_tracks_bin['species'].unique()
 
-    # getting extra data (colours for plotting, species metrics)
-    species_sixes = six_letter_sp_name(species)
-    tribe_col = tribe_cols()
-    metrics_path = '/Users/annikanichols/Desktop/cichlid_species_database.xlsx'
-    sp_metrics = add_metrics(species_sixes, metrics_path)
-
-    # add species six name and tribe
-    fish_tracks_bin['species_six'] = fish_tracks_bin.apply(lambda row: six_letter_sp_name(row.species)[0], axis=1)
-    fish_tracks_bin = pd.merge(fish_tracks_bin, sp_metrics.loc[:, ['species_six', 'tribe']], how='left')
-    fish_tracks_bin = add_day_number_fish_tracks(fish_tracks_bin)
-
-    return fish_tracks_bin, sp_metrics, tribe_col, species_sixes, species, fish_IDs
+    return fish_tracks_bin, sp_metrics, tribe_col, species_true, fish_IDs, species_sixes
 
 
 if __name__ == '__main__':
@@ -58,7 +57,7 @@ if __name__ == '__main__':
     rootdir = askdirectory(parent=root)
     root.destroy()
 
-    fish_tracks_bin, sp_metrics, tribe_col, species_sixes, species, fish_IDs = setup_run_binned(rootdir)
+    fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, species_sixes = setup_run_binned(rootdir)
 
     # get timings
     fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, \
@@ -72,7 +71,7 @@ if __name__ == '__main__':
     averages_move, sp_move_combined = plot_ridge_plots(fish_tracks_bin, change_times_datetime,
                                                        rootdir, sp_metrics, tribe_col)
 
-    # ### generate averages of the the averages ###
+    # ### generate averages of the averages ###
     aves_ave_spd = feature_daily(averages_spd)
     aves_ave_vp = feature_daily(averages_vp)
     aves_ave_rest = feature_daily(averages_rest)
@@ -96,26 +95,25 @@ if __name__ == '__main__':
     features = ['speed_mm', 'rest']
     for feature in features:
         first = True
-        for species_name in species:
+        for species_name in species_sixes:
             # correlations for individuals across daily average
             fish_daily_ave_feature = species_feature_fish_daily_ave(fish_tracks_bin, species_name, feature)
             # correlations for individuals average days
             corr_vals_f = fish_daily_corr(fish_daily_ave_feature, feature, species_name, rootdir)
 
             if first:
-                corr_vals = pd.DataFrame(corr_vals_f, columns=[six_letter_sp_name(species_name)[0]])
+                corr_vals = pd.DataFrame(corr_vals_f, columns=[species_name])
                 first = False
             else:
-                corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_vals_f, columns=[six_letter_sp_name(species_name)
-                                                                                     [0]])], axis=1)
+                corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_vals_f, columns=[species_name])], axis=1)
 
-        corr_vals_long = pd.melt(corr_vals, var_name='species_six', value_name='corr_coef')
+        corr_vals_long = pd.melt(corr_vals, var_name='species', value_name='corr_coef')
 
         f, ax = plt.subplots(figsize=(4, 10))
-        sns.boxplot(data=corr_vals_long, x='corr_coef', y='species_six', ax=ax, fliersize=0,
-                    order=corr_vals_long.groupby('species_six').mean().sort_values("corr_coef").index.to_list())
-        sns.stripplot(data=corr_vals_long, x='corr_coef', y='species_six', color=".2", ax=ax, size=3,
-                      order=corr_vals_long.groupby('species_six').mean().sort_values("corr_coef").index.to_list())
+        sns.boxplot(data=corr_vals_long, x='corr_coef', y='species', ax=ax, fliersize=0,
+                    order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
+        sns.stripplot(data=corr_vals_long, x='corr_coef', y='species', color=".2", ax=ax, size=3,
+                      order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
         ax.set(xlabel='Correlation', ylabel='Species')
         ax.set(xlim=(-1, 1))
         ax = plt.axvline(0, ls='--', color='k')
@@ -159,14 +157,15 @@ if __name__ == '__main__':
     # crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, species)     # for plotting weekly data for each species
 
     feature = 'speed_mm'
-    cres_peaks = crepuscular_peaks(feature, fish_tracks_bin, species, fish_diel_patterns_sp)
+    cres_peaks = crepuscular_peaks(feature, fish_tracks_bin, fish_diel_patterns_sp)
     plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature)
 
     # make and save diel patterns csv
-    cresp_sp = cres_peaks.groupby(['species_six', 'species']).mean().reset_index(level=[1])
-    diel_sp = fish_diel_patterns.groupby('species_six').mean()
+    cresp_sp = cres_peaks.groupby(['species']).mean()
+    diel_sp = fish_diel_patterns.groupby('species').mean()
     diel_patterns_df = pd.concat([cresp_sp, diel_sp.day_night_dif], axis=1).reset_index()
-    diel_patterns_df = diel_patterns_df.merge(species_cluster_spd, on="species_six")
+    diel_patterns_df = diel_patterns_df.merge(species_cluster_spd, on="species")
+    # add total rest
 
     diel_patterns_df.to_csv(os.path.join(rootdir, "combined_diel_patterns_{}_dp.csv".format(dt.date.today())))
     print("Finished saving out diel pattern data")
