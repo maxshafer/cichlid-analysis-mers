@@ -5,9 +5,6 @@ import seaborn as sns
 from scipy import stats
 import statsmodels.stats.multitest as smt
 
-from cichlidanalysis.utils.species_names import six_letter_sp_name
-from cichlidanalysis.io.meta import extract_meta
-
 
 def diel_pattern_stats_individ_bin(fish_tracks_bin, feature='movement'):
     """ To define if a fish is diurnal or nocturnal we use a wilcoxon test to find if day means are different from night
@@ -189,10 +186,10 @@ def daily_more_than_pattern_individ(feature_v, species, plot=False):
     thresh = 1.1
     first = True
     for species_name in species:
-        night = feature_v.loc[feature_v.species == species_name, 'rest_mean_night']
-        day = feature_v.loc[feature_v.species == species_name, 'rest_mean_day']
+        night = feature_v.loc[feature_v.six_letter_name_Ronco == species_name, 'rest_mean_night']
+        day = feature_v.loc[feature_v.six_letter_name_Ronco == species_name, 'rest_mean_day']
         dawn_dusk = feature_v.loc[
-            feature_v.species == species_name, ['rest_mean_predawn', 'rest_mean_dawn', 'rest_mean_dusk',
+            feature_v.six_letter_name_Ronco == species_name, ['rest_mean_predawn', 'rest_mean_dawn', 'rest_mean_dusk',
                                                 'rest_mean_postdusk']].mean(axis=1)
 
         nocturnal = (night * thresh < day) & (night * thresh < dawn_dusk)
@@ -267,7 +264,7 @@ def day_night_ratio_individ(feature_v):
     day_night_ratio = np.abs(1 - day) / np.abs(1 - night)
     day_night_ratio = day_night_ratio.rename('ratio')
     day_night_ratio = day_night_ratio.to_frame()
-    day_night_ratio["species"] = feature_v.species
+    day_night_ratio["species"] = feature_v.six_letter_name_Ronco
 
     ax = sns.boxplot(data=day_night_ratio, y='species', x='ratio')
     ax = sns.swarmplot(data=day_night_ratio, y='species', x='ratio', color=".2")
