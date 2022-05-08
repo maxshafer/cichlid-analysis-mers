@@ -13,21 +13,36 @@ from datetime import timedelta
 from cichlidanalysis.utils.timings import output_timings
 
 
+def getKeysByValue(dict, value_to_find):
+    listOfKeys = list()
+    listOfItems = dict.items()
+    for item in listOfItems:
+        if item[1].count(value_to_find) > 0:
+            listOfKeys.append(item[0])
+    return listOfKeys
+
 def cluster_dics():
-    dic_complex = {'diurnal': [6], 'nocturnal': [1], 'crepuscular1': [2], 'crepuscular2': [4], 'crepuscular3': [5],
-           'undefined': [3, 7, 8, 9, 10, 11]}
-    dic_simple = {'diurnal': [6], 'nocturnal': [1], 'crepuscular': [2, 4, 5], 'undefined': [3, 7, 8, 9, 10, 11]}
+    # dic_complex = {'diurnal': [6], 'nocturnal': [1], 'crepuscular1': [2], 'crepuscular2': [4], 'crepuscular3': [5],
+    #        'undefined': [3, 7, 8, 9, 10, 11]}
+    # dic_simple = {'diurnal': [6], 'nocturnal': [1], 'crepuscular': [2, 4, 5], 'undefined': [3, 7, 8, 9, 10, 11]}
+
+    # final
+    dic_complex = {'diurnal': [7], 'nocturnal': [1], 'crepuscular1': [2], 'crepuscular2': [4], 'crepuscular3': [6],
+           'crepuscular4': [5], 'undefined': [3, 8, 9, 10, 11, 12]}
+    dic_simple = {'diurnal': [7], 'nocturnal': [1], 'crepuscular': [2, 4, 5, 6], 'undefined': [3, 8, 9, 10, 11, 12]}
+
     col_dic_complex = {'diurnal': 'orange', 'nocturnal': 'royalblue', 'crepuscular1': 'orchid', 'crepuscular2':
-        'mediumorchid', 'crepuscular3': 'darkorchid', 'undefined': 'gray'}
-    col_dic_simple = {'diurnal': 'orange', 'nocturnal': 'royalblue', 'crepuscular': 'orchid', 'undefined': 'gray'}
-    cluster_dic = {'1': 'nocturnal', '2': 'crepuscular1', '3': 'undefined', '4': 'crepuscular2', '5': 'crepuscular3',
-                   '6': 'diurnal', '7': 'undefined', '8': 'undefined', '9': 'undefined', '10': 'undefined',
-                   '11': 'undefined'}
-    cluster_order = [11, 10, 9, 3, 1, 2, 4, 5, 8, 7, 6]
+        'mediumorchid', 'crepuscular3': 'darkorchid',  'crepuscular4': 'mediumpurple', 'undefined': 'dimgrey'}
+    col_dic_simple = {'diurnal': 'orange', 'nocturnal': 'royalblue', 'crepuscular': 'orchid', 'undefined': 'dimgrey'}
+
+    # cluster_dic = {'1': 'nocturnal', '2': 'crepuscular1', '3': 'undefined', '4': 'crepuscular2', '5': 'crepuscular3',
+    #                '6': 'diurnal', '7': 'undefined', '8': 'undefined', '9': 'undefined', '10': 'undefined',
+    #                '11': 'undefined'}
+    cluster_order = [12, 11, 10, 9, 3, 1, 2, 4, 6, 5, 8, 7]
     return dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order
 
 
-def dendrogram_sp_clustering(aves_ave_spd, link_method='single', max_d=1.4):
+def dendrogram_sp_clustering(aves_ave_spd, link_method='single', max_d=1.35):
     """ Dendrogram of the clustering as done in clustermap. This allows me to get out the clusters
 
     :param aves_ave_spd:
@@ -68,7 +83,7 @@ def dendrogram_sp_clustering(aves_ave_spd, link_method='single', max_d=1.4):
 
 def clustered_spd_map(rootdir, aves_ave_spd, link_method='single'):
 
-    species_cluster, individ_corr = dendrogram_sp_clustering(aves_ave_spd, link_method=link_method, max_d=1.4)
+    individ_corr, species_cluster = dendrogram_sp_clustering(aves_ave_spd, link_method=link_method, max_d=1.35)
 
     # Plot cluster map with one dendrogram, main clusters (hardcoded) as row/col colours
     cg = sns.clustermap(individ_corr, figsize=(12, 12), method=link_method, metric='euclidean', vmin=-1, vmax=1,
@@ -86,10 +101,10 @@ def cluster_daily_ave(rootdir, aves_ave_spd, link_method='single'):
     dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
     change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, \
     change_times_datetime, change_times_unit = output_timings()
-    species_cluster, individ_corr = dendrogram_sp_clustering(aves_ave_spd, link_method=link_method, max_d=1.4)
+    individ_corr, species_cluster = dendrogram_sp_clustering(aves_ave_spd, link_method=link_method, max_d=1.35)
 
     date_form = DateFormatter('%H')
-    feature, ymax, span_max, ylabeling = 'speed_mm', 95, 275, 'Speed mm/s'
+    feature, ymax, span_max, ylabeling = 'speed_mm', 95, len(cluster_order)*25, 'Speed mm/s'
     fig = plt.figure(figsize=(2, 9))
 
     # create time vector in datetime format
@@ -118,7 +133,7 @@ def cluster_daily_ave(rootdir, aves_ave_spd, link_method='single'):
         # subset_spd_stdev = subset_spd.std(axis=1)
         daily_speed = subset_spd.mean(axis=1) + top - 25 - cluster_count * 25
 
-        colour = col_dic_complex[dic_complex[str(cluster_n)]]
+        colour = col_dic_complex[getKeysByValue(dic_complex, cluster_n)[0]]
         # plotting
         # ax = sns.lineplot(x=date_time_obj, y=(daily_speed + subset_spd_stdev), color='lightgrey')
         # ax = sns.lineplot(x=date_time_obj, y=(daily_speed - subset_spd_stdev), color='lightgrey')

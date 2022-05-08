@@ -189,11 +189,11 @@ def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day
     # plt.tight_layout()
 
 
-def plot_cre_dawn_dusk_strip_v(rootdir, all_feature_combined, feature):
+def plot_cre_dawn_dusk_strip_v(rootdir, all_feature_combined, feature, peak_feature='peak_amplitude'):
 
-    sorted_index = all_feature_combined.groupby(by='species').mean().sort_values(by='peak_amplitude').index
+    sorted_index = all_feature_combined.groupby(by='species').mean().sort_values(by=peak_feature).index
     grped_bplot = sns.catplot(y='species',
-                              x='peak_amplitude',
+                              x=peak_feature,
                               hue="twilight",
                               kind="box",
                               legend=False,
@@ -206,7 +206,7 @@ def plot_cre_dawn_dusk_strip_v(rootdir, all_feature_combined, feature):
                               palette="flare")
     plt.axvline(0, color='k', linestyle='--')
     grped_bplot = sns.stripplot(y='species',
-                                x='peak_amplitude',
+                                x=peak_feature,
                                 hue='twilight',
                                 jitter=True,
                                 dodge=True,
@@ -215,7 +215,7 @@ def plot_cre_dawn_dusk_strip_v(rootdir, all_feature_combined, feature):
                                 order=sorted_index,
                                 palette="flare")
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "species_crepuscularity_{0}_{1}.png".format(feature, dt.date.today())))
+    plt.savefig(os.path.join(rootdir, "species_crepuscularity_{0}_{1}_{2}.png".format(feature, peak_feature, dt.date.today())))
 
 
 def colors_from_values(values, palette_name):
@@ -234,7 +234,7 @@ def colors_from_values(values, palette_name):
     return np.array(palette).take(indices, axis=0)
 
 
-def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature):
+def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature, peak_feature='peak_amplitude'):
     """ Plot the crepuscular data as a strip and box plot
 
     :param rootdir:
@@ -242,7 +242,7 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature):
     :param feature:
     :return:
     """
-    sorted_index = cres_peaks_i.groupby(by='species').mean().sort_values(by='peak_amplitude').index
+    sorted_index = cres_peaks_i.groupby(by='species').mean().sort_values(by=peak_feature).index
 
     # grped_bplot = sns.catplot(x='species_six',
     #                           y='peak_amplitude',
@@ -292,11 +292,11 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature):
     # plt.close()
 
     dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
-    sorted_index = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by='peak_amplitude').index
+    sorted_index = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
     twilights = ['dawn', 'dusk']
     for period in twilights:
         grped_bplot = sns.catplot(x='species',
-                                  y='peak_amplitude',
+                                  y=peak_feature,
                                   kind="box",
                                   legend=False,
                                   height=5,
@@ -305,21 +305,25 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature):
                                   fliersize=0,
                                   boxprops=dict(alpha=.3),
                                   order=sorted_index,
-                                  palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period].
-                                    groupby('species').peak_amplitude.median().reindex(sorted_index), "flare"),
+                                  palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period,
+                                                                              [peak_feature, 'species']].groupby
+                                                             ('species').median().reindex(sorted_index).loc[:, peak_feature], "flare"),
                                   saturation=1)
 
-        sns.stripplot(x='species', y='peak_amplitude',
+        sns.stripplot(x='species', y=peak_feature,
                                     data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
                                     order=sorted_index,
-                                    palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period].
-                                                               groupby('species').peak_amplitude.median().
-                                                               reindex(sorted_index), "flare"),
+                                    palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period,
+                                                                              [peak_feature, 'species']].groupby
+                                                             ('species').median().reindex(sorted_index).loc[:, peak_feature], "flare"),
                                     size=3).set(title=period)
         grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
-        grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
+        if peak_feature == 'peak_amplitude':
+            grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
+        elif peak_feature == 'peak':
+            grped_bplot.set(ylabel='Peak fraction', xlabel='Species')
         ax = plt.axhline(0, ls='--', color='k')
         plt.tight_layout()
-        plt.savefig(os.path.join(rootdir, "species_crepuscular_30min_box_sort_{0}_{1}_{2}.png".format(period, dt.date.today(), feature)))
+        plt.savefig(os.path.join(rootdir, "species_crepuscular_30min_box_sort_{0}_{1}_{2}_{3}.png".format(period, dt.date.today(), feature, peak_feature)))
         plt.close()
     return

@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.linear_model import LinearRegression
-from scipy.spatial import ConvexHull
+import scipy.spatial as spatial
 
 from cichlidanalysis.io.io_feature_vector import load_feature_vectors, load_diel_pattern
 from cichlidanalysis.utils.species_names import six_letter_sp_name
@@ -40,7 +40,7 @@ def run_linear_reg(x, y):
     return model, r_sq
 
 
-def plt_lin_reg(x, y, model, r_sq):
+def plt_lin_reg(rootdir, x, y, model, r_sq):
     """ Plot the scatter of two variables and add in the linear regression model, pearson's correlation and R2
 
     :param x: behavioural feature, pandas series
@@ -120,8 +120,6 @@ if __name__ == '__main__':
 
     # add column for cluster, hardcoded!!!!
     dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
-    # dic = {'diurnal': [7], 'nocturnal': [1], 'crepuscular': [2, 3, 5, 6, 8, 9], 'undefined': [4, 10, 11, 12]}
-    # col_dic = {'diurnal': 'gold', 'nocturnal': 'royalblue', 'crepuscular': 'mediumorchid', 'undefined': 'black'}
     feature_v['cluster_pattern'] = 'placeholder'
     for key in dic_simple:
         # find the species which are in diel cluster group
@@ -143,6 +141,14 @@ if __name__ == '__main__':
         stdv = sp_subset.std(axis=0)
 
     averages_norm = averages.div(averages.sum(axis=1), axis=0)
+
+    # histogram of total rest
+    feature_v_mean = feature_v.groupby('six_letter_name_Ronco').mean()
+    feature_v_mean = feature_v_mean.reset_index()
+
+    feature_v_mean.loc[:, ['six_letter_name_Ronco', 'total_rest', 'peak_amplitude', 'peak', 'day_night_dif', 'cluster']
+    ].to_csv(os.path.join(rootdir, "combined_cichlid_data_{}.csv".format(datetime.date.today())))
+    print("Finished saving out species data")
 
     # ## heatmap of fv
     # fig1, ax1 = plt.subplots()
@@ -216,22 +222,6 @@ if __name__ == '__main__':
     ax = plt.axvline(12, ls='--', color='k')
     plt.savefig(os.path.join(rootdir, "total_rest_ordered_diet_{0}.png".format(datetime.date.today())))
     plt.close()
-
-    # histogram of total rest
-    feature_v_mean = feature_v.groupby('six_letter_name_Ronco').mean()
-    feature_v_mean = feature_v_mean.reset_index()
-
-    feature_v_mean.loc[:, ['six_letter_name_Ronco', 'total_rest', 'peak_amplitude', 'peak', 'day_night_dif', 'cluster']
-    ].to_csv(os.path.join(rootdir, "combined_cichlid_data_{}.csv".format(datetime.date.today())))
-    print("Finished saving out species data")
-
-    # feature_v_mean['tribe'] = 'undefined'
-    # for row in feature_v_mean['species_six']:
-    #     if sp_metrics.loc[sp_metrics['species_six'] == row, 'tribe'].empty:
-    #         feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = 'undefined'
-    #     else:
-    #         feature_v_mean.loc[feature_v_mean['species_six'] == row, 'tribe'] = \
-    #             sp_metrics.loc[sp_metrics['species_six'] == row, 'tribe'].values[0]
 
     fig = plt.figure(figsize=(10, 5))
     sns.histplot(data=feature_v, x='total_rest', binwidth=1, multiple="stack", color='skyblue')
@@ -404,10 +394,20 @@ if __name__ == '__main__':
                     'size_female', 'fish_length_mm']:
             non_nan_rows = sub_df[sub_df[behav].isna() == False].index & sub_df[sub_df[col].isna() == False].index
             model, r_sq = run_linear_reg(sub_df.loc[non_nan_rows, behav], sub_df.loc[non_nan_rows, col])
-            plt_lin_reg(sub_df.loc[non_nan_rows, behav], sub_df.loc[non_nan_rows, col], model, r_sq)
+            plt_lin_reg(rootdir, sub_df.loc[non_nan_rows, behav], sub_df.loc[non_nan_rows, col], model, r_sq)
 
+    # correlating day/night vs crepuscularity
     model, r_sq = run_linear_reg(feature_v_mean.peak, abs(feature_v_mean.day_night_dif))
-    plt_lin_reg(feature_v_mean.peak, abs(feature_v_mean.day_night_dif), model, r_sq)
+    plt_lin_reg(rootdir, feature_v_mean.peak, abs(feature_v_mean.day_night_dif), model, r_sq)
+
+    model, r_sq = run_linear_reg(feature_v_mean.peak_amplitude, abs(feature_v_mean.day_night_dif))
+    plt_lin_reg(rootdir, feature_v_mean.peak_amplitude, abs(feature_v_mean.day_night_dif), model, r_sq)
+
+    model, r_sq = run_linear_reg(feature_v_mean.peak, feature_v_mean.day_night_dif)
+    plt_lin_reg(rootdir, feature_v_mean.peak, feature_v_mean.day_night_dif, model, r_sq)
+
+    model, r_sq = run_linear_reg(feature_v_mean.peak_amplitude, feature_v_mean.day_night_dif)
+    plt_lin_reg(rootdir, feature_v_mean.peak_amplitude, feature_v_mean.day_night_dif, model, r_sq)
 
     #### draw convex hull for each temporal guild ####
     # speed_mm guilds 24.02.2022
@@ -427,7 +427,7 @@ if __name__ == '__main__':
         points = points.to_numpy()
         plt.scatter(points[:, 0], points[:, 1], color=col_dic_simple[key], s=12)
         if key in ['diurnal', 'nocturnal', 'crepuscular']:
-            hull = ConvexHull(points)
+            hull = spatial.ConvexHull(points)
             for simplex in hull.simplices:
                 ax.plot(points[simplex, 0], points[simplex, 1], color=col_dic_simple[key])
     ax.set_xlabel('$\delta^{13} C$')

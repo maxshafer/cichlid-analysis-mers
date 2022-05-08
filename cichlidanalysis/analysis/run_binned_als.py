@@ -22,6 +22,8 @@ from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, 
     plot_day_night_species_ave
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.analysis.clustering_patterns import run_species_pattern_cluster_daily, run_species_pattern_cluster_weekly
+from cichlidanalysis.plotting.figure_1 import cluster_daily_ave, clustered_spd_map
+from cichlidanalysis.analysis.feature_vector_v2 import run_linear_reg, plt_lin_reg
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -125,9 +127,11 @@ if __name__ == '__main__':
         # _ = fish_weekly_corr(rootdir, fish_tracks_bin, feature, 'single')
 
     # correlations for species and clusters
-    species_daily_corr(rootdir, aves_ave_spd, 'ave','speed_mm', 'single')
-    species_daily_corr(rootdir, aves_ave_rest, 'ave', 'rest', 'single')
-    species_daily_corr(rootdir, aves_ave_move, 'ave', 'movement', 'single')
+    run = False
+    if run:
+        species_daily_corr(rootdir, aves_ave_spd, 'ave', 'speed_mm', 'single')
+        species_daily_corr(rootdir, aves_ave_rest, 'ave', 'rest', 'single')
+        species_daily_corr(rootdir, aves_ave_move, 'ave', 'movement', 'single')
 
     species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster_daily(aves_ave_spd,
                                                                                                   aves_ave_move,
@@ -135,6 +139,11 @@ if __name__ == '__main__':
                                                                                                   rootdir)
     # species_cluster_spd_wk, species_cluster_move_wk, species_cluster_rest_wk = run_species_pattern_cluster_weekly(
     #     averages_spd, averages_move, averages_rest, rootdir)
+
+    # Figures
+    clustered_spd_map(rootdir, aves_ave_spd, link_method='single')
+    cluster_daily_ave(rootdir, aves_ave_spd, link_method='single')
+
 
     # ###########################
     # ### Define diel pattern ###
@@ -159,6 +168,12 @@ if __name__ == '__main__':
     feature = 'speed_mm'
     cres_peaks = crepuscular_peaks(feature, fish_tracks_bin, fish_diel_patterns_sp)
     plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature)
+
+    cres_peaks_ave = cres_peaks.groupby(by=['species', 'twilight']).mean().reset_index()
+    data1 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dawn', 'peak_amplitude']
+    data2 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dusk', 'peak_amplitude']
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
 
     # make and save diel patterns csv
     cresp_sp = cres_peaks.groupby(['species']).mean()

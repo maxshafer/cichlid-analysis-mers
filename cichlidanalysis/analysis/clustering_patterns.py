@@ -90,7 +90,7 @@ def run_species_pattern_cluster_daily(aves_ave_spd, aves_ave_move, aves_ave_rest
 
     change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
 
-    species_cluster_spd = cluster_patterns(aves_ave_spd, rootdir, feature="speed", max_d=1.4, label='daily')
+    species_cluster_spd = cluster_patterns(aves_ave_spd, rootdir, feature="speed", max_d=1.35, label='daily')
     species_cluster_move = cluster_patterns(aves_ave_move, rootdir, feature="movement", max_d=1.2,  label='daily')
     species_cluster_rest = cluster_patterns(aves_ave_rest, rootdir, feature="rest", max_d=1.05,  label='daily')
 
