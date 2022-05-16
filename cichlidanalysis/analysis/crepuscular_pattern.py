@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
+from matplotlib.dates import DateFormatter
+from matplotlib.ticker import (MultipleLocator)
 
 from cichlidanalysis.io.meta import extract_meta
 from cichlidanalysis.utils.species_names import six_letter_sp_name
@@ -81,6 +83,8 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
         peak_prom = 7
 
     for species_name in species:
+        date_form = DateFormatter("%H")
+
         fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
             columns='FishID', values=feature, index='ts')
 
@@ -108,6 +112,11 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
             plt.title(species_name)
 
             ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * i) + 0.5, "o", color="r")
+        ax2.xaxis.set_major_locator(MultipleLocator(24))
+        ax2.xaxis.set_major_formatter(date_form)
+        plt.xlabel("Time (h)")
+        plt.ylabel("Speed (mm/s)")
+        sns.despine(top=True, right=True)
 
 
 def crepuscular_peaks(feature, fish_tracks_ds, fish_diel_patterns_sp):

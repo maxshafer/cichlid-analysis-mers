@@ -12,7 +12,6 @@ import datetime as dt
 from datetime import timedelta
 
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
-from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
 
 
 def plot_ridge_plots(fish_tracks_bin, change_times_datetime, rootdir, sp_metrics, tribe_col):

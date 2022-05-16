@@ -8,8 +8,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.linear_model import LinearRegression
 import scipy.spatial as spatial
+from scipy import stats
 
 from cichlidanalysis.io.io_feature_vector import load_feature_vectors, load_diel_pattern
 from cichlidanalysis.utils.species_names import six_letter_sp_name
@@ -17,62 +17,12 @@ from cichlidanalysis.io.meta import extract_meta
 from cichlidanalysis.utils.species_metrics import tribe_cols
 from cichlidanalysis.analysis.diel_pattern import daily_more_than_pattern_individ, daily_more_than_pattern_species, \
     day_night_ratio_individ, day_night_ratio_species
+from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 from cichlidanalysis.io.io_ecological_measures import get_meta_paths
 from cichlidanalysis.plotting.figure_1 import cluster_dics
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-
-def run_linear_reg(x, y):
-    """  Runs linear regression on x and y  varialbes. Will reshape x as needed (so  you  can add in pandas series)
-
-    :param x: behavioural feature, pandas series
-    :param y: ecological feature, pandas series
-    :return: model and r_sq (R2 value for model fit)
-    """
-    x = x.to_numpy()
-    if x.ndim == 1:
-        x = np.reshape(x, (-1, 1))
-
-    model = LinearRegression().fit(x, y)
-    r_sq = model.score(x, y)
-    return model, r_sq
-
-
-def plt_lin_reg(rootdir, x, y, model, r_sq):
-    """ Plot the scatter of two variables and add in the linear regression model, pearson's correlation and R2
-
-    :param x: behavioural feature, pandas series
-    :param y: ecological feature, pandas series
-    :param model: run_linear_reg model
-    :param r_sq: R2 value for model fit
-    :return: saves plot
-    """
-    fig = plt.figure(figsize=(5, 5))
-    ax = sns.scatterplot(x, y)
-    # x_intercept = (model.intercept_/model.coef_)[0]*-1
-    # plt.plot([0, x_intercept], [model.intercept_, 0], color='k')
-    y_pred = model.predict(np.reshape(x.to_numpy(), (-1, 1)))
-    plt.plot(x, y_pred, color='k')
-    ax.set(xlim=(min(x), max(x)), ylim=(min(y), max(y)))
-
-    r = np.corrcoef(x, y)
-    ax.text(0.9, 0.94, s="$R^2$={}".format(np.round(r_sq, 2)), va='top', ha='center', transform=ax.transAxes)
-    ax.text(0.9, 0.98, s="$r$={}".format(np.round(r[0, 1], 2)), va='top', ha='center', transform=ax.transAxes)
-    fig.tight_layout()
-    plt.savefig(os.path.join(rootdir, "feature_correlation_plot_{0}_vs_{1}_{2}.png".format(x.name, y.name,
-                                                                                           datetime.date.today())))
-    plt.close()
-
-    # # residuals plot
-    # fig = plt.figure(figsize=(5, 5))
-    # ax = sns.scatterplot(x, y-y_pred)
-    # ax.set_xlabel('Predicted')
-    # ax.set_ylabel('Residuals')
-    # plt.axhline(y=0, color='k')
-    # fig.tight_layout()
-    return
 
 
 def subset_feature_plt(averages_i, features, labelling):
@@ -124,7 +74,7 @@ if __name__ == '__main__':
     for key in dic_simple:
         # find the species which are in diel cluster group
         sp_diel_group = set(diel_patterns.loc[diel_patterns.cluster.isin(dic_simple[key]), 'species'].to_list())
-        feature_v.loc[feature_v.species_six.isin(sp_diel_group), 'cluster_pattern'] = key
+        feature_v.loc[feature_v.six_letter_name_Ronco.isin(sp_diel_group), 'cluster_pattern'] = key
 
     # make species average
     for species_n, species_name in enumerate(species):
@@ -189,8 +139,25 @@ if __name__ == '__main__':
     # number of species
     # feature_v["species"].value_counts().index
 
+
+    # total rest
+    fig = plt.figure(figsize=(5, 10))
+    ax = sns.boxplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', dodge=False,
+                     showfliers=False, color='skyblue',
+                     order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values("total_rest").index.to_list())
+    ax = sns.swarmplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', color=".2", size=4,
+                       order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values(
+                           "total_rest").index.to_list())
+    ax.set(xlabel='Average total rest per day', ylabel='Species')
+    ax.set(xlim=(0, 24))
+    plt.tight_layout()
+    ax = plt.axvline(12, ls='--', color='k')
+    sns.despine(top=True, right=True)
+    plt.savefig(os.path.join(rootdir, "total_rest_ordered_{0}.png".format(datetime.date.today())), dpi=1000)
+    plt.close()
+
     # total rest ordered by mean, coloured by temporal guild
-    colors = ['royalblue', 'mediumorchid', 'gold', 'silver']
+    colors = ['royalblue', 'mediumorchid', 'silver', 'gold']
     customPalette = sns.set_palette(sns.color_palette(colors))
     fig = plt.figure(figsize=(5, 10))
     ax = sns.boxplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', hue="cluster_pattern", dodge=False,
@@ -203,7 +170,7 @@ if __name__ == '__main__':
     ax.set(xlim=(0, 24))
     plt.tight_layout()
     ax = plt.axvline(12, ls='--', color='k')
-    plt.savefig(os.path.join(rootdir, "total_rest_ordered_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "total_rest_ordered_cluster_{0}.png".format(datetime.date.today())))
     plt.close()
 
     # total rest ordered by mean, coloured by diet guild
@@ -409,13 +376,49 @@ if __name__ == '__main__':
     model, r_sq = run_linear_reg(feature_v_mean.peak_amplitude, feature_v_mean.day_night_dif)
     plt_lin_reg(rootdir, feature_v_mean.peak_amplitude, feature_v_mean.day_night_dif, model, r_sq)
 
+    model, r_sq = run_linear_reg(feature_v_mean.total_rest, feature_v_mean.day_night_dif)
+    plt_lin_reg(rootdir, feature_v_mean.total_rest, feature_v_mean.day_night_dif, model, r_sq)
+
+    model, r_sq = run_linear_reg(feature_v_mean.total_rest, feature_v_mean.peak)
+    plt_lin_reg(rootdir, feature_v_mean.total_rest, feature_v_mean.peak, model, r_sq)
+
+    model, r_sq = run_linear_reg(feature_v_mean.total_rest, feature_v_mean.fish_length_mm)
+    plt_lin_reg(rootdir, feature_v_mean.total_rest, feature_v_mean.peak, model, r_sq)
+
+    model, r_sq = run_linear_reg(sub_df.total_rest, sub_df.d15N)
+    plt_lin_reg(rootdir, sub_df.total_rest, sub_df.d15N, model, r_sq)
+    plt.close('all')
+
+    x = feature_v_mean.total_rest
+    y = feature_v_mean.fish_length_mm
+    col_vector = cichlid_meta.set_index('six_letter_name_Ronco').loc[feature_v_mean.six_letter_name_Ronco.to_list(), 'diet'].reset_index().drop_duplicates().diet
+
+    # diet size relationship
+    diets = col_vector.unique()
+    for diet in diets[~pd.isna(diets)]:
+        diet_species = cichlid_meta.loc[cichlid_meta.diet == diet, 'six_letter_name_Ronco']
+        ind = feature_v_mean.six_letter_name_Ronco.isin(diet_species)
+        model, r_sq = run_linear_reg(feature_v_mean.loc[ind, 'total_rest'], feature_v_mean.loc[ind, 'fish_length_mm'])
+        plt_lin_reg(rootdir, feature_v_mean.loc[ind, 'total_rest'], feature_v_mean.loc[ind, 'fish_length_mm'], model, r_sq, diet)
+
     #### draw convex hull for each temporal guild ####
     # speed_mm guilds 24.02.2022
     # dic = {'diurnal': [3], 'nocturnal': [1], 'crepuscular': [7, 8, 9, 10, 11], 'undefined': [2, 4, 5, 6, 12, 13]}
     # dic = {'diurnal': [1], 'nocturnal': [8], 'crepuscular': [5, 6, 7], 'undefined': [2, 3, 4, 9, 10, 11, 12]}
     # col_dic = {'diurnal': 'gold', 'nocturnal': 'royalblue', 'crepuscular': 'mediumorchid', 'undefined': 'black'}
 
-    # pelagic and trophic levels
+    # total rest compare to ecospace
+    fig = plt.figure(figsize=(3, 3))
+    ax = sns.scatterplot(df.loc[:, 'd13C'], df.loc[:, 'd15N'], color='silver', s=12)
+    ax = sns.scatterplot(data=sub_df, x='d13C', y='d15N', hue='total_rest', s=20, legend=None, palette='winter')
+    ax.set_xlabel('$\delta^{13} C$')
+    ax.set_ylabel('$\delta^{15} N$')
+    sns.despine(top=True, right=True)
+    fig.tight_layout()
+    plt.savefig(os.path.join(rootdir, "d15N_d13C_total_rest_{0}.png".format(datetime.date.today())), dpi=1200)
+    plt.close()
+
+    # pelagic and trophic levelss
     fig = plt.figure(figsize=(3, 3))
     ax = sns.scatterplot(df.loc[:, 'd13C'], df.loc[:, 'd15N'], color='silver', s=12)
     for key in dic_simple:
@@ -434,7 +437,7 @@ if __name__ == '__main__':
     ax.set_ylabel('$\delta^{15} N$')
     sns.despine(top=True, right=True)
     fig.tight_layout()
-    plt.savefig(os.path.join(rootdir, "d15N_d13C_temporal-guilds_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "d15N_d13C_temporal-guilds_{0}.png".format(datetime.date.today())), dpi=1200)
     plt.close()
 
     # trophic guilds
@@ -472,8 +475,42 @@ if __name__ == '__main__':
 
     colors = ['sandybrown', 'tomato', 'mediumseagreen', 'steelblue']
     customPalette = sns.set_palette(sns.color_palette(colors))
+    fig = plt.figure(figsize=(6, 4))
     ax = sns.barplot(x="daytime", y="species_n", hue="diet", data=df_group, palette=customPalette)
     ax.set(xlabel=None)
     ax.set(ylabel="# of species")
     plt.savefig(os.path.join(rootdir, "diet-guilds_hist_{0}.png".format(datetime.date.today())))
     plt.close()
+
+    # total rest by diet guild
+    df_per_species = df.loc[:, ['diet', 'habitat', 'six_letter_name_Ronco', 'total_rest', 'rest_mean_night',
+                                'rest_mean_day', 'fish_length_mm', 'night-day_dif_rest', 'fish_n', 'species_true',
+                                'species_our_names', 'species_six']].drop_duplicates().reset_index(drop=True)
+    colors = ['mediumseagreen', 'sandybrown', 'tomato', 'steelblue']
+    diet_order = ['Algivore', 'Zooplanktivore', 'Invertivore', 'Piscivore']
+    customPalette = sns.set_palette(sns.color_palette(colors))
+
+    stats_array = np.zeros([len(diet_order), len(diet_order)])
+    for diet_1_n, diet_1 in enumerate(diet_order):
+        for diet_2_n, diet_2 in enumerate(diet_order):
+            _, stats_array[diet_1_n, diet_2_n] = stats.ttest_ind(df_per_species.loc[df_per_species.diet == diet_1,
+                                                    'total_rest'], df_per_species.loc[df_per_species.diet == diet_2,
+                                                                                      'total_rest'])
+    fig = plt.figure(figsize=(3, 3))
+    ax = sns.boxplot(data=df_per_species, x='diet', y='total_rest', dodge=False, showfliers=False, order=diet_order)
+    ax = sns.swarmplot(data=df_per_species, x='diet', y='total_rest', color=".2", size=4,order=diet_order)
+    ax.set(xlabel='Diet Guild', ylabel='Average total rest per day')
+    ax.set(ylim=(0, 24))
+    plt.xticks(rotation='45', ha="right")
+
+    # statistical annotation
+    if not np.max(stats_array < 0.05):
+        y, h, col = 22, len(diet_order), 'k'
+        for diet_i_n, diet_i in enumerate(diet_order):
+            plt.text(diet_i_n, y, "ns", ha='center', va='bottom', color=col)
+
+    sns.despine(top=True, right=True)
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "total_rest_vs_diet_significance_{0}.png".format(datetime.date.today())))
+    plt.close()
+
