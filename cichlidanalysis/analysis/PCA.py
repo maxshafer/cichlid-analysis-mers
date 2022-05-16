@@ -1,52 +1,102 @@
 from tkinter.filedialog import askdirectory
 from tkinter import *
-import os
 
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-import datetime as dt
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.cm
 
-from cichlidanalysis.io.als_files import load_ds_als_files
-from cichlidanalysis.io.io_ecological_measures import get_meta_paths
 from cichlidanalysis.utils.timings import load_timings
-from cichlidanalysis.utils.species_metrics import tribe_cols
-from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave, \
-    fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
-from cichlidanalysis.analysis.diel_pattern import diel_pattern_stats_individ_bin, diel_pattern_stats_species_bin
-from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr
-from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks
-from cichlidanalysis.plotting.cluster_plots import cluster_all_fish, cluster_species_daily
-from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box, \
-    plot_day_night_species_ave
+from cichlidanalysis.analysis.processing import feature_daily
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.analysis.run_binned_als import setup_run_binned
+from cichlidanalysis.io.io_feature_vector import load_diel_pattern
+from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 
 # insipired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
 
-def run_pca(fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, species_sixes):
+def plot_loadings(rootdir, pca, labels, data_input):
+    loadings = pd.DataFrame(pca.components_.T, columns=labels, index=data_input.columns)
 
+    for pc_name in labels:
+        loadings_sorted = loadings.sort_values(by=pc_name)
+        f, ax = plt.subplots(figsize=(10, 5))
+        plt.scatter(loadings_sorted.index, loadings_sorted.loc[:, pc_name])
+        ax.set_xticklabels(loadings_sorted.index, rotation=90)
+        plt.title(pc_name)
+        ax.set_ylabel('loading')
+        sns.despine(top=True, right=True)
+        plt.tight_layout()
+    return loadings
+
+
+def reconstruct_pc(data_input, pca, mu, pc_n):
+    # reconstruct the data with only pc 'n'
+    Xhat = np.dot(pca.transform(data_input)[:, pc_n-1:pc_n], pca.components_[:1, :])
+    Xhat += mu
+    reconstructed = pd.DataFrame(data=Xhat, columns=data_input.columns)
+    f, ax = plt.subplots(figsize=(10, 5))
+    plt.plot(reconstructed)
+
+    f, ax = plt.subplots(figsize=(10, 5))
+    plt.plot(reconstructed.iloc[:, 0:5:])
+
+    species = 'Tylpol'
+    f, ax = plt.subplots(figsize=(10, 5))
+    plt.plot(reconstructed.loc[:, species])
+    plt.plot(data_input.loc[:, species])
+    plt.close('all')
+
+
+def run_pca(rootdir, data_input):
+
+    data_input = sp_metrics_sub
+    data_input = aves_ave_spd
     # Standardizing the features
     n_com = 2
-    x = StandardScaler().fit_transform(aves_ave_spd.values)
-    mu = np.mean(aves_ave_spd, axis=0)
+    x = StandardScaler().fit_transform(data_input.values)
+    mu = np.mean(data_input, axis=0)
 
+    # run PCA
     pca = PCA(n_components=n_com)
     principalComponents = pca.fit_transform(x)
     labels = []
     for i in range(n_com):
         labels.append('pc{}'.format(i+1))
     principalDf = pd.DataFrame(data=principalComponents, columns=labels)
-    finalDf = pd.concat([principalDf, aves_ave_spd.index.to_series().reset_index(drop=True)], axis=1)
-    day = set(np.where(aves_ave_spd.index.to_series().reset_index(drop=True) <'19:00')[0]) & set(np.where(aves_ave_spd.index.to_series().reset_index(drop=True) >= '07:00')[0])
-    six_thirty_am = set(np.where(aves_ave_spd.index.to_series().reset_index(drop=True) == '06:30')[0])
-    seven_am = set(np.where(aves_ave_spd.index.to_series().reset_index(drop=True) == '07:00')[0])
-    seven_pm = set(np.where(aves_ave_spd.index.to_series().reset_index(drop=True) == '19:00')[0])
-    six_thirty_pm = set(np.where(aves_ave_spd.index.to_series().reset_index(drop=True) == '18:30')[0])
+    finalDf = pd.concat([principalDf, data_input.index.to_series().reset_index(drop=True)], axis=1)
+
+    # reconstructing the fish series
+    # https://stats.stackexchange.com/questions/229092/how-to-reverse-pca-and-reconstruct-original-variables-from-several-principal-com
+    Xhat = np.dot(pca.transform(data_input)[:, :n_com], pca.components_[:n_com, :])
+    Xhat += mu
+    reconstructed = pd.DataFrame(data=Xhat, columns=data_input.columns)
+    f, ax = plt.subplots(figsize=(10, 5))
+    plt.plot(reconstructed)
+
+    # plot reconstruction of pc 'n'
+    reconstruct_pc(data_input, pca, mu, 1)
+
+    # plot loadings of each pc
+    loadings = plot_loadings(rootdir, pca, labels, data_input)
+    f, ax = plt.subplots(figsize=(10, 5))
+    plt.plot(reconstructed.loc[:, 'Astbur'])
+
+    # plot variance explained
+    f, ax = plt.subplots(figsize=(10, 5))
+    plt.plot(principalDf)
+    f, ax = plt.subplots(figsize=(10, 5))
+    plt.plot(np.cumsum(pca.explained_variance_))
+
+    # plot 2D PC space with labeled points
+    day = set(np.where(data_input.index.to_series().reset_index(drop=True) <'19:00')[0]) & set(np.where(aves_ave_spd.index.to_series().reset_index(drop=True) >= '07:00')[0])
+    six_thirty_am = set(np.where(data_input.index.to_series().reset_index(drop=True) == '06:30')[0])
+    seven_am = set(np.where(data_input.index.to_series().reset_index(drop=True) == '07:00')[0])
+    seven_pm = set(np.where(data_input.index.to_series().reset_index(drop=True) == '19:00')[0])
+    six_thirty_pm = set(np.where(data_input.index.to_series().reset_index(drop=True) == '18:30')[0])
     finalDf['daynight'] = 'night'
     finalDf.loc[day, 'daynight'] = 'day'
     finalDf.loc[six_thirty_am, 'daynight'] = 'six_thirty_am'
@@ -54,45 +104,7 @@ def run_pca(fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, spec
     finalDf.loc[seven_am, 'daynight'] = 'seven_am'
     finalDf.loc[seven_pm, 'daynight'] = 'seven_pm'
 
-    # reconstructing the fish series
-    # https://stats.stackexchange.com/questions/229092/how-to-reverse-pca-and-reconstruct-original-variables-from-several-principal-com
-    Xhat = np.dot(pca.transform(aves_ave_spd)[:, :n_com], pca.components_[:n_com, :])
-    Xhat += mu
-    reconstructed = pd.DataFrame(data=Xhat, columns=aves_ave_spd.columns)
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.plot(reconstructed)
-
-    # reconstruct with only pc1
-    Xhat = np.dot(pca.transform(aves_ave_spd)[:, :1], pca.components_[:1, :])
-    Xhat += mu
-    reconstructed = pd.DataFrame(data=Xhat, columns=aves_ave_spd.columns)
-    night_minus_day = reconstructed.loc[10, :] - reconstructed.loc[25, :]
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.scatter(night_minus_day.sort_values().index, night_minus_day.sort_values())
-    ax.set_xticklabels(ax.get_xticks(), rotation=90)
-    ax.set_xticklabels(night_minus_day.sort_values().index.to_list())
-
-    # reconstruct with only pc2
-    Xhat = np.dot(pca.transform(aves_ave_spd)[:, 1:2], pca.components_[1:2, :])
-    Xhat += mu
-    reconstructed = pd.DataFrame(data=Xhat, columns=aves_ave_spd.columns)
-    night_minus_day = reconstructed.loc[14, :] - reconstructed.loc[25, :]
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.scatter(night_minus_day.sort_values().index, night_minus_day.sort_values())
-    ax.set_xticklabels(ax.get_xticks(), rotation=90)
-    ax.set_xticklabels(night_minus_day.sort_values().index.to_list())
-
-
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.plot(principalDf)
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.plot(np.cumsum(pca.explained_variance_))
-
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.scatter(principalDf.loc[:, 'pc1'], principalDf.loc[:, 'pc2'])
-
     cmap = matplotlib.cm.get_cmap('twilight_shifted')
-
     fig = plt.figure(figsize=(8, 8))
     ax = fig.add_subplot(1, 1, 1)
     ax.set_xlabel('Principal Component 1', fontsize=15)
@@ -106,6 +118,7 @@ def run_pca(fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, spec
         ax.scatter(finalDf.loc[indicesToKeep, 'pc1'], finalDf.loc[indicesToKeep, 'pc2'], c=cmap(time_n/len(timepoints)), s=50)
     ax.legend(timepoints)
     ax.grid()
+    return pca, labels, loadings
 
 
 if __name__ == '__main__':
@@ -124,6 +137,8 @@ if __name__ == '__main__':
     averages_move, sp_move_combined = plot_ridge_plots(fish_tracks_bin, change_times_datetime,
                                                        rootdir, sp_metrics, tribe_col)
 
+    diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
+
     # ### generate averages of the averages ###
     aves_ave_spd = feature_daily(averages_spd)
     aves_ave_rest = feature_daily(averages_rest)
@@ -131,4 +146,22 @@ if __name__ == '__main__':
 
     aves_ave_spd.columns = species_sixes
 
-    run_pca(fish_tracks_bin, sp_metrics, tribe_col, species_full, fish_IDs, species_sixes)
+    spd_df = aves_ave_spd.T.reset_index().rename(columns={'index': 'six_letter_name_Ronco'})
+
+    sp_metrics_sub = sp_metrics.loc[:, ['six_letter_name_Ronco', 'habitat', 'diet']]
+
+    for col in ['habitat', 'diet']:
+        sp_metrics_sub[col].replace(sp_metrics_sub.loc[:, col].unique(), np.arange(len(sp_metrics_sub.loc[:, col].unique())), inplace=True)
+
+    sp_metrics_sub = sp_metrics_sub.merge(spd_df, on="six_letter_name_Ronco")
+    sp_metrics_sub = sp_metrics_sub.set_index("six_letter_name_Ronco")
+
+    pca, labels, loadings = run_pca(rootdir, aves_ave_spd)
+
+    loadings = loadings.reset_index().rename(columns={'index': 'species'})
+    pca_df = loadings.merge(diel_patterns, on='species')
+    model, r_sq = run_linear_reg(pca_df.pc1, pca_df.day_night_dif)
+    plt_lin_reg(rootdir, pca_df.pc1, pca_df.day_night_dif, model, r_sq)
+
+    model, r_sq = run_linear_reg(pca_df.pc2, pca_df.peak)
+    plt_lin_reg(rootdir, pca_df.pc2, pca_df.peak, model, r_sq)
