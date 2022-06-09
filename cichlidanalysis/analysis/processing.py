@@ -286,18 +286,6 @@ def add_day_number_fish_tracks(fish_tracks_ds):
     return fish_tracks_ds
 
 
-# def add_day(fish_df):
-#     """ Adds day number to the fish dataframe, by using the timestamp (ts) column
-#
-#     :param fish_df:
-#     :return:
-#     """
-#
-#     fish_df['day'] = fish_df.ts.apply(lambda row: int(str(row)[8:10]) - 1)
-#     print("added night and day column")
-#     return fish_df
-
-
 if __name__ == "__main__":
     import doctest
     doctest.testmod()

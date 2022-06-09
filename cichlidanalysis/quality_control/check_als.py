@@ -9,10 +9,10 @@ import pandas as pd
 from cichlidanalysis.io.als_files import load_als_files
 
 if __name__ == '__main__':
-    ' this script goes through each subfolder and loads _als.csv files. It will check the length of the data in ' \
-    ' days. This is  used since there seems to be a silent bug which causes only part of the als file to be saved. ' \
-    ' Have added a check on run_fish_als to prevent this issue in the future. This script will save out a csv with ' \
-    ' the fishIDs and the day lengths'
+    """this script goes through each subfolder and loads _als.csv files. It will check the length of the data in
+    days. This is  used since there seems to be a silent bug which causes only part of the als file to be saved.
+    Have added a check on run_fish_als to prevent this issue in the future. This script will save out a csv with
+    the fishIDs and the day lengths"""
 
     # Allows a user to select top directory
     root = Tk()

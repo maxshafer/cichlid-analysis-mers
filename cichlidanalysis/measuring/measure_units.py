@@ -1,9 +1,7 @@
-# this file will ask you to load a movie/median. it will then ask you to draw the length of the barrier 3 times.
-# It will take the average length and add this to the config file?
+# this file will ask you to load a movie. It will then ask you to draw the length of the barrier 3 times.
+# It will take the average length and add this to the config file.
 
 # https://stackoverflow.com/questions/16195190/python-cv2-how-do-i-draw-a-line-on-an-image-with-mouse-then-return-line-coord
-# def measure_barrier():
-#     ''''''
 
 import os
 from tkinter.filedialog import askopenfilename
@@ -33,7 +31,6 @@ def measuring(img):
             ebox = [x, y]
             line_end.append(ebox)
             cv2.line(img, tuple(line_start[-1]), tuple(ebox), (0, 255, 0), thickness=2)
-
 
     cv2.namedWindow('Measuring units')
 
@@ -74,7 +71,7 @@ def measuring(img):
 
 
 def main():
-    # Allows a user to select a directory
+    # Allows a user to select a file
     root = Tk()
     root.withdraw()
     root.update()
@@ -85,6 +82,7 @@ def main():
 
     line_length_pixels = measuring(img)
 
+    # divider length is hard coded
     divider_base_mm = 15
     mm_per_pixel = divider_base_mm / line_length_pixels
     mm_per_pixel = np.mean(mm_per_pixel)
@@ -99,7 +97,7 @@ def main():
 
     with open(os.path.join(parts[0], "config.yaml"), "w") as file:
         documents = yaml.dump(config_file, file)
-
+    print("saved mm_per_pixel into config.yaml file")
 
 
 if __name__ == "__main__":

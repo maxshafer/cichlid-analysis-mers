@@ -1,5 +1,5 @@
 # In some cases the camera is bumped, the water refilled or something else happens to disturb th video tracking.
-# To get around it we use this script. There are two cases which is will take care of:
+# To get around this we use this script. There are two cases which will be taken care of:
 # if you want to NaN a region, or if you want to spilt the video and recalculate a background image for each part and
 # retrack. This second option also retracks the next video as it assumes that the background used wasn't good enough.
 

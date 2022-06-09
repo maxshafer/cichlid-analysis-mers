@@ -163,19 +163,6 @@ def adjust_old_time(recname, timestamps):
     return adjusted_timestamps
 
 
-def save_fishtracks_30m(fish_tracks_30m, rootdir):
-    """ Save out combined fish_tracks_30m
-
-    :param fish_tracks_30m:
-    :param rootdir:
-    :return:
-    """
-    date = dt.datetime.now().strftime("%Y%m%d")
-    # save out 30m data (all adjusted to 7am-7pm)
-    fish_tracks_30m.to_csv(os.path.join(rootdir, "combined_{0}_als_30m.csv".format(date)))
-    print("Finished saving out 30min data")
-
-
 def get_file_paths_from_nums(rootdir, video_nums, file_format='*.mp4'):
     selecting_vids = video_nums.split(',')
 

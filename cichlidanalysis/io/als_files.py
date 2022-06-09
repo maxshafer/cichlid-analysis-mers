@@ -69,31 +69,6 @@ def load_ds_als_files(folder, suffix="*als.csv"):
 
 
 def load_vertical_rest_als_files(folder, suffix="*als_vertical_pos_hist_rest-non-rest.csv"):
-    os.chdir(folder)
-    files = glob.glob(suffix)
-    files.sort()
-    first_done = 0
-
-    for file in files:
-        if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
-            print("loaded file {}".format(file))
-            data = pd.concat([data, data_s])
-
-        else:
-            # initiate data frames for each of the fish, beside the time series,
-            data = pd.read_csv(os.path.join(folder, file), sep=',')
-            print("loaded file {}".format(file))
-            first_done = 1
-
-    # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
-    data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
-
-    print("All binned als.csv files loaded")
-    return data
-
-
-def load_vertical_rest_als_files(folder, suffix="*als_vertical_pos_hist_rest-non-rest.csv"):
     """ load *als_vertical_pos_hist_rest-non-rest.csv files and add species name
 
     :param folder:

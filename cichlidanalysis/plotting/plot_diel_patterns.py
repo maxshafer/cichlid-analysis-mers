@@ -62,44 +62,6 @@ def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_s
     plt.close()
     return
 
-    # plotting horizontal
-    # f, ax = plt.subplots(figsize=(10, 5))
-    # bp = sns.boxplot(data=fish_diel_patterns, x='species_six', y=input_type, palette=box_cols, ax=ax,
-    #                  order=sorted_index, fliersize=0, boxprops=dict(alpha=.7))
-    # for patch, color in zip(bp.artists, row_cols):
-    #     patch.set_edgecolor(color)
-    #     patch.set_linewidth(3)
-    #     # patch.set_alpha(1)
-    # sns.stripplot(data=fish_diel_patterns, x='species_six', y=input_type, hue='diel_pattern', ax=ax, size=4,
-    #               palette=clrs, hue_order=hue_ordering, order=sorted_index)
-    # ax.set(ylabel=input_type, xlabel='Species')
-    # ax.set_xticklabels(labels=sorted_index, rotation=90)
-    # if input_type == 'day_night_dif':
-    #     ax = plt.axhline(0, ls='--', color='k')
-    # else:
-    #     ax = plt.axhline(1, ls='--', color='k')
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(rootdir, "species_diurnal-nocturnal_30min_median-value_{0}_{1}_{2}.png".
-    #                          format(feature, dt.date.today(), input_type)))
-    # plt.close()
-
-    # # plotting horizontal
-    # f, ax = plt.subplots(figsize=(10, 5))
-    # sns.boxplot(data=fish_diel_patterns, x='species_six', y=input_type, palette=row_cols, ax=ax,
-    #             order=sorted_index, fliersize=0, boxprops=dict(alpha=.3))
-    # sns.stripplot(data=fish_diel_patterns, x='species_six', y=input_type, hue='diel_pattern', ax=ax, size=4,
-    #               palette=clrs, hue_order=hue_ordering, order=sorted_index)
-    # ax.set(ylabel=input_type, xlabel='Species')
-    # ax.set_xticklabels(labels=sorted_index, rotation=90)
-    # if input_type == 'day_night_dif':
-    #     ax = plt.axhline(0, ls='--', color='k')
-    # else:
-    #     ax = plt.axhline(1, ls='--', color='k')
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(rootdir, "species_diurnal-nocturnal_30min_diel-pattern_{0}_{1}_{2}.png".
-    # format(feature, dt.date.today(), input_type)))
-    # plt.close()
-
 
 def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day_night_dif'):
     """ Plots the individual fish diurnality as scatter and bar plot. Colouring indicates the species level call,
@@ -177,17 +139,6 @@ def plot_day_night_species(rootdir, fish_diel_patterns, feature, input_type='day
                                                                                         dt.date.today(), input_type)))
     plt.close()
 
-    # plotting vertical
-    # f, ax = plt.subplots(figsize=(5, 10))
-    # sns.boxplot(data=fish_diel_patterns, x='day_night_dif', y='species_six', palette=row_cols, ax=ax, order=sorted_index,
-    #             fliersize=0)
-    # sns.stripplot(data=fish_diel_patterns, x='day_night_dif', y='species_six', hue='diel_pattern', ax=ax, size=4,
-    #               palette=clrs, hue_order=hue_ordering, order=sorted_index)
-    # ax.set(xlabel='Day mean - night mean', ylabel='Species')
-    # ax = plt.axvline(0, ls='--', color='k')
-    # ax.set_xticks(rotation=45)
-    # plt.tight_layout()
-
 
 def plot_cre_dawn_dusk_strip_v(rootdir, all_feature_combined, feature, peak_feature='peak_amplitude'):
 
@@ -244,53 +195,6 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature, peak_feature='p
     """
     sorted_index = cres_peaks_i.groupby(by='species').mean().sort_values(by=peak_feature).index
 
-    # grped_bplot = sns.catplot(x='species_six',
-    #                           y='peak_amplitude',
-    #                           kind="strip",
-    #                           legend=False,
-    #                           height=3,
-    #                           aspect=4,
-    #                           hue='twilight',
-    #                           data=cres_peaks_i,
-    #                           order=sorted_index,
-    #                           palette="flare")
-    # grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
-    # grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
-    # ax = plt.axhline(0, ls='--', color='k')
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(rootdir, "species_crepuscular_30min_strip_{0}_{1}.png".format(dt.date.today(), feature)))
-    # plt.close()
-
-    # grped_bplot = sns.catplot(x='species_six',
-    #                           y='peak_amplitude',
-    #                           kind="box",
-    #                           legend=False,
-    #                           height=5,
-    #                           aspect=2,
-    #                           data=cres_peaks_i,
-    #                           fliersize=0,
-    #                           boxprops=dict(alpha=.3),
-    #                           order=sorted_index,
-    #                           palette="flare")
-    # grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
-    # grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
-    # ax = plt.axhline(0, ls='--', color='k')
-    #
-    # grped_bplot = sns.stripplot(x='species_six',
-    #                             y='peak_amplitude',
-    #                             hue='twilight',
-    #                             data=cres_peaks_i,
-    #                             order=sorted_index,
-    #                             palette="flare",
-    #                             size=3)
-    # grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
-    # grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
-    # ax = plt.axhline(0, ls='--', color='k')
-    # plt.tight_layout()
-    #
-    # plt.savefig(os.path.join(rootdir, "species_crepuscular_30min_box_{0}_{1}.png".format(dt.date.today(), feature)))
-    # plt.close()
-
     dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
     sorted_index = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
     twilights = ['dawn', 'dusk']
@@ -310,13 +214,15 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature, peak_feature='p
                                                              ('species').median().reindex(sorted_index).loc[:, peak_feature], "flare"),
                                   saturation=1)
 
-        sns.stripplot(x='species', y=peak_feature,
-                                    data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
-                                    order=sorted_index,
-                                    palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period,
-                                                                              [peak_feature, 'species']].groupby
-                                                             ('species').median().reindex(sorted_index).loc[:, peak_feature], "flare"),
-                                    size=3).set(title=period)
+        sns.stripplot(x='species',
+                      y=peak_feature,
+                      data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
+                      order=sorted_index,
+                      palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period,
+                                                                  [peak_feature, 'species']].groupby('species')
+                                                 .median().reindex(sorted_index).loc[:, peak_feature], "flare"),
+                      size=3,
+                      jitter=0.5).set(title=period)
         grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
         if peak_feature == 'peak_amplitude':
             grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')

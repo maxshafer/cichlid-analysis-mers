@@ -180,7 +180,7 @@ def daily_ave_vp(rootdir, sp_vp_ave, sp_vp_ave_std, species_f, change_times_unit
     plt.close()
     return daily_rest
 
-# make a new col where the daily timestamp is (no year/ month/ day)
+
 def plot_daily(fish_tracks_30m_i, change_times_unit, rootdir):
 
     all_species = fish_tracks_30m_i['species'].unique()

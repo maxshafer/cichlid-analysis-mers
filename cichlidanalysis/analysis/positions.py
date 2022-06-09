@@ -34,11 +34,5 @@ def hist_feature_rest(rootdir, fish_tracks, species, feature='vertical_pos', bin
             df_fishes = pd.concat([df_fishes, df])
     df_fishes = df_fishes.reset_index().rename(columns={'level_0': 'FishID'})
     df_fishes.to_csv(os.path.join(rootdir, "{}_als_{}_hist_rest-non-rest.csv".format(species, feature)))
-
-    # sns.barplot(data=df_fishes, x='bin', y='non_rest', hue='FishID')
-    # df_fishes.pivot('FishID', 'bin', 'rest')
-    # fig1, ax1 = plt.subplots()
-    # sns.heatmap(df_fishes.pivot('FishID', 'bin', 'rest').T.iloc[::-1], yticklabels = (np.round(bins[0:-1], 2).tolist())[::-1])
-
     return df_fishes
 

@@ -9,11 +9,11 @@ def get_meta_paths():
     :return:
     """
     # paths for Ronco 2021 data
-    ronco_data_path = "/Volumes/RG-AS04-Data01/Cichlid-genomes/Fig2_data.csv"
+    ronco_data_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/Fig2_data.csv"
     # https://www.nature.com/articles/s41586-020-2930-4#Sec30
 
     # path for cichlid meta
-    cichlid_meta_path = "/Volumes/RG-AS04-Data01/Cichlid-genomes/cichlid_meta_20220428.csv"
+    cichlid_meta_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/cichlid_meta_20220428.csv"
 
     # voucher_key_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/01_specimen_voucher_key.csv"
     # pigmentation_pattern_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/06_scores_pigmentation_pattern.csv"

@@ -5,7 +5,6 @@
 # and for speed graph:
 # https://stackoverflow.com/questions/32111705/overlay-a-graph-over-a-video
 
-# importing libraries
 from tkinter import Tk
 from tkinter.filedialog import askdirectory
 import os
