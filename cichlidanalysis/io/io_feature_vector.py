@@ -131,3 +131,17 @@ def load_feature_vectors(folder, suffix="*als_fv.csv"):
 
     print("All down sampled als.csv files loaded")
     return data
+
+
+def load_diel_pattern(folder, suffix="*dp.csv"):
+    os.chdir(folder)
+    files = glob.glob(suffix)
+    files.sort()
+
+    # use most up to date file
+    data = pd.read_csv(os.path.join(folder, files[-1]), sep=',')
+
+    data = data.drop(columns="Unnamed: 0")
+
+    print("Most up to date file loaded")
+    return data

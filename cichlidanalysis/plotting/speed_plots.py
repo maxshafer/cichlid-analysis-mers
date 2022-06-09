@@ -12,7 +12,45 @@ import datetime as dt
 from datetime import timedelta
 
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
-from cichlidanalysis.utils.species_names import shorten_sp_name, six_letter_sp_name
+
+
+def plot_ridge_plots(fish_tracks_bin, change_times_datetime, rootdir, sp_metrics, tribe_col):
+    """ Plot ridge plots and get averages of each feature
+
+    :param fish_tracks_bin:
+    :param change_times_datetime:
+    :param rootdir:
+    :param sp_metrics:
+    :param tribe_col:
+    :return:
+    """
+    # daily
+    feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
+    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                  sp_metrics, tribe_col)
+    feature, ymax, span_max, ylabeling = 'movement', 1, 0.8, 'Movement'
+    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                  sp_metrics, tribe_col)
+    feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
+    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                  sp_metrics, tribe_col)
+
+    # weekly
+    feature, ymax, span_max, ylabeling = 'vertical_pos', 1, 0.8, 'Vertical position'
+    averages_vp, date_time_obj_vp, sp_vp_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                            ylabeling, change_times_datetime, rootdir)
+    feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
+    averages_spd, _, sp_spd_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                               ylabeling, change_times_datetime, rootdir)
+    feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
+    averages_rest, _, sp_rest_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                 ylabeling, change_times_datetime, rootdir)
+    feature, ymax, span_max, ylabeling = 'movement', 1, 0.8, 'Movement'
+    averages_move, _, sp_move_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                 ylabeling, change_times_datetime, rootdir)
+
+    return averages_vp, date_time_obj_vp, sp_vp_combined, averages_spd, sp_spd_combined, averages_rest, \
+           sp_rest_combined, averages_move, sp_move_combined
 
 
 # speed_mm (30m bins) for each fish (individual lines)
@@ -219,8 +257,7 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
         for s in spines:
             ax_objs[-1].spines[s].set_visible(False)
 
-        short_name = six_letter_sp_name(species_name)
-        ax_objs[-1].text(0.9, 0, short_name[0], fontweight="bold", fontsize=10, ha="right", rotation=-45)
+        ax_objs[-1].text(0.9, 0, species_name, fontweight="bold", fontsize=10, ha="right", rotation=-45)
         gs.update(hspace=-0.1)
     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_{1}.png".format(feature, dt.date.today())))
     plt.close('all')
@@ -247,9 +284,8 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
     fig = plt.figure(figsize=(4, 14))
     ax_objs = []
 
-    # order species by clustering, sort  by tribe
+    # order species by clustering, sort by tribe
     species_sort = fish_tracks_ds_i.loc[:, ['species', 'tribe']].drop_duplicates().sort_values('tribe').species.to_list()
-
 
     for species_n, species_name in enumerate(species_sort):
         tribe = fish_tracks_ds_i.loc[fish_tracks_ds_i["species"] == species_name].tribe.unique()[0]
@@ -321,8 +357,7 @@ def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, yla
         for s in spines:
             ax_objs[-1].spines[s].set_visible(False)
 
-        short_name = six_letter_sp_name(species_name)
-        ax_objs[-1].text(1, 0, short_name[0], fontweight="bold", fontsize=10, ha="right", rotation=-45)
+        ax_objs[-1].text(1, 0, species_name, fontweight="bold", fontsize=10, ha="right", rotation=-45)
         gs.update(hspace=-0.1)
     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_daily_{1}.png".format(feature, dt.date.today())))
     plt.close('all')

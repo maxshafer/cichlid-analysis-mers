@@ -60,14 +60,16 @@ def fish_weekly_corr(rootdir, fish_tracks_ds, feature, link_method):
 
     corr_vals_long = pd.melt(corr_vals, var_name='species_six', value_name='corr_coef')
 
-    f, ax = plt.subplots(figsize=(3, 5))
-    sns.boxplot(data=corr_vals_long, x='corr_coef', y='species_six', ax=ax, fliersize=0)
-    sns.stripplot(data=corr_vals_long, x='corr_coef', y='species_six', color=".2", ax=ax, size=3)
+    f, ax = plt.subplots(figsize=(4, 10))
+    sns.boxplot(data=corr_vals_long, x='corr_coef', y='species_six', ax=ax, fliersize=0,
+                order=corr_vals_long.groupby('species_six').mean().sort_values("corr_coef").index.to_list())
+    sns.stripplot(data=corr_vals_long, x='corr_coef', y='species_six', color=".2", ax=ax, size=3,
+                  order=corr_vals_long.groupby('species_six').mean().sort_values("corr_coef").index.to_list())
     ax.set(xlabel='Correlation', ylabel='Species')
     ax.set(xlim=(-1, 1))
     ax = plt.axvline(0, ls='--', color='k')
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "fish_corr_coefs_{0}_{1}.png".format(feature,  dt.date.today())))
+    plt.savefig(os.path.join(rootdir, "fish_weekly_corr_coefs_{0}_{1}.png".format(feature,  dt.date.today())))
     plt.close()
 
     return corr_vals
@@ -84,17 +86,24 @@ def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_metho
     """
     # issue with some columns being all zeros and messing up correlation so drop these columns
     averages_feature_dropped = averages_feature.loc[(averages_feature.sum(axis=1) != 0), (averages_feature.sum(axis=0) != 0)]
-    individ_corr = averages_feature_dropped.corr()
+    individ_corr = averages_feature_dropped.corr(method='pearson')
+    # Z = sch.linkage(individ_corr, link_method)
+    mask = np.ones(individ_corr.shape, dtype='bool')
+    mask[np.triu_indices(len(individ_corr))] = False
+    corr_val_f = individ_corr.values[mask]
+    corr_vals = pd.DataFrame(corr_val_f, columns=[species_name])
+
     ax = sns.clustermap(individ_corr, figsize=(7, 5), method=link_method, metric='euclidean', vmin=-1, vmax=1,
                         cmap='RdBu_r', xticklabels=False, yticklabels=False)
 
     ax.fig.suptitle(feature)
-    plt.savefig(os.path.join(rootdir, "fish_of_{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_name, feature, dt.date.today(), link_method)))
+    # plt.savefig(os.path.join(rootdir, "fish_of_{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_name, feature, dt.date.today(), link_method)))
     plt.close()
+    return corr_vals
 
 
 
-def species_daily_corr(rootdir, averages_feature, feature, link_method='single'):
+def species_daily_corr(rootdir, averages_feature, feature, label, link_method='single'):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -104,10 +113,10 @@ def species_daily_corr(rootdir, averages_feature, feature, link_method='single')
 
     individ_corr = averages_feature.corr()
 
-    ax = sns.clustermap(individ_corr, figsize=(8, 7), method=link_method, metric='euclidean', vmin=-1, vmax=1,
+    ax = sns.clustermap(individ_corr, figsize=(10, 9), method=link_method, metric='euclidean', vmin=-1, vmax=1,
                         cmap='viridis', yticklabels=True, xticklabels=True)
     ax.fig.suptitle(feature)
-    plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}.png".format(feature, dt.date.today(), link_method)))
+    plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}_{2}_{3}.png".format(label, feature, dt.date.today(), link_method)))
     plt.close()
 
 

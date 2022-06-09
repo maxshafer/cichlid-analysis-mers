@@ -24,7 +24,7 @@ from cichlidanalysis.io.io_feature_vector import create_fv1, create_fv2
 from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
 from cichlidanalysis.analysis.bouts import find_bouts_input
-from cichlidanalysis.analysis.behavioural_state import define_rest
+from cichlidanalysis.analysis.behavioural_state import define_rest, plotting_clustering_states
 from cichlidanalysis.plotting.position_plots import spd_vs_y, plot_position_maps
 from cichlidanalysis.plotting.speed_plots import plot_speed_30m_individuals, plot_speed_30m_mstd, plot_speed_30m_sex
 from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individuals, plot_movement_30m_mstd, \
@@ -39,8 +39,6 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 # pick folder
 # Allows user to select top directory and load all als files here
 root = Tk()
-root.withdraw()
-root.update()
 rootdir = askdirectory(parent=root)
 root.destroy()
 
@@ -56,8 +54,9 @@ metat = meta.transpose()
 fish_IDs = fish_tracks['FishID'].unique()
 
 # get timings
-fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, day_ns, day_s,\
-    change_times_d, change_times_m = load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
+fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, day_ns, day_s, \
+change_times_d, change_times_m, change_times_datetime, change_times_unit = \
+    load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
 change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
 
 # add new column with Day or Night
@@ -146,6 +145,8 @@ plot_speed_30m_individuals(rootdir, fish_tracks_30m, change_times_d)
 plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d)
 
 plot_speed_30m_sex(rootdir, fish_tracks_30m, change_times_d)
+
+# plotting_clustering_states(rootdir, fish_tracks,  resample_units=['1S', '3S', '10S', '30S', '2T', '10T'])
 print("Finished speed plots")
 
 # ### MOVEMENT ###

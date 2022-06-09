@@ -44,7 +44,7 @@ def kmeans_cluster(input_pd_df, resample_unit_i, cluster_number=15):
     occurrences, spurious = check_cluster_size(kmeans_list[kl.elbow - 1])
     smaller_cluster = 1
     while spurious:
-        print("Found spurious  cluster, reducing cluster number by 1")
+        print("Found spurious cluster, reducing cluster number by 1")
         smaller_cluster = smaller_cluster + 1
         occurrences, spurious = check_cluster_size(kmeans_list[kl.elbow - smaller_cluster])
 

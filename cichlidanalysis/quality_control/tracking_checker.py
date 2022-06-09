@@ -5,7 +5,6 @@
 # and for speed graph:
 # https://stackoverflow.com/questions/32111705/overlay-a-graph-over-a-video
 
-# importing libraries
 from tkinter import Tk
 from tkinter.filedialog import askdirectory
 import os
@@ -135,7 +134,7 @@ def tracker_checker_inputs(video_path_i):
     spd_sm_mm = spd_sm * config["mm_per_pixel"]
     spd_sm_mm_ps = spd_sm_mm * config['fps']
 
-    thresh = 0.25 * meta["fish_length_mm"]
+    thresh = 15
 
     # Make a list of ranges, by extracting it from the previous_median_name (s)
     if isinstance(previous_bgd_name, list) and len(previous_bgd_name) > 1:
@@ -217,7 +216,7 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
 
     # max_sp = int(np.nanpercentile(speed_sm, 99) + 5)
     max_sp = np.nanmax(spd_sm_mm_ps)
-    fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+    fig, ax = plt.subplots()
     plt.ion()
     plt.show()
     playing = 1
@@ -262,7 +261,7 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
                 cv2.circle(frame_delta, (int(x_nt[int(curr_frame)]), int(y_nt[int(curr_frame)])), 4, (0, 255, 255), 4)
                 cv2.circle(frame_delta, (cX, cY), 4, (0, 0, 255), 2)
             except:
-                cv2.rectangle(frame, 0, 10, 255, 1)
+                cv2.rectangle(img=frame, pt1=(0, 0), pt2=(10, 10), color=(0, 0, 255), thickness=-1)
 
             cv2.rectangle(frame_delta, start_point, end_point, 220, 2)
             cv2.imshow("Background subtraction of {}".format(vid_name), frame_delta)
@@ -296,7 +295,7 @@ def track_checker_gui(video_path_j, bgd, pmn, spd_sm, spd_sm_mm_ps, thresh, disp
         ax.set_xlim([0, 400])
         ax.set_aspect('auto')
         # ax.legend(["current frame", "speed_sm_mm_ps", "thresh 15mm/s"])
-        ax.legend(["current frame", "speed_raw_mm_ps", "speed_sm_mm_ps", "threshold (0.25 bl)"])
+        ax.legend(["current frame", "speed_raw_mm_ps", "speed_sm_mm_ps", "threshold {}".format(thresh)])
         plt.ylabel("mm/s")
 
         k = cv2.waitKey(33)
@@ -349,10 +348,8 @@ def run_tracker_checker():
     while int(video_num) == -1:
         video_num = input("What is the number of the movie you would like to check?:")
 
-    # Allows a user to select folder
+    # Allows a user to select folder138
     root = Tk()
-    root.withdraw()
-    root.update()
     video_folder_path = askdirectory(parent=root, title="Select movie file")
     root.destroy()
 

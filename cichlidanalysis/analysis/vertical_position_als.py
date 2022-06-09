@@ -19,6 +19,5 @@ if __name__ == '__main__':
     rootdir = askdirectory(parent=root)
     root.destroy()
 
-    print('hi')
     vp_hist = load_vertical_rest_als_files(rootdir)
     plot_v_position_hists(rootdir, vp_hist)

@@ -47,7 +47,7 @@ def full_analysis(rootdir):
     start_total_sec = (int(start_time[0:2]) * 60 * 60 + int(start_time[2:4]) * 60 + int(start_time[4:]))
 
     # set sunrise, day, sunset, night times (ns, s, m, h) and set day length in ns
-    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d = output_timings()
+    change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, _, _ = output_timings()
 
     # set time vector
     if track_full[0, 0] == 0:
@@ -242,7 +242,7 @@ def full_analysis(rootdir):
     super_threshold_indices_bin = smooth_speed(fraction_active, 10 * 60 * min_bins)
 
     # filled plot in s
-    plt.close()
+    plt.close('all')
     fig1, ax1 = filled_plot(tv / 10 ** 9 / 60 / 60, super_threshold_indices_bin, change_times_h,
                             day_ns / 10 ** 9 / 60 / 60)
     ax1.set_ylim([0, 1])
@@ -252,7 +252,7 @@ def full_analysis(rootdir):
     plt.title("Fraction_active_{}_thresh_{}_mmps".format(meta["species"], move_thresh))
     plt.savefig(os.path.join(rootdir, "{0}_wake_{1}_spt.png".format(fish_ID, meta["species"].replace(' ', '-'))))
 
-    # win_size = fps * sec/min * mins (was 30*60)heatm
+    # win_size = fps * sec/min * mins (was 30*60)
     smooth_win = 10 * 60 * min_bins
     speed_sm_bin = smooth_speed(speed_sm_tbl_ps, win_size=smooth_win)
     plt.close()
@@ -263,7 +263,7 @@ def full_analysis(rootdir):
     plt.title("Speed_{0}_smoothed_by_{1}".format(meta["species"], min_bins))
     plt.savefig(os.path.join(rootdir, "{0}_speed_{1}_30m_spt.png".format(fish_ID, meta["species"].replace(' ', '-'))))
 
-    # win_size = fps * sec/min * mins (was 30*60)heatm
+    # win_size = fps * sec/min * mins (was 30*60)
     smooth_win = 10 * 60 * min_bins
     speed_sm_mm_bin = smooth_speed(speed_sm_mm_ps, win_size=smooth_win)
     plt.close()
@@ -355,9 +355,23 @@ def full_analysis(rootdir):
     # test if saving file worked (issues with null bytes)
     try:
         data_b = pd.read_csv(filename, sep=',')
+        # check if all data is as expected
+        if data_b.shape != als_df.shape:
+            # try  to save again using np
+            np.savetxt(filename, track_als.T, delimiter=',', header='tv_ns,speed_mm,x_nt,y_nt', comments='')
+            data_b = pd.read_csv(filename, sep=',')
+            if data_b.shape != als_df.shape:
+                raise Exception("Saving didn't work properly as the saved csv is too short! Report this bug!")
+            else:
+                print("could save as np")
     except pd.errors.ParserError:
         print("problem parsing, probably null bytes error, trying to save with numpy instead ")
         np.savetxt(filename, track_als.T, delimiter=',', header='tv_ns,speed_mm,x_nt,y_nt', comments='')
+        data_b = pd.read_csv(filename, sep=',')
+        if data_b.shape != als_df.shape:
+            raise Exception("Saving didn't work properly as the saved csv is too short! Report this bug!")
+        else:
+            print("could save as np")
 
     try:
         data_b = pd.read_csv(filename, sep=',')
@@ -375,8 +389,6 @@ if __name__ == '__main__':
     if analyse_multiple_folders == 'n':
         # Allows a user to select top directory
         root = Tk()
-        root.withdraw()
-        root.update()
         rootdir = askdirectory(parent=root, title="Select roi folder (which has the movies and tracks)")
         root.destroy()
 
@@ -384,8 +396,6 @@ if __name__ == '__main__':
     else:
         # Allows a user to select top directory
         root = Tk()
-        root.withdraw()
-        root.update()
         topdir = askdirectory(parent=root, title="Select top recording folder (which has the camera folders)")
         root.destroy()
 

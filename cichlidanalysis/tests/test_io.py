@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from cichlidanalysis.io.tracks import load_als_files
+from cichlidanalysis.io.als_files import load_als_files
 
 
 @pytest.mark.parametrize('test_data_file, expected', [

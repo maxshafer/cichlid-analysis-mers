@@ -5,7 +5,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.cm import hsv
 import pandas as pd
-import numpy as np
 
 from cichlidanalysis.io.meta import add_meta_from_name
 from cichlidanalysis.analysis.processing import species_feature_fish_daily_ave

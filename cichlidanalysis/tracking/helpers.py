@@ -222,8 +222,6 @@ if __name__ == '__main__':
         date_tag = input("What is the date tag for the new tracks? YYYYMMDD: \n")
         # Allows a user to select top directory
         root = Tk()
-        root.withdraw()
-        root.update()
         rootdir = askdirectory(parent=root, title="Select video folder (which has the movies and tracks)")
         root.destroy()
 

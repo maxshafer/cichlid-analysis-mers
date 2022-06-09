@@ -1,4 +1,5 @@
 import copy
+import os
 
 import pandas as pd
 import numpy as np
@@ -60,7 +61,7 @@ def define_long_states(fish_tracks_i, change_times_d, time_window_s=[5, 15, 30, 
     return fish_tracks_i
 
 
-def define_rest(fish_tracks_i, time_window_s=60, fraction_threshold=0.05):
+def define_rest(fish_tracks_i, time_window_s=60, fraction_threshold=0.05, fps=10):
     """ Defines behavioural state by thresholding on a window
     Sleep  as defined by movement below Y% in X seconds
 
@@ -70,7 +71,7 @@ def define_rest(fish_tracks_i, time_window_s=60, fraction_threshold=0.05):
     :return:
     """
 
-    fish_tracks_i["rest"] = ((fish_tracks_i.groupby("FishID")['movement'].transform(lambda s: s.rolling(10 *
+    fish_tracks_i["rest"] = ((fish_tracks_i.groupby("FishID")['movement'].transform(lambda s: s.rolling(fps *
                               time_window_s).mean())) < fraction_threshold) * 1
     return fish_tracks_i
 
@@ -94,8 +95,8 @@ def plt_move_bs(fish_tracks_c):
         plt.ylim([0, 65])
 
 
-def plotting_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S', '20S', '30S',
-                                                              '45S', '1T', '2T', '5T', '10T', '15T', '20T']):
+def plotting_clustering_states(rootdir, fish_tracks_i, resample_units=['1S', '2S', '3S', '4S', '5S', '10S', '15S',
+                                                                       '20S', '30S', '45S', '1T', '2T', '5T', '10T']):
     """ For plotting the different resampling of fish clustering
 
     :param fish_tracks_i:
@@ -148,7 +149,7 @@ def plotting_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', 
         counts_combined_std_norm = pd.DataFrame(data=counts_combined_std.T, index=bin_boxes[0:-1], columns=resample_units)
         counts_combined_std_norm = counts_combined_std_norm.div(counts_combined_std_norm.sum(axis=0), axis=1)
 
-        fig3 = plt.figure(figsize=(8, 4))
+        fig2 = plt.figure(figsize=(8, 4))
         plt.imshow(counts_combined_norm.T, cmap='hot', aspect='auto')
         plt.title("{}".format(fish))
         cbar = plt.colorbar(label="% occupancy")
@@ -160,7 +161,7 @@ def plotting_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', 
         plt.gca().set_xlabel("Speed mm/s")
         plt.gca().set_ylabel("Time bin")
         fig2.suptitle("{}".format(fish), fontsize=8)
-        # plt.savefig(os.path.join(rootdir, "xy_ave_Day_{0}.png".format(species_n.replace(' ', '-'))))
+        # plt.savefig(os.path.join(rootdir, "xy_ave_Day_{0}.png".format(fish_n.replace(' ', '-'))))
 
         fig3 = plt.figure(figsize=(8, 4))
         plt.imshow(counts_combined_std_norm.T, cmap='hot', aspect='auto')
@@ -173,7 +174,7 @@ def plotting_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', 
         plt.gca().set_xlim([0, 120])
         plt.gca().set_xlabel("Speed mm/s std")
         plt.gca().set_ylabel("Time bin")
-        fig2.suptitle("{}".format(fish), fontsize=8)
+        fig3.suptitle("{}".format(fish), fontsize=8)
 
         # https://matplotlib.org/matplotblog/posts/create-ridgeplots-in-matplotlib/
         cmap = cm.get_cmap('turbo')
@@ -218,6 +219,7 @@ def plotting_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', 
 
             gs.update(hspace=-0.8)
             plt.show()
+            plt.close('all')
 
         all_counts_combined_norm[:, :, fish_n] = counts_combined_norm
         all_counts_combined_norm_mean = np.mean(all_counts_combined_norm, axis=2)
@@ -230,9 +232,10 @@ def plotting_clustering_states(fish_tracks_i, resample_units=['1S', '2S', '3S', 
         plt.gca().set_xticks(np.arange(0, bin_boxes[-1], 10))
         plt.gca().set_yticks(np.arange(0, len(resample_units)))
         plt.gca().set_yticklabels(resample_units)
-        plt.gca().set_xlim([0, 120])
+        plt.gca().set_xlim([0, 100])
         plt.gca().set_xlabel("Speed mm/s")
         plt.gca().set_ylabel("Time bin")
+        plt.savefig(os.path.join(rootdir, "speed_histogram_average_bins.png".format(fish_n.replace(' ', '-'))))
 
 
 def set_bs_thresh(fish_tracks_i_fish, fish_tracks_unit, thresholds):

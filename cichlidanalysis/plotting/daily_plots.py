@@ -1,18 +1,9 @@
 import os
 
-from matplotlib.dates import DateFormatter
-import matplotlib.cm as cm
-import pandas as pd
-import matplotlib.gridspec as grid_spec
-import datetime as dt
-from datetime import timedelta
-
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import (MultipleLocator)
 import seaborn as sns
-
-from cichlidanalysis.utils.species_names import six_letter_sp_name
 
 
 def daily_ave_spd(sp_spd_ave, sp_spd_ave_std, rootdir, species_f, change_times_unit):
@@ -189,7 +180,7 @@ def daily_ave_vp(rootdir, sp_vp_ave, sp_vp_ave_std, species_f, change_times_unit
     plt.close()
     return daily_rest
 
-# make a new col where the daily timestamp is (no year/ month/ day)
+
 def plot_daily(fish_tracks_30m_i, change_times_unit, rootdir):
 
     all_species = fish_tracks_30m_i['species'].unique()
@@ -242,92 +233,3 @@ def plot_daily(fish_tracks_30m_i, change_times_unit, rootdir):
 
         # make the plots
         daily_ave_vp(rootdir, sp_vp_ave, sp_vp_ave_std, species_f, change_times_unit)
-
-#
-# def plot_daily_ridge_plot(rootdir, aves_ave_feature, feature, ymax, span_max, ylabeling, change_times_datetime_i):
-#     """ ridgeplot but of individuals, want to order by clustering.
-#
-#     :param rootdir:
-#     :param aves_ave_feature:
-#     :param feature:
-#     :param ymax:
-#     :param span_max:
-#     :param ylabeling:
-#     :param change_times_datetime_i:
-#     :return:
-#     """
-#
-#     ymax =  20
-#     span_max = 20
-#     species = aves_ave_feature.columns
-#     sorted_index = aves_ave_feature.groupby(by='species_six').mean().sort_values(by='peak_amplitude').index
-#
-#     cmap = cm.get_cmap('turbo')
-#     colour_array = np.arange(0, 1, 1 / len(species))
-#
-#     date_form = DateFormatter('%H:%M:%S')
-#
-#     gs = grid_spec.GridSpec(len(species), 1)
-#     fig = plt.figure(figsize=(4, 9))
-#     ax_objs = []
-#     averages = np.zeros([len(species), 303])
-#
-#     first = 1
-#     for species_n, species_name in enumerate(species):
-#         date_time_obj = []
-#         for i in aves_ave_feature.index:
-#             date_time_obj.append(dt.datetime.strptime(i, '%H:%M') + timedelta(days=365*70+18))
-#
-#         # creating new axes object
-#         ax_objs.append(fig.add_subplot(gs[species_n:species_n + 1, 0:]))
-#         days_to_plot = 1
-#
-#         ax_objs[-1].fill_between([dt.datetime.strptime("1970-1-2 00:00:00", '%Y-%m-%d %H:%M:%S'),
-#                                   change_times_datetime_i[0]], [span_max, span_max], 0,
-#                                  color='lightblue', alpha=0.5, linewidth=0, zorder=1)
-#         ax_objs[-1].fill_between([change_times_datetime_i[0], change_times_datetime_i[1]], [span_max, span_max], 0,
-#                                  color='wheat', alpha=0.5, linewidth=0)
-#         ax_objs[-1].fill_between([change_times_datetime_i[2], change_times_datetime_i[3]], [span_max, span_max], 0,
-#                                  color='wheat', alpha=0.5, linewidth=0)
-#         ax_objs[-1].fill_between([change_times_datetime_i[3], change_times_datetime_i[4]], [span_max, span_max], 0,
-#                                  color='lightblue', alpha=0.5, linewidth=0)
-#
-#         # plotting the distribution
-#         ax_objs[-1].plot(date_time_obj, aves_ave_feature.loc[:, species_name], lw=1, color='w')
-#         ax_objs[-1].fill_between(date_time_obj, aves_ave_feature.loc[:, species_name], 0, color=cmap(colour_array[species_n]), zorder=2)
-#
-#         # setting uniform x and y lims
-#         ax_objs[-1].set_xlim(min(date_time_obj), dt.datetime.strptime("1970-1-2 23:59:59", '%Y-%m-%d %H:%M:%S'))
-#         ax_objs[-1].set_ylim(0, ymax)
-#
-#         # make background transparent
-#         rect = ax_objs[-1].patch
-#         rect.set_alpha(0)
-#
-#         if species_n == len(species) - 1:
-#             ax_objs[-1].set_xlabel("Time", fontsize=10, fontweight="bold")
-#             ax_objs[-1].xaxis.set_major_locator(MultipleLocator(20))
-#             ax_objs[-1].xaxis.set_major_formatter(date_form)
-#             ax_objs[-1].yaxis.tick_right()
-#             ax_objs[-1].yaxis.set_label_position("right")
-#             ax_objs[-1].set_ylabel(ylabeling)
-#
-#         else:
-#             # remove borders, axis ticks, and labels
-#             ax_objs[-1].set_xticklabels([])
-#             ax_objs[-1].set_xticks([])
-#             ax_objs[-1].set_yticks([])
-#             ax_objs[-1].set_yticklabels([])
-#             ax_objs[-1].set_ylabel('')
-#
-#         spines = ["top", "right", "left", "bottom"]
-#         for s in spines:
-#             ax_objs[-1].spines[s].set_visible(False)
-#
-#         ax_objs[-1].text(0.9, 0, species_name, fontweight="bold", fontsize=10, ha="right", rotation=-45)
-#         gs.update(hspace=-0.1)
-#     plt.show()
-#
-#     plt.savefig(os.path.join(rootdir, "{0}_30min_combined_species_{1}.png".format(feature, dt.date.today())))
-#     plt.close()
-#     aves_feature = pd.DataFrame(averages.T, columns=species, index=date_time_obj[0:averages.shape[1]])

@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy.signal import find_peaks
+from matplotlib.dates import DateFormatter
+from matplotlib.ticker import (MultipleLocator)
 
 from cichlidanalysis.io.meta import extract_meta
 from cichlidanalysis.utils.species_names import six_letter_sp_name
@@ -81,6 +83,8 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
         peak_prom = 7
 
     for species_name in species:
+        date_form = DateFormatter("%H")
+
         fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
             columns='FishID', values=feature, index='ts')
 
@@ -108,20 +112,24 @@ def crespuscular_weekly_fish(rootdir, feature, fish_tracks_ds, species):
             plt.title(species_name)
 
             ax1.plot(x.reset_index().index[peaks].values, (np.ones(len(peaks)) * i) + 0.5, "o", color="r")
+        ax2.xaxis.set_major_locator(MultipleLocator(24))
+        ax2.xaxis.set_major_formatter(date_form)
+        plt.xlabel("Time (h)")
+        plt.ylabel("Speed (mm/s)")
+        sns.despine(top=True, right=True)
 
 
-def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
-    """ Uses borders to find peaks in the twilight periods (2h -/+ of sunup/down). Finds peak position  and height.
-    Uses the defined diel pattern to define baseline, nocturnal = night, diurnal = day, undefined = mean od day and
+def crepuscular_peaks(feature, fish_tracks_ds, fish_diel_patterns_sp):
+    """ Uses borders to find peaks in the twilight periods (2h -/+ of sunup/down). Finds peak position and height.
+    Uses the defined diel pattern to define baseline, nocturnal = night, diurnal = day, undefined = mean of day and
     night
 
-    # Returns: peak height, peak location, dawn/dusk, max day/night for that day, if  peak missing, find most common
+    # Returns: peak height, peak location, dawn/dusk, max day/night for that day, if peak missing, find most common
     peak, if all peaks missing use average of the whole period location and use the value of that bin.
     Find amplitude of peaks
 
     :param feature:
     :param fish_tracks_ds:
-    :param species:
     :param fish_diel_patterns: df with: 'FishID', 'peak_amplitude', 'peak', 'twilight', 'species', 'species_six'
     :return:
     """
@@ -151,7 +159,7 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
         peak_prom = 7
 
     first_all = True
-    for species_name in species:
+    for species_name in fish_tracks_ds.species.unique():
         fish_feature = fish_tracks_ds.loc[fish_tracks_ds.species == species_name, ['ts', 'FishID', feature]].pivot(
             columns='FishID', values=feature, index='ts')
         first = True
@@ -162,6 +170,7 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
             fish_peaks_dawn = np.zeros([4, int(np.floor(fish_feature.iloc[:, i].reset_index().shape[0] / 48))])
             fish_peaks_dusk = np.zeros([4, int(np.floor(fish_feature.iloc[:, i].reset_index().shape[0] / 48))])
 
+            # for each epoque (48 time points for 30min binned data) find the peaks in dawn and dusk
             for j in np.arange(0, int(np.ceil(fish_feature.shape[0] / 48))):
                 x = fish_feature.iloc[epoques[j]:epoques[j + 1], i]
                 if x.size == 48:
@@ -187,9 +196,11 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
                     night_mean = np.round(x[night_border.astype(int) == 1].mean(), 2)
                     daynight_mean = np.round(x[(night_border + day_border).astype(int) == 1].mean(), 2)
 
-                    # how the baseline is chosen is dependent on the diel pattern of the fish (predefined)
-                    pattern = fish_diel_patterns.loc[fish_diel_patterns.FishID == fish_feature.columns[i],
-                                                     'species_diel_pattern'].values[0]
+                    # how the baseline is chosen is dependent on the diel pattern of the species of the fish
+                    # pattern = fish_diel_patterns.loc[fish_diel_patterns.FishID == fish_feature.columns[i],
+                    #                                  'species_diel_pattern'].values[0]
+                    pattern = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species == species_name,
+                                                        'diel_pattern'].values[0]
                     if pattern == 'nocturnal':
                         fish_peaks_dawn[3, j] = fish_peaks_dawn[2, j] - night_mean
                         fish_peaks_dusk[3, j] = fish_peaks_dusk[2, j] - night_mean
@@ -232,7 +243,7 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
     # average for each fish for dawn and dusk for 'peak_amplitude', peaks/(peaks+nonpeaks)
     periods = ['dawn', 'dusk']
     first_all = True
-    for species_name in species:
+    for species_name in fish_tracks_ds.species.unique():
         first = True
         for period in periods:
             feature_i = all_peaks_df[(all_peaks_df['species'] == species_name) & (all_peaks_df['twilight'] == period)][
@@ -255,10 +266,5 @@ def crepuscular_peaks(feature, fish_tracks_ds, species, fish_diel_patterns):
             all_feature_combined = pd.concat([all_feature_combined, sp_feature_combined], axis=0)
     all_feature_combined = all_feature_combined.reset_index(drop=True)
     all_feature_combined = all_feature_combined.loc[:, ~all_feature_combined.columns.duplicated()]
-
-    all_feature_combined['species_six'] = 'blank'
-    for fish in fishes:
-        all_feature_combined.loc[all_feature_combined['FishID'] == fish, 'species_six'] = six_letter_sp_name(
-            extract_meta(fish)['species'])[0]
 
     return all_feature_combined
