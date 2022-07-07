@@ -82,7 +82,7 @@ def load_timings(vector_length):
 
 
 def get_time_state(tv_i_s, day_unit_s, change_times_unit_s, fps):
-    """ Input must be in seconds!!! state of day, night =  0, dawn/dusk = 1, daylight = 2
+    """ Input must be in seconds!!! state of day, night = 0, dawn/dusk = 1, daylight = 2
     """
 
     days_to_plot = math.ceil(tv_i_s[-1]/day_unit_s)

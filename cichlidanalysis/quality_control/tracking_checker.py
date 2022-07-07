@@ -21,7 +21,7 @@ from cichlidanalysis.analysis.processing import int_nan_streches, remove_high_sp
 
 
 def tracker_checker_inputs(video_path_i):
-    """ Get theinputs for the tracker_checker
+    """ Get the inputs for the tracker_checker
 
     :param video_path_i:
     :return:

@@ -418,7 +418,7 @@ if __name__ == '__main__':
     plt.savefig(os.path.join(rootdir, "d15N_d13C_total_rest_{0}.png".format(datetime.date.today())), dpi=1200)
     plt.close()
 
-    # pelagic and trophic levelss
+    # pelagic and trophic levels
     fig = plt.figure(figsize=(3, 3))
     ax = sns.scatterplot(df.loc[:, 'd13C'], df.loc[:, 'd15N'], color='silver', s=12)
     for key in dic_simple:
