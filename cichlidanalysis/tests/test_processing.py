@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from cichlidanalysis.analysis.processing import smooth_speed, neg_values, int_nan_streches, remove_high_spd_xy, \
+from cichlidanalysis.analysis.processing import smooth_speed, neg_values, interpolate_nan_streches, remove_high_spd_xy, \
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
 
 @pytest.mark.parametrize("win_size, speed_raw, speed_smooth", [
@@ -26,8 +26,7 @@ def test_neg_values(input_array, output_array):
     (np.array([np.nan, np.nan, 0, np.nan, 0, 1, np.nan, 0, 0]), np.array([0, 0, 0, 0, 0, 1, 0.5, 0, 0])),
     (np.array([np.nan, np.nan, 0, 0, 1, np.nan, 0, np.nan, np.nan]), np.array([0, 0, 0, 0, 1, 0.5, 0, 0, 0]))])
 def test_int_nan_streches(input_data, binned_data):
-    output_data = int_nan_streches(input_data)
-    # print(output_data)
+    output_data = interpolate_nan_streches(input_data)
     assert (output_data == binned_data).all()
 
 

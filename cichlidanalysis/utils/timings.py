@@ -1,6 +1,8 @@
 import math
 import numpy as np
 import datetime as dt
+import os
+import glob
 
 
 def infer_tv(fps, filechunk):
@@ -105,6 +107,21 @@ def get_time_state(tv_i_s, day_unit_s, change_times_unit_s, fps):
         time_state[change_times_unit_fps[2] + day_unit * day_n:change_times_unit_fps[3]+day_unit * day_n] = 1
 
     return time_state
+
+
+def get_start_time_from_str(start_time):
+    """ WRITE TEST"""
+    start_total_sec = (int(start_time[0:2]) * 60 * 60 + int(start_time[2:4]) * 60 + int(start_time[4:]))
+    return start_total_sec
+
+
+def get_start_time_of_video(rootdir):
+    os.chdir(rootdir)
+    files = glob.glob("*.csv")
+    files.sort()
+    start_time = files[0][9:15]
+    start_total_sec = get_start_time_from_str(start_time)
+    return start_total_sec
 
 
 if __name__ == "__main__":

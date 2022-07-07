@@ -29,7 +29,7 @@ def neg_values(array):
     return new_array
 
 
-def int_nan_streches(data_input):
+def interpolate_nan_streches(data_input):
     """ finds nan streches and interporlates the strech, pads start as continuous"""
     data = copy.copy(data_input)
 
