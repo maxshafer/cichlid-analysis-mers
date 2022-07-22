@@ -1,6 +1,5 @@
 import copy
 import os
-import glob
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,25 +7,11 @@ import pandas as pd
 
 from cichlidanalysis.io.meta import load_yaml
 from cichlidanalysis.io.tracks import extract_tracks_from_fld, adjust_old_time_ns
-from cichlidanalysis.utils.timings import output_timings
+from cichlidanalysis.utils.timings import output_timings, get_start_time_of_video, set_time_vector
 from cichlidanalysis.analysis.processing import interpolate_nan_streches, remove_high_spd_xy, smooth_speed, neg_values
 from cichlidanalysis.plotting.single_plots import filled_plot, plot_hist_2, image_minmax, sec_axis_h
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path, select_top_folder_path
 from cichlidanalysis.utils.species_names import get_roi_from_fish_id
-
-
-
-
-
-def set_time_vector(track_full, video_start_total_sec, config):
-    if track_full[0, 0] == 0:
-        tv = np.arange(video_start_total_sec * 10 ** 9,
-                       ((track_full.shape[0] / config['fps']) * 10 ** 9 + video_start_total_sec * 10 ** 9),
-                       ((1 / config['fps']) * 10 ** 9))
-        print("using retracked data so using interpolated time vector")
-    else:
-        tv = track_full[:, 0] - track_full[0, 0] + video_start_total_sec * 10 ** 9
-    return tv
 
 
 def full_analysis(rootdir):
@@ -42,6 +27,7 @@ def full_analysis(rootdir):
     config = load_yaml(FILE_PATH_PARTS[0], "config")
     meta = load_yaml(rootdir, "meta_data")
     FISH_ID = FILE_PATH_PARTS[1]
+    MOVE_THRESH = 15
 
     file_ending = get_roi_from_fish_id(FISH_ID)
 
@@ -60,19 +46,19 @@ def full_analysis(rootdir):
     tv = set_time_vector(track_full, video_start_total_sec, config)
 
     # correct to seconds
-    tv_sec = tv / 10 ** 9
-    tv_24h_sec = tv / 10 ** 9
+    NS_IN_SECONDS = 10 ** 9
+    tv_sec = tv / NS_IN_SECONDS
+    tv_24h_sec = tv / NS_IN_SECONDS
 
     # get time vector with 24h time
-    for i in range(NUM_DAYS):
-        tv_24h_sec[np.where(tv_24h_sec > day_ns / 10 ** 9)] -= day_ns / 10 ** 9
+    for day in range(NUM_DAYS):
+        tv_24h_sec[np.where(tv_24h_sec > day_ns / NS_IN_SECONDS)] -= day_ns / NS_IN_SECONDS
 
     # interpolate between NaN stretches
     x_n = interpolate_nan_streches(track_full[:, 1])
     y_n = interpolate_nan_streches(track_full[:, 2])
 
-    # replace bad track NaNs (-1) -> these are manually defined as artifacts    plt.xlabel("Time (h)")
-    #     ax2.invert_yaxis() by "split_tracking"
+    # replace bad track NaNs (-1) -> these are manually defined as artifacts
     x_n[np.where(x_n == -1)] = np.nan
     y_n[np.where(y_n == -1)] = np.nan
 
@@ -217,11 +203,9 @@ def full_analysis(rootdir):
             np.logical_and((x_nt - xmin) >= previous_x_bin * x_bin_size, (x_nt - xmin) <= x_bin * x_bin_size))] = x_bin
         previous_x_bin = copy.copy(x_bin)
 
-    move_thresh = 15
-
     # Bin thresholded data (10fps = seconds, 60 seconds = min e.g. 10*60*10 = 10min bins
-    fraction_active = (speed_sm_mm_ps > move_thresh) * 1
-    super_threshold_indices_bin = smooth_speed(fraction_active, 10 * 60 * MIN_BINS)
+    movement = (speed_sm_mm_ps > MOVE_THRESH) * 1
+    super_threshold_indices_bin = smooth_speed(movement, 10 * 60 * MIN_BINS)
 
     # filled plot in s
     plt.close('all')
@@ -231,7 +215,7 @@ def full_analysis(rootdir):
     sec_axis_h(ax1, video_start_total_sec)
     plt.xlabel("Time (h)")
     plt.ylabel("Fraction active in {} min sliding windows".format(MIN_BINS))
-    plt.title("Fraction_active_{}_thresh_{}_mmps".format(meta["species"], move_thresh))
+    plt.title("Fraction_active_{}_thresh_{}_mmps".format(meta["species"], MOVE_THRESH))
     plt.savefig(os.path.join(rootdir, "{0}_wake_{1}_spt.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
 
     # win_size = fps * sec/min * mins (was 30*60)
@@ -307,7 +291,7 @@ def full_analysis(rootdir):
 
     # save out track file
     # track file needs: FISH20200727_c1_r1_Genus-species_sex_mmpp_fishlength-mm
-    # speed_sm_tbl_ps, tv, x, y, fraction_active
+    # speed_sm_tbl_ps, tv, x, y, movement
     # speed_sm_mm_ps, tv, x, y
 
     track_meta = {'ID': FISH_ID, 'species': meta["species"], 'sex': meta["sex"],

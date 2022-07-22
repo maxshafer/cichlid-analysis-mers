@@ -8,8 +8,6 @@ from scipy.signal import find_peaks
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (MultipleLocator)
 
-from cichlidanalysis.io.meta import extract_meta
-from cichlidanalysis.utils.species_names import six_letter_sp_name
 from cichlidanalysis.analysis.processing import species_feature_fish_daily_ave
 from cichlidanalysis.analysis.diel_pattern import replace_crep_peaks, make_fish_peaks_df
 
@@ -133,8 +131,6 @@ def crepuscular_peaks(feature, fish_tracks_ds, fish_diel_patterns_sp):
     :param fish_diel_patterns: df with: 'FishID', 'peak_amplitude', 'peak', 'twilight', 'species', 'species_six'
     :return:
     """
-
-    fishes = fish_tracks_ds.FishID.unique()
 
     # define borders
     border_top = np.ones(48)

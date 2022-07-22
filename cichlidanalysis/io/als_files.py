@@ -43,7 +43,7 @@ def load_als_files(folder, suffix="*als.csv"):
     return data
 
 
-def load_ds_als_files(folder, suffix="*als.csv"):
+def load_bin_als_files(folder, suffix="*als.csv"):
     os.chdir(folder)
     files = glob.glob(suffix)
     files.sort()

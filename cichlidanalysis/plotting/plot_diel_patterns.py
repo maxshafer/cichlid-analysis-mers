@@ -12,7 +12,7 @@ def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_s
 
     :return:
     """
-    sorted_index = fish_diel_patterns.groupby('species').median().sort_values(by=input_type).index
+    sorted_species_idx = fish_diel_patterns.groupby('species').median().sort_values(by=input_type).index
 
     # clrs = [(sns.color_palette(palette='RdBu')[0]), sns.color_palette(palette='RdBu')[5], (128/255, 128/255, 128/255)]
     # hue_ordering = ['diurnal', 'nocturnal', 'undefined']
@@ -21,15 +21,21 @@ def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_s
     box_cols = []
     sorted_day_night_dif = fish_diel_patterns.groupby('species').median().sort_values(by=input_type).loc[:,
                            input_type]
-    sorted_day_night_dif_scaled = (sorted_day_night_dif-sorted_day_night_dif.min())/(sorted_day_night_dif.max() -
-                                                                                     sorted_day_night_dif.min())
-    for i in sorted_index:
-        box_cols.append(plt.cm.get_cmap('bwr')(sorted_day_night_dif_scaled.loc[i]))
+    scale_max = sorted_day_night_dif.max()
+    scale_min = sorted_day_night_dif.min()
+
+    # find the largest number and use this to scale so that 0 = mid colour scale
+    scale_factor = np.max([scale_max, abs(scale_min)])
+
+    sorted_day_night_dif_scaled = (sorted_day_night_dif + scale_factor)/(scale_factor + scale_factor)
+
+    for species in sorted_species_idx:
+        box_cols.append(plt.cm.get_cmap('bwr')(sorted_day_night_dif_scaled.loc[species]))
 
     # row colours by diel pattern
     row_cols = []
-    for i in sorted_index:
-        sp_pattern = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species == i, "diel_pattern"].values[0]
+    for species in sorted_species_idx:
+        sp_pattern = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species == species, "diel_pattern"].values[0]
         if sp_pattern == 'diurnal':
             row_cols.append('gold')
         elif sp_pattern == 'nocturnal':
@@ -37,18 +43,17 @@ def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_s
         elif sp_pattern == 'undefined':
             row_cols.append((211/255, 211/255, 211/255))
 
-    # Simplified
     f, ax = plt.subplots(figsize=(10, 5))
     bp = sns.boxplot(data=fish_diel_patterns, x='species', y=input_type, palette=box_cols, ax=ax,
-                     order=sorted_index, fliersize=0, boxprops=dict(alpha=.7))
-    sns.stripplot(data=fish_diel_patterns, x='species', y=input_type, ax=ax, size=4, order=sorted_index, color='k')
-    ax.set(ylabel=input_type, xlabel='Species')
-    ax.set_xticklabels(labels=sorted_index, rotation=90)
-    ax.tick_params(left=True, bottom=False)
-    sns.despine(bottom=True)
+                     order=sorted_species_idx, fliersize=0, boxprops=dict(alpha=.7))
+    sns.stripplot(data=fish_diel_patterns, x='species', y=input_type, ax=ax, size=4, order=sorted_species_idx, color='k')
+    ax.set(ylabel='Day - night activity', xlabel='Species')
+    ax.set_xticklabels(labels=sorted_species_idx, rotation=90)
+    ax.tick_params(left=True, bottom=True)
+    sns.despine()
     # statistical annotation
     y, h, col = fish_diel_patterns[input_type].max(), 2, 'k'
-    for species_n, species_i in enumerate(sorted_index):
+    for species_n, species_i in enumerate(sorted_species_idx):
         sig = fish_diel_patterns_sp.loc[fish_diel_patterns_sp.species == species_i, 't_pval_corr_sig'].values[0]
         if sig < 0.05:
             plt.text(species_n, y*1.05, "*", ha='center', va='bottom', color=col)

@@ -173,7 +173,7 @@ def find_bout_start_ends_pd(bout_array):
     """
     # test that the  array has no NaNs
     if max(np.isnan(bout_array)):
-        print("NaN in bout_array therefore cannot run bout_speeds")
+        print("NaN in bout_array therefore cannot run find_bout_start_ends_pd")
         return False
     else:
         # determine bout starts and finishes
