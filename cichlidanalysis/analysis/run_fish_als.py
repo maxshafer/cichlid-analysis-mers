@@ -79,7 +79,7 @@ def full_analysis(rootdir):
     plt.xlabel("pixels")
     plt.ylabel("frequency")
     plt.title("X_{0}".format(meta["species"]))
-    plt.savefig(os.path.join(rootdir, "{0}_X_jumps_{1}.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_X_jumps.png".format(FISH_ID)))
 
     fig1, ax1 = plt.subplots()
     plt.hist(np.diff(y_nt), 1000)
@@ -87,7 +87,7 @@ def full_analysis(rootdir):
     plt.xlabel("pixels")
     plt.ylabel("frequency")
     plt.title("Y_{0}".format(meta["species"]))
-    plt.savefig(os.path.join(rootdir, "{0}_Y-jumps_{1}.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_Y-jumps.png".format(FISH_ID)))
     plt.close()
 
     y_sm = smooth_speed(y_nt, win_size=5)
@@ -98,7 +98,7 @@ def full_analysis(rootdir):
 
     plt.ylabel("average y position")
     plt.title("Y position_{0}_smoothed_by_{1}".format(meta["species"], MIN_BINS))
-    plt.savefig(os.path.join(rootdir, "{0}_Y-position_{1}.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_Y-position.png".format(FISH_ID)))
 
     # area
     area_sm = smooth_speed(track_full[0:-1, 3], win_size=5)
@@ -132,7 +132,7 @@ def full_analysis(rootdir):
     bin_edges_plot = np.linspace(0, 200, 101)
     # bin_edges_plot = np.logspace(0, 1.2, 10)
     plot_hist_2(bin_edges_plot, speed_sm_day, "day", speed_sm_night, "night", "speed mm/s", 1)
-    plt.savefig(os.path.join(rootdir, "{0}_hist_D_vs_N_{1}_spd_mms.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_hist_D_vs_N_spd_mms.png".format(FISH_ID)))
 
     # split data into day and night
     position_night_x = np.empty([0, 0])
@@ -216,7 +216,7 @@ def full_analysis(rootdir):
     plt.xlabel("Time (h)")
     plt.ylabel("Fraction active in {} min sliding windows".format(MIN_BINS))
     plt.title("Fraction_active_{}_thresh_{}_mmps".format(meta["species"], MOVE_THRESH))
-    plt.savefig(os.path.join(rootdir, "{0}_wake_{1}_spt.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_wake_spt.png".format(FISH_ID)))
 
     # win_size = fps * sec/min * mins (was 30*60)
     smooth_win = 10 * 60 * MIN_BINS
@@ -227,7 +227,7 @@ def full_analysis(rootdir):
     plt.xlabel("Time (h)")
     plt.ylabel("Speed body lengths/s")
     plt.title("Speed_{0}_smoothed_by_{1}".format(meta["species"], MIN_BINS))
-    plt.savefig(os.path.join(rootdir, "{0}_speed_{1}_30m_spt.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_speed_30m_spt.png".format(FISH_ID)))
 
     # win_size = fps * sec/min * mins (was 30*60)
     smooth_win = 10 * 60 * MIN_BINS
@@ -238,7 +238,7 @@ def full_analysis(rootdir):
     plt.xlabel("Time (h)")
     plt.ylabel("Speed mm/s")
     plt.title("Speed_{0}_smoothed_by_{1}".format(meta["species"], MIN_BINS))
-    plt.savefig(os.path.join(rootdir, "{0}_speed_{1}_30m_spt.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_speed_30m_spt.png".format(FISH_ID)))
 
     plt.close()
     fig2, ax2 = filled_plot(tv / 10 ** 9 / 60 / 60, speed_sm_mm_bin, change_times_h, day_ns / 10 ** 9 / 60 / 60)
@@ -248,7 +248,7 @@ def full_analysis(rootdir):
     plt.title("Speed_{0}_smoothed_by_{1}".format(meta["species"], MIN_BINS))
     ax2.set_ylim(0, 60)
     plt.savefig(
-        os.path.join(rootdir, "{0}_speed_{1}_30m_spt_0-60ylim.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+        os.path.join(rootdir, "{0}_speed_30m_spt_0-60ylim.png".format(FISH_ID)))
 
     smooth_win = 10 * 60 * 10
     speed_sm_mm_bin = smooth_speed(speed_sm_mm_ps, win_size=smooth_win)
@@ -259,7 +259,7 @@ def full_analysis(rootdir):
     plt.ylabel("Speed mm/s")
     plt.title("Speed_{0}_smoothed_by_{1}".format(meta["species"], MIN_BINS))
     plt.savefig(
-        os.path.join(rootdir, "{0}_speed_{1}_{2}m_spt.png".format(FISH_ID, meta["species"].replace(' ', '-'), 10)))
+        os.path.join(rootdir, "{0}_speed_{1}m_spt.png".format(FISH_ID, 10)))
 
     plt.close()
     fig2, ax2 = filled_plot(tv / 10 ** 9 / 60 / 60, speed_full, change_times_h, day_ns / 10 ** 9 / 60 / 60)
@@ -267,10 +267,8 @@ def full_analysis(rootdir):
     sec_axis_h(ax2, video_start_total_sec)
     plt.xlabel("Time (h)")
     plt.ylabel("Speed pixels/0.1s")
-    plt.title("Speed_{0}_raw-black_thresholded-blue".format(FISH_ID, meta["species"].replace(' ', '-')))
-    plt.savefig(os.path.join(rootdir, "{0}_speed_{1}_speed_full_speed_thresholded.png".format(FISH_ID,
-                                                                                              meta["species"].replace(
-                                                                                                  ' ', '-'))))
+    plt.title("Speed_{0}_raw-black_thresholded-blue".format(FISH_ID))
+    plt.savefig(os.path.join(rootdir, "{0}_speed_speed_full_speed_thresholded.png".format(FISH_ID)))
 
     # area
     plt.close()
@@ -279,7 +277,7 @@ def full_analysis(rootdir):
     plt.ylabel("Area pixels/0.1s")
     plt.title("Area_{0}".format(meta["species"]))
     sec_axis_h(ax2, video_start_total_sec)
-    plt.savefig(os.path.join(rootdir, "{0}_{1}_area.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_area.png".format(FISH_ID)))
 
     plt.close()
     fig3, ax3 = filled_plot(tv / 10 ** 9 / 60 / 60, np.diff(tv) / 10 ** 9, change_times_h, day_ns / 10 ** 9 / 60 / 60)
@@ -287,7 +285,7 @@ def full_analysis(rootdir):
     plt.xlabel("Time (h)")
     plt.ylabel("Inter frame time difference (s)")
     plt.title("TV_{0}".format(meta["species"]))
-    plt.savefig(os.path.join(rootdir, "{0}_{1}_TV_diff.png".format(FISH_ID, meta["species"].replace(' ', '-'))))
+    plt.savefig(os.path.join(rootdir, "{0}_TV_diff.png".format(FISH_ID)))
 
     # save out track file
     # track file needs: FISH20200727_c1_r1_Genus-species_sex_mmpp_fishlength-mm
