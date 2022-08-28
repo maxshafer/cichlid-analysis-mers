@@ -26,7 +26,7 @@ def plot_example_spd_move_rest():
     FRACTION_THRESH = 0.05
 
     move_colour = 'forestgreen'
-    rest_colour = 'skyblue'
+    rest_colour = 'darkorchid'
 
     SEC_TO_NS = 10 ** 9
     fish_tracks = load_als_files(rootdir)

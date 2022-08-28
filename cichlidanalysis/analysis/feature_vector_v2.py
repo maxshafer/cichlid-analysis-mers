@@ -11,6 +11,7 @@ import seaborn as sns
 import scipy.spatial as spatial
 from scipy import stats
 
+from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.io_feature_vector import load_feature_vectors, load_diel_pattern
 from cichlidanalysis.utils.species_names import six_letter_sp_name
 from cichlidanalysis.io.meta import extract_meta
@@ -42,9 +43,7 @@ def subset_feature_plt(averages_i, features, labelling):
 
 if __name__ == '__main__':
     # Allows user to select top directory and load all als files here
-    root = Tk()
-    rootdir = askdirectory(parent=root)
-    root.destroy()
+    rootdir = select_dir_path()
 
     feature_v = load_feature_vectors(rootdir, "*als_fv2.csv")
     diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
@@ -143,7 +142,7 @@ if __name__ == '__main__':
     # total rest
     fig = plt.figure(figsize=(5, 10))
     ax = sns.boxplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', dodge=False,
-                     showfliers=False, color='skyblue',
+                     showfliers=False, color='darkorchid',
                      order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values("total_rest").index.to_list())
     ax = sns.swarmplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', color=".2", size=4,
                        order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values(
@@ -153,7 +152,7 @@ if __name__ == '__main__':
     plt.tight_layout()
     ax = plt.axvline(12, ls='--', color='k')
     sns.despine(top=True, right=True)
-    plt.savefig(os.path.join(rootdir, "total_rest_ordered_{0}.png".format(datetime.date.today())), dpi=1000)
+    plt.savefig(os.path.join(rootdir, "total_rest_ordered.png"), dpi=1000)
     plt.close()
 
     # total rest ordered by mean, coloured by temporal guild
@@ -170,7 +169,7 @@ if __name__ == '__main__':
     ax.set(xlim=(0, 24))
     plt.tight_layout()
     ax = plt.axvline(12, ls='--', color='k')
-    plt.savefig(os.path.join(rootdir, "total_rest_ordered_cluster_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "total_rest_ordered_cluster.png"))
     plt.close()
 
     # total rest ordered by mean, coloured by diet guild
@@ -187,12 +186,16 @@ if __name__ == '__main__':
     ax.set(xlim=(0, 24))
     plt.tight_layout()
     ax = plt.axvline(12, ls='--', color='k')
-    plt.savefig(os.path.join(rootdir, "total_rest_ordered_diet_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "total_rest_ordered_diet.png"))
     plt.close()
 
+    # histogram of total rest timings
     fig = plt.figure(figsize=(10, 5))
-    sns.histplot(data=feature_v, x='total_rest', binwidth=1, multiple="stack", color='skyblue')
-    sns.histplot(data=feature_v_mean, x='total_rest', binwidth=1, multiple="stack", color='royalblue')
+    sns.histplot(data=feature_v, x='total_rest', binwidth=1, multiple="stack", color='skyblue').set(title='Total rest per fish')
+    plt.savefig(os.path.join(rootdir, "total_rest_hist_per_fish.png"))
+    plt.close()
+    sns.histplot(data=feature_v_mean, x='total_rest', binwidth=1, multiple="stack", color='royalblue').set(title='Total rest per species')
+    plt.savefig(os.path.join(rootdir, "total_rest_hist_per_species.png"))
     plt.close()
 
     # total rest vs day speed
@@ -216,7 +219,7 @@ if __name__ == '__main__':
                        order=diel_patterns.sort_values(by="cluster").species)
     ax.set(xlim=(0, 1250))
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "rest_bout_mean_day_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "rest_bout_mean_day.png"))
 
     fig = plt.figure(figsize=(5, 10))
     ax = sns.boxplot(data=feature_v, y='six_letter_name_Ronco', x='rest_bout_mean_night', fliersize=1, hue="cluster",
@@ -225,7 +228,7 @@ if __name__ == '__main__':
                        order=diel_patterns.sort_values(by="cluster").species)
     ax.set(xlim=(0, 1250))
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "rest_bout_mean_night_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "rest_bout_mean_night.png"))
 
     feature_v['rest_bout_mean_dn_dif'] = feature_v['rest_bout_mean_day'] - feature_v['rest_bout_mean_night']
     fig = plt.figure(figsize=(5, 10))
@@ -236,7 +239,7 @@ if __name__ == '__main__':
     plt.axvline(0, ls='--', color='k')
     ax.set(xlim=(-750, 600))
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "rest_bout_mean_dn_dif_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "rest_bout_mean_dn_dif.png"))
 
     # # bout lengths non-rest
     fig = plt.figure(figsize=(5, 10))
@@ -246,7 +249,7 @@ if __name__ == '__main__':
                        order=diel_patterns.sort_values(by="cluster").species)
     ax.set(xlim=(0, 1250))
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_day_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_day.png"))
 
     fig = plt.figure(figsize=(5, 10))
     ax = sns.boxplot(data=feature_v, y='six_letter_name_Ronco', x='nonrest_bout_mean_night', fliersize=1, hue="cluster",
@@ -255,7 +258,7 @@ if __name__ == '__main__':
                        order=diel_patterns.sort_values(by="cluster").species)
     ax.set(xlim=(0, 1250))
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_night_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_night.png"))
 
     feature_v['nonrest_bout_mean_dn_dif'] = feature_v['nonrest_bout_mean_day'] - feature_v['nonrest_bout_mean_night']
     fig = plt.figure(figsize=(5, 10))
@@ -267,7 +270,7 @@ if __name__ == '__main__':
     plt.axvline(0, ls='--', color='k')
     ax.set(xlim=(-4000, 3000))
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_dn_dif_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "nonrest_bout_mean_dn_dif.png"))
 
     feature_v_mean['rest_bout_mean_dn_dif'] = feature_v_mean['rest_bout_mean_day'] - feature_v_mean[
         'rest_bout_mean_night']
@@ -415,10 +418,10 @@ if __name__ == '__main__':
     ax.set_ylabel('$\delta^{15} N$')
     sns.despine(top=True, right=True)
     fig.tight_layout()
-    plt.savefig(os.path.join(rootdir, "d15N_d13C_total_rest_{0}.png".format(datetime.date.today())), dpi=1200)
+    plt.savefig(os.path.join(rootdir, "d15N_d13C_total_rest.png"), dpi=1200)
     plt.close()
 
-    # pelagic and trophic levels
+    # pelagic and trophic levels (ecospace) vs temporal guilds
     fig = plt.figure(figsize=(3, 3))
     ax = sns.scatterplot(df.loc[:, 'd13C'], df.loc[:, 'd15N'], color='silver', s=12)
     for key in dic_simple:
@@ -437,7 +440,7 @@ if __name__ == '__main__':
     ax.set_ylabel('$\delta^{15} N$')
     sns.despine(top=True, right=True)
     fig.tight_layout()
-    plt.savefig(os.path.join(rootdir, "d15N_d13C_temporal-guilds_{0}.png".format(datetime.date.today())), dpi=1200)
+    plt.savefig(os.path.join(rootdir, "d15N_d13C_temporal-guilds.png"), dpi=1200)
     plt.close()
 
     # trophic guilds
@@ -456,7 +459,7 @@ if __name__ == '__main__':
     ax.set_ylabel('$\delta^{15} N$')
     sns.despine(top=True, right=True)
     fig.tight_layout()
-    plt.savefig(os.path.join(rootdir, "d15N_d13C_diet-guilds_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "d15N_d13C_diet-guilds.png"))
     plt.close()
 
     first = True
@@ -479,7 +482,7 @@ if __name__ == '__main__':
     ax = sns.barplot(x="daytime", y="species_n", hue="diet", data=df_group, palette=customPalette)
     ax.set(xlabel=None)
     ax.set(ylabel="# of species")
-    plt.savefig(os.path.join(rootdir, "diet-guilds_hist_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "diet-guilds_hist.png"))
     plt.close()
 
     # total rest by diet guild
@@ -511,6 +514,6 @@ if __name__ == '__main__':
 
     sns.despine(top=True, right=True)
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "total_rest_vs_diet_significance_{0}.png".format(datetime.date.today())))
+    plt.savefig(os.path.join(rootdir, "total_rest_vs_diet_significance.png"))
     plt.close()
 

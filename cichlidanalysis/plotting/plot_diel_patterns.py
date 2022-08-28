@@ -235,6 +235,66 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature, peak_feature='p
             grped_bplot.set(ylabel='Peak fraction', xlabel='Species')
         ax = plt.axhline(0, ls='--', color='k')
         plt.tight_layout()
-        plt.savefig(os.path.join(rootdir, "species_crepuscular_30min_box_sort_{0}_{1}_{2}_{3}.png".format(period, dt.date.today(), feature, peak_feature)))
+        plt.savefig(os.path.join(rootdir, "crepuscular_30min_box_sort_{0}_{1}_{2}_{3}.png".format(period, dt.date.today(), feature, peak_feature)))
+        plt.close()
+    return
+
+
+def plot_cre_dawn_dusk_stacked(rootdir, cres_peaks_i, feature, peak_feature='peak_amplitude'):
+    """ Plot the crepuscular data as a stacked bar plot
+
+    :param rootdir:
+    :param all_feature_combined:
+    :param feature:
+    :return:
+    """
+    sorted_index = cres_peaks_i.groupby(by='species').mean().sort_values(by=peak_feature).index
+
+    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
+    sorted_index = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
+    twilights = ['dawn', 'dusk']
+
+    # from raw value to percentage
+
+    for period in twilights:
+        # for category in
+        #     cres_peaks_i.loc[cres_peaks_i.twilight == period, peak_feature].plot(kind='bar', stacked='True')
+        #   cres_peaks_i.loc[peak_feature].hist(by=cres_peaks_i['species'])
+        #     plt.savefig(os.path.join(rootdir,"crepuscular_30min_box_sort_{0}_{1}_{2}_{3}_TEST.png".format(period, dt.date.today(),
+        #                                                                                      feature, peak_feature)))
+
+
+        grped_bplot = sns.catplot(x='species',
+                                  y=peak_feature,
+                                  kind="box",
+                                  legend=False,
+                                  height=5,
+                                  aspect=2,
+                                  data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
+                                  fliersize=0,
+                                  boxprops=dict(alpha=.3),
+                                  order=sorted_index,
+                                  palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period,
+                                                                              [peak_feature, 'species']].groupby
+                                                             ('species').median().reindex(sorted_index).loc[:, peak_feature], "flare"),
+                                  saturation=1)
+
+        sns.stripplot(x='species',
+                      y=peak_feature,
+                      data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
+                      order=sorted_index,
+                      palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period,
+                                                                  [peak_feature, 'species']].groupby('species')
+                                                 .median().reindex(sorted_index).loc[:, peak_feature], "flare"),
+                      size=3,
+                      jitter=0.5).set(title=period)
+        grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
+        if peak_feature == 'peak_amplitude':
+            grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
+        elif peak_feature == 'peak':
+            grped_bplot.set(ylabel='Peak fraction', xlabel='Species')
+        ax = plt.axhline(0, ls='--', color='k')
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "crepuscular_30min_box_sort_{0}_{1}_{2}_{3}.png".format(period, dt.date.today(), feature, peak_feature)))
         plt.close()
     return

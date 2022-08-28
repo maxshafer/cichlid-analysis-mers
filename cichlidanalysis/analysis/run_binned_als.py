@@ -64,9 +64,9 @@ def plot_corr_coefs(rootdir, corr_vals_long, feature):
 
 
 def setup_run_binned(rootdir):
-    fish_tracks_bin = load_bin_als_files(rootdir, "*als_30m.csv")
-    fish_tracks_bin = fish_tracks_bin.reset_index(drop=True)
-    fish_tracks_bin['time_of_day_dt'] = fish_tracks_bin.ts.apply(
+    fish_tracks_bin_i = load_bin_als_files(rootdir, "*als_30m.csv")
+    fish_tracks_bin_i = fish_tracks_bin_i.reset_index(drop=True)
+    fish_tracks_bin_i['time_of_day_dt'] = fish_tracks_bin_i.ts.apply(
         lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
     _, cichlid_meta_path = get_meta_paths()
     sp_metrics = pd.read_csv(cichlid_meta_path)
@@ -75,17 +75,17 @@ def setup_run_binned(rootdir):
     tribe_col = tribe_cols()
 
     # add species six names, tribe and other meta data
-    fish_tracks_bin = fish_tracks_bin.rename(columns={"species": "species_our_names"})
-    fish_tracks_bin = fish_tracks_bin.merge(sp_metrics, on='species_our_names')
-    fish_tracks_bin = add_day_number_fish_tracks(fish_tracks_bin)
-    fish_tracks_bin = fish_tracks_bin.rename(columns={"six_letter_name_Ronco": "species"})
+    fish_tracks_bin_i = fish_tracks_bin_i.rename(columns={"species": "species_our_names"})
+    fish_tracks_bin_i = fish_tracks_bin_i.merge(sp_metrics, on='species_our_names')
+    fish_tracks_bin_i = add_day_number_fish_tracks(fish_tracks_bin_i)
+    fish_tracks_bin_i = fish_tracks_bin_i.rename(columns={"six_letter_name_Ronco": "species"})
 
     # get each fish ID and all species
-    fish_IDs = fish_tracks_bin['FishID'].unique()
-    species_true = fish_tracks_bin['species_our_names'].unique()
-    species_sixes = fish_tracks_bin['species'].unique()
+    fish_IDs = fish_tracks_bin_i['FishID'].unique()
+    species_true = fish_tracks_bin_i['species_our_names'].unique()
+    species_sixes = fish_tracks_bin_i['species'].unique()
 
-    return fish_tracks_bin, sp_metrics, tribe_col, species_true, fish_IDs, species_sixes
+    return fish_tracks_bin_i, sp_metrics, tribe_col, species_true, fish_IDs, species_sixes
 
 
 if __name__ == '__main__':

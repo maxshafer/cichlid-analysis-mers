@@ -62,14 +62,9 @@ if __name__ == '__main__':
     fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, day_ns, day_s, \
     change_times_d, change_times_m, change_times_datetime, change_times_unit = \
         load_timings(fish_tracks[fish_tracks.FishID == fish_IDs[0]].shape[0])
-    change_times_unit = [7 * 2, 7.5 * 2, 18.5 * 2, 19 * 2]
 
     # add new column with Day or Night
     t2 = time.time()
-    # fish_tracks['time_of_day_m'] = 0 # too slow!
-    # for index, row in fish_tracks.ts.iteritems():
-    #     fish_tracks.loc[index, 'time_of_day_m'] = int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:])
-    # check if not a time exists! null = np.where(np.isnat(fish_tracks.ts))
     fish_tracks = fish_tracks.dropna()  # occaisionally have NaTs in ts, this removes them.
     fish_tracks['time_of_day_m'] = fish_tracks.ts.apply(
         lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
