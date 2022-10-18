@@ -7,11 +7,11 @@ import numpy as np
 import pandas as pd
 import scipy.cluster.hierarchy as sch
 
-from cichlidanalysis.utils.species_names import six_letter_sp_name
+from cichlidanalysis.analysis.processing import species_feature_fish_daily_ave
 
 
-def fish_weekly_corr(rootdir, fish_tracks_ds, feature, link_method):
-    """
+def fish_weekly_corr(rootdir, fish_tracks_ds, feature, link_method, plot=False):
+    """ Finds the corr values within species across the full recording
 
     :param fish_tracks_ds:
     :param feature:
@@ -32,31 +32,21 @@ def fish_weekly_corr(rootdir, fish_tracks_ds, feature, link_method):
         corr_val_f = individ_corr.values[mask]
 
         if first:
-            corr_vals = pd.DataFrame(corr_val_f, columns=[six_letter_sp_name(species_i)[0]])
+            corr_vals = pd.DataFrame(corr_val_f, columns=[species_i])
             first = False
         else:
-            corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_val_f, columns=[six_letter_sp_name(species_i)[0]])], axis=1)
-
-        X = individ_corr.values
-        d = sch.distance.pdist(X)
-        L = sch.linkage(d, method=link_method)
-        ind = sch.fcluster(L, 0.5*d.max(), 'distance')
-        cols = [individ_corr.columns.tolist()[i] for i in list((np.argsort(ind)))]
-        individ_corr = individ_corr[cols]
-        individ_corr = individ_corr.reindex(cols)
+            corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_val_f, columns=[species_i])], axis=1)
 
         fish_sex = fish_tracks_ds.loc[fish_tracks_ds.species == species_i, ['FishID', 'sex']].drop_duplicates()
         fish_sex = list(fish_sex.sex)
-        fish_sex_clus = [fish_sex[i] for i in list((np.argsort(ind)))]
 
-        f, ax = plt.subplots(figsize=(7, 5))
-        sns.heatmap(data=individ_corr, vmin=-1, vmax=1, xticklabels=fish_sex_clus, yticklabels=fish_sex_clus,
-                         cmap='seismic', ax=ax)
-        plt.tight_layout()
-        plt.savefig(os.path.join(rootdir, "{0}_corr_by_30min_{1}_{2}_{3}.png".format(species_i.replace(' ', '-'),
-                                                                                     feature, dt.date.today(),
-                                                                                     link_method)))
-        plt.close()
+        if plot:
+            sns.clustermap(data=individ_corr, vmin=-1, vmax=1, xticklabels=fish_sex, yticklabels=fish_sex,
+                             cmap='seismic')
+            plt.tight_layout()
+            plt.savefig(os.path.join(rootdir, "{0}_corr_by_30min_{1}_{2}.png".format(species_i, feature,
+                                                                                         link_method)))
+            plt.close()
 
     corr_vals_long = pd.melt(corr_vals, var_name='species_six', value_name='corr_coef')
 
@@ -69,10 +59,11 @@ def fish_weekly_corr(rootdir, fish_tracks_ds, feature, link_method):
     ax.set(xlim=(-1, 1))
     ax = plt.axvline(0, ls='--', color='k')
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "fish_weekly_corr_coefs_{0}_{1}.png".format(feature,  dt.date.today())))
+    plt.savefig(os.path.join(rootdir, "fish_weekly_corr_coefs_{0}.png".format(feature)))
     plt.close()
+    corr_vals_long = pd.melt(corr_vals, var_name='species', value_name='corr_coef')
 
-    return corr_vals
+    return corr_vals_long
 
 
 def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_method='single'):
@@ -102,7 +93,6 @@ def fish_daily_corr(averages_feature, feature, species_name, rootdir, link_metho
     return corr_vals
 
 
-
 def species_daily_corr(rootdir, averages_feature, feature, label, link_method='single'):
     """ Plots corr matrix of clustered species by given feature
 
@@ -120,7 +110,7 @@ def species_daily_corr(rootdir, averages_feature, feature, label, link_method='s
     plt.close()
 
 
-def week_corr(rootdir, fish_tracks_ds, feature):
+def week_corr(rootdir, fish_tracks_ds, feature, plot=False):
     """ Plots corr matrix of clustered species by given feature
 
     :param averages_feature:
@@ -136,8 +126,8 @@ def week_corr(rootdir, fish_tracks_ds, feature):
 
         for fish in fishes:
             print(fish)
-            fish_tracks_ds_day = fish_tracks_ds.loc[fish_tracks_ds.FishID == fish, ['day', 'time_of_day_dt', feature]]
-            fish_tracks_ds_day = fish_tracks_ds_day.pivot(columns='day', values=feature, index='time_of_day_dt')
+            fish_tracks_ds_day = fish_tracks_ds.loc[fish_tracks_ds.FishID == fish, ['day_n', 'time_of_day_dt', feature]]
+            fish_tracks_ds_day = fish_tracks_ds_day.pivot(columns='day_n', values=feature, index='time_of_day_dt')
             individ_corr = fish_tracks_ds_day.corr()
 
             mask = np.ones(individ_corr.shape, dtype='bool')
@@ -149,22 +139,62 @@ def week_corr(rootdir, fish_tracks_ds, feature):
             else:
                 corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_val_f, columns=[fish])], axis=1)
 
-            X = individ_corr.values
-            d = sch.distance.pdist(X)
-            L = sch.linkage(d, method='single')
-            ind = sch.fcluster(L, 0.5*d.max(), 'distance')
-            cols = [individ_corr.columns.tolist()[i] for i in list((np.argsort(ind)))]
-            individ_corr = individ_corr[cols]
-            individ_corr = individ_corr.reindex(cols)
+            if plot:
+                f, ax = plt.subplots(figsize=(7, 5))
+                ax = sns.clustermap(individ_corr, vmin=-1, vmax=1, cmap='bwr')
+                plt.tight_layout()
+                plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}.png".format(feature)))
+                plt.close()
 
-            f, ax = plt.subplots(figsize=(7, 5))
-            ax = sns.heatmap(individ_corr, vmin=-1, vmax=1, cmap='bwr')
-            ax.set_title(fish)
-            plt.tight_layout()
-            plt.savefig(os.path.join(rootdir, "species_corr_by_30min_{0}_{1}.png".format(feature, dt.date.today())))
-            plt.close()
+        f, ax = plt.subplots(figsize=(4, 10))
+        sns.boxplot(data=corr_vals, ax=ax, fliersize=0)
+        sns.stripplot(data=corr_vals, color=".2", ax=ax, size=3)
+        ax.set(ylabel='Correlation')
+        ax.set(ylim=(-1, 1))
+        ax = plt.axhline(0, ls='--', color='k')
+        plt.xticks(rotation=90)
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "individual_day_corr_coef_by_30min_{0}_{1}.png".format(feature, species_i)))
+        plt.close()
 
-        f, ax = plt.subplots(figsize=(7, 5))
-        ax = sns.catplot(data=corr_vals, kind="swarm", vmin=-1, vmax=1)
-        ax.set_title(species_i)
 
+def get_corr_coefs_daily(rootdir, fish_tracks_bin, feature, species_sixes):
+    """
+
+    :param rootdir:
+    :param fish_tracks_bin:
+    :param feature:
+    :param species_sixes:
+    :return:
+    """
+    first = True
+    for species_name in species_sixes:
+        # get daily averages for each fish in species
+        fish_daily_ave_feature = species_feature_fish_daily_ave(fish_tracks_bin, species_name, feature)
+        # correlations for individuals across average days
+        corr_vals_f = fish_daily_corr(fish_daily_ave_feature, feature, species_name, rootdir)
+
+        if first:
+            corr_vals = pd.DataFrame(corr_vals_f, columns=[species_name])
+            first = False
+        else:
+            corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_vals_f, columns=[species_name])], axis=1)
+
+    corr_vals_long = pd.melt(corr_vals, var_name='species', value_name='corr_coef')
+
+    return corr_vals_long
+
+
+def plot_corr_coefs(rootdir, corr_vals_long, feature, title):
+    f, ax = plt.subplots(figsize=(4, 10))
+    sns.boxplot(data=corr_vals_long, x='corr_coef', y='species', ax=ax, fliersize=0,
+                order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
+    sns.stripplot(data=corr_vals_long, x='corr_coef', y='species', color=".2", ax=ax, size=3,
+                  order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
+    ax.set(xlabel='Correlation', ylabel='Species')
+    ax.set(xlim=(-1, 1))
+    ax = plt.axvline(0, ls='--', color='k')
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "fish_corr_coefs_{0}_{1}.png".format(feature, title)))
+    plt.close()
+    return

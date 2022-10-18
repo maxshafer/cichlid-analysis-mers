@@ -85,7 +85,7 @@ def daily_ave_move(sp_move_ave, sp_move_ave_std, rootdir, species_f, change_time
     daily_move = sp_move_ave.mean(axis=1)
     ax = sns.lineplot(x=sp_move_ave.index, y=(daily_move + sp_move_ave_std), color='lightgrey')
     ax = sns.lineplot(x=sp_move_ave.index, y=(daily_move - sp_move_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_move_ave.index, y=(daily_move))
+    ax = sns.lineplot(x=sp_move_ave.index, y=(daily_move), color='palevioletred')
 
     ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
     ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
@@ -124,7 +124,7 @@ def daily_ave_rest(sp_rest_ave, sp_rest_ave_std, rootdir, species_f, change_time
     daily_rest = sp_rest_ave.mean(axis=1)
     ax = sns.lineplot(x=sp_rest_ave.index, y=(daily_rest + sp_rest_ave_std), color='lightgrey')
     ax = sns.lineplot(x=sp_rest_ave.index, y=(daily_rest - sp_rest_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_rest_ave.index, y=(daily_rest))
+    ax = sns.lineplot(x=sp_rest_ave.index, y=(daily_rest), color='darkorchid')
 
     ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
     ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
@@ -164,7 +164,7 @@ def daily_ave_vp(rootdir, sp_vp_ave, sp_vp_ave_std, species_f, change_times_unit
     daily_rest = sp_vp_ave.mean(axis=1)
     ax = sns.lineplot(x=sp_vp_ave.index, y=(daily_rest + sp_vp_ave_std), color='lightgrey')
     ax = sns.lineplot(x=sp_vp_ave.index, y=(daily_rest - sp_vp_ave_std), color='lightgrey')
-    ax = sns.lineplot(x=sp_vp_ave.index, y=(daily_rest))
+    ax = sns.lineplot(x=sp_vp_ave.index, y=(daily_rest), color='teal')
 
     ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
     ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)

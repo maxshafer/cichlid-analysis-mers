@@ -455,6 +455,10 @@ if __name__ == '__main__':
         points = sub_df.loc[guild_species, ['d13C', 'd15N']]
         points = points.to_numpy()
         plt.scatter(points[:, 0], points[:, 1], color=diet_col_dic[key], s=12)
+        if key in ['Zooplanktivore', 'Algivore', 'Invertivore', 'Piscivore']:
+            hull = spatial.ConvexHull(points)
+            for simplex in hull.simplices:
+                ax.plot(points[simplex, 0], points[simplex, 1], color=diet_col_dic[key])
     ax.set_xlabel('$\delta^{13} C$')
     ax.set_ylabel('$\delta^{15} N$')
     sns.despine(top=True, right=True)

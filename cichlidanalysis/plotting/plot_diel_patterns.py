@@ -3,7 +3,9 @@ import os
 import datetime as dt
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib
 import numpy as np
+import pandas as pd
 
 
 def plot_day_night_species_ave(rootdir, fish_diel_patterns, fish_diel_patterns_sp, feature, input_type='day_night_dif'):
@@ -240,61 +242,41 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature, peak_feature='p
     return
 
 
-def plot_cre_dawn_dusk_stacked(rootdir, cres_peaks_i, feature, peak_feature='peak_amplitude'):
+def plot_cre_dawn_dusk_stacked(rootdir, cres_peaks_i, feature, peak_feature='peak'):
     """ Plot the crepuscular data as a stacked bar plot
+
+    inspiration: https://www.python-graph-gallery.com/stacked-and-percent-stacked-barplot
 
     :param rootdir:
     :param all_feature_combined:
     :param feature:
     :return:
     """
+    # use mean of the dawn to sort the order
     sorted_index = cres_peaks_i.groupby(by='species').mean().sort_values(by=peak_feature).index
-
-    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
-    sorted_index = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
     twilights = ['dawn', 'dusk']
-
-    # from raw value to percentage
+    cmap = matplotlib.cm.get_cmap('flare')
 
     for period in twilights:
-        # for category in
-        #     cres_peaks_i.loc[cres_peaks_i.twilight == period, peak_feature].plot(kind='bar', stacked='True')
-        #   cres_peaks_i.loc[peak_feature].hist(by=cres_peaks_i['species'])
-        #     plt.savefig(os.path.join(rootdir,"crepuscular_30min_box_sort_{0}_{1}_{2}_{3}_TEST.png".format(period, dt.date.today(),
-        #                                                                                      feature, peak_feature)))
+        first = True
+        for species_i in sorted_index:
+            # percentage of the 6 periods that have peaks for each species
+            bin_range = np.arange(0, 8)
+            cres_peaks_species = cres_peaks_i.loc[cres_peaks_i.species == species_i, ['peak', 'twilight']]
+            cres_peaks_species_twi = cres_peaks_species.loc[cres_peaks_species.twilight == period, ['peak']]*6
+            hist, bin_edges = np.histogram(cres_peaks_species_twi, bins=bin_range)
+            hist_norm = hist/(sum(hist))
 
+            if first:
+                all_hist = pd.DataFrame(np.reshape(hist_norm, (1, 7)), index=[species_i], columns=bin_range[0:-1])
+                first = False
+            else:
+                new_block = pd.DataFrame(np.reshape(hist_norm, (1, 7)), index=[species_i], columns=bin_range[0:-1])
+                all_hist = pd.concat([all_hist, new_block])
 
-        grped_bplot = sns.catplot(x='species',
-                                  y=peak_feature,
-                                  kind="box",
-                                  legend=False,
-                                  height=5,
-                                  aspect=2,
-                                  data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
-                                  fliersize=0,
-                                  boxprops=dict(alpha=.3),
-                                  order=sorted_index,
-                                  palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period,
-                                                                              [peak_feature, 'species']].groupby
-                                                             ('species').median().reindex(sorted_index).loc[:, peak_feature], "flare"),
-                                  saturation=1)
-
-        sns.stripplot(x='species',
-                      y=peak_feature,
-                      data=cres_peaks_i.loc[cres_peaks_i.twilight == period],
-                      order=sorted_index,
-                      palette=colors_from_values(cres_peaks_i.loc[cres_peaks_i.twilight == period,
-                                                                  [peak_feature, 'species']].groupby('species')
-                                                 .median().reindex(sorted_index).loc[:, peak_feature], "flare"),
-                      size=3,
-                      jitter=0.5).set(title=period)
-        grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
-        if peak_feature == 'peak_amplitude':
-            grped_bplot.set(ylabel='Peak amplitude from baseline', xlabel='Species')
-        elif peak_feature == 'peak':
-            grped_bplot.set(ylabel='Peak fraction', xlabel='Species')
-        ax = plt.axhline(0, ls='--', color='k')
+        all_hist.plot(kind='bar', stacked=True, color=(cmap(np.round(bin_range[0:-1]/6, 2))))
+        plt.ylabel('Fraction')
         plt.tight_layout()
-        plt.savefig(os.path.join(rootdir, "crepuscular_30min_box_sort_{0}_{1}_{2}_{3}.png".format(period, dt.date.today(), feature, peak_feature)))
+        plt.savefig(os.path.join(rootdir, "crepuscular_stacked_bar_{0}_{1}_{2}.png".format(period, feature, peak_feature)))
         plt.close()
     return

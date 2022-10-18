@@ -2,16 +2,10 @@
 # This module loads als and meta data of individual fish and plots the following for each species:
 # speed_mm (30m bins, daily ave) for each fish (lines single and average as well as heatmap)
 # x,y position (binned day/night, and average day/night)
-# fraction mobile/immobile
-# fraction active/quiescent
-# bout structure (MI and AQ, bout fraction in 30min bins, bouts D/N over days)
+# fraction movement/not movement
+# fraction rest/non-rest
+# bout structure (movement and rest, bout fraction in 30min bins, bouts D/N over days)
 
-# For combined data this module will plot:
-# speed_mm (30m bins, daily ave) for each species (lines and heatmap)
-# x,y position (binned day/night,  and average day/night)
-
-from tkinter.filedialog import askdirectory
-from tkinter import *
 import warnings
 import time
 import os
@@ -32,7 +26,6 @@ from cichlidanalysis.plotting.movement_plots import plot_movement_30m_individual
     plot_bout_lengths_dn_move, plot_movement_30m_sex
 from cichlidanalysis.plotting.daily_plots import plot_daily
 from cichlidanalysis.plotting.rest_plots import plot_rest_ind, plot_rest_mstd, plot_rest_bout_lengths_dn, plot_rest_sex
-from cichlidanalysis.analysis.positions import hist_feature_rest
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -50,7 +43,7 @@ if __name__ == '__main__':
     t0 = time.time()
     fish_tracks = load_als_files(rootdir)
     t1 = time.time()
-    print("time to load tracks {}".format(t1 - t0))
+    print("time to load tracks {:.0f} sec".format(t1 - t0))
 
     meta = load_meta_files(rootdir)
     metat = meta.transpose()
@@ -69,7 +62,7 @@ if __name__ == '__main__':
     fish_tracks['time_of_day_m'] = fish_tracks.ts.apply(
         lambda row: int(str(row)[11:16][:-3]) * 60 + int(str(row)[11:16][-2:]))
     t3 = time.time()
-    print("time to add time_of_day tracks {}".format(t3 - t2))
+    print("time to add time_of_day tracks {:.0f} sec".format(t3 - t2))
 
     fish_tracks['daynight'] = "d"
     fish_tracks.loc[fish_tracks.time_of_day_m < change_times_m[0], 'daynight'] = "n"
@@ -154,9 +147,6 @@ if __name__ == '__main__':
     plot_bout_lengths_dn_move(fish_bouts_move, rootdir)
     print("Finished movement plots")
 
-    # get daily average
-    plot_daily(fish_tracks_30m, change_times_unit, rootdir)
-
     # ### POSITION ###
     # ##### x,y position (binned day/night, and average day/night) #####
     plot_position_maps(meta, fish_tracks, rootdir)
@@ -171,13 +161,12 @@ if __name__ == '__main__':
 
     # rest (30m bins) for each species (mean  +- std)
     plot_rest_mstd(rootdir, fish_tracks_30m, change_times_d, "30m")
-
-    # rest day/night
-    plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
-
-    # rest by sex
     plot_rest_sex(rootdir, fish_tracks_30m, change_times_d, FRACTION_THRESH, TIME_WINDOW_SEC, "30m")
+    plot_rest_bout_lengths_dn(fish_bouts_rest, rootdir)
     print("Finished rest plots")
+
+    # get daily average
+    plot_daily(fish_tracks_30m, change_times_unit, rootdir)
 
     # save out downsampled als
     for species in all_species:
@@ -188,6 +177,3 @@ if __name__ == '__main__':
     create_fv1(all_species, fish_IDs, fish_tracks, metat, rootdir)
     create_fv2(all_species, fish_tracks, fish_bouts_move, fish_bouts_rest, fish_IDs, metat, fish_tracks_30m, rootdir)
 
-    for species in all_species:
-        # vertical position for rest and non-rest
-        hist_feature_rest(rootdir, fish_tracks, species, feature='vertical_pos')

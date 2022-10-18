@@ -16,51 +16,18 @@ from cichlidanalysis.analysis.processing import feature_daily, species_feature_f
 from cichlidanalysis.analysis.diel_pattern import diel_pattern_stats_individ_bin, diel_pattern_stats_species_bin
 from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr
 from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks
-from cichlidanalysis.plotting.cluster_plots import cluster_all_fish, cluster_species_daily
-from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box, \
-    plot_day_night_species_ave
-from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.analysis.clustering_patterns import run_species_pattern_cluster_daily, \
     run_species_pattern_cluster_weekly
-from cichlidanalysis.plotting.figure_1 import cluster_daily_ave, clustered_spd_map
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
+from cichlidanalysis.analysis.self_correlations import plot_corr_coefs, get_corr_coefs_daily, week_corr
+from cichlidanalysis.plotting.cluster_plots import cluster_all_fish, cluster_species_daily
+from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box, \
+    plot_day_night_species_ave, plot_cre_dawn_dusk_stacked
+from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
+from cichlidanalysis.plotting.figure_1 import cluster_daily_ave, clustered_spd_map
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-
-def get_corr_coefs(fish_tracks_bin, feature, species_sixes):
-    first = True
-    for species_name in species_sixes:
-        # correlations for individuals across daily average
-        fish_daily_ave_feature = species_feature_fish_daily_ave(fish_tracks_bin, species_name, feature)
-        # correlations for individuals average days
-        corr_vals_f = fish_daily_corr(fish_daily_ave_feature, feature, species_name, rootdir)
-
-        if first:
-            corr_vals = pd.DataFrame(corr_vals_f, columns=[species_name])
-            first = False
-        else:
-            corr_vals = pd.concat([corr_vals, pd.DataFrame(corr_vals_f, columns=[species_name])], axis=1)
-
-    corr_vals_long = pd.melt(corr_vals, var_name='species', value_name='corr_coef')
-
-    return corr_vals_long
-
-
-def plot_corr_coefs(rootdir, corr_vals_long, feature):
-    f, ax = plt.subplots(figsize=(4, 10))
-    sns.boxplot(data=corr_vals_long, x='corr_coef', y='species', ax=ax, fliersize=0,
-                order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
-    sns.stripplot(data=corr_vals_long, x='corr_coef', y='species', color=".2", ax=ax, size=3,
-                  order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
-    ax.set(xlabel='Correlation', ylabel='Species')
-    ax.set(xlim=(-1, 1))
-    ax = plt.axvline(0, ls='--', color='k')
-    plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "daily_fish_corr_coefs_{0}_{1}.png".format(feature, dt.date.today())))
-    plt.close()
-    return
 
 
 def setup_run_binned(rootdir):
@@ -100,7 +67,7 @@ if __name__ == '__main__':
     day_unit = dt.datetime.strptime("1970:1", "%Y:%d")
 
     # ###########################
-    # ## ridge plots for each feature ###
+    # ## ridge plots and averages for each feature ###
     averages_vp, date_time_obj_vp, sp_vp_combined, averages_spd, sp_spd_combined, averages_rest, sp_rest_combined, \
     averages_move, sp_move_combined = plot_ridge_plots(fish_tracks_bin, change_times_datetime,
                                                        rootdir, sp_metrics, tribe_col)
@@ -117,22 +84,19 @@ if __name__ == '__main__':
     aves_ave_move.columns = species_sixes
 
     # ###########################
-    # ### clustered heatmaps ###
-    # cluster_species_daily(rootdir, aves_ave_spd, aves_ave_vp, aves_ave_rest, aves_ave_move, species_sixes)
-    # cluster_all_fish(rootdir, fish_tracks_bin)
-
-    # ###########################
-    # ## correlations ##
-    # # correlations for days across week for an individual
-    # week_corr(rootdir, fish_tracks_bin, 'rest')
+    ## correlations ##
+    # correlations for days across week for an individual
+    week_corr(rootdir, fish_tracks_bin, 'rest')
 
     features = ['speed_mm', 'rest']
     for feature in features:
-        corr_vals_long = get_corr_coefs(fish_tracks_bin, feature, species_sixes)
-        plot_corr_coefs(rootdir, corr_vals_long, feature)
+        # correlations for individuals of species across daily average of feature
+        corr_vals_long = get_corr_coefs_daily(rootdir, fish_tracks_bin, feature, species_sixes)
+        plot_corr_coefs(rootdir, corr_vals_long, feature, 'daily')
 
         # correlations for individuals across week
-        # _ = fish_weekly_corr(rootdir, fish_tracks_bin, feature, 'single')
+        corr_vals_long_weekly = fish_weekly_corr(rootdir, fish_tracks_bin, feature, 'single', False)
+        plot_corr_coefs(rootdir, corr_vals_long_weekly, feature, 'weekly')
 
     # ### correlations for species and clusters ####
     run = False
@@ -141,6 +105,7 @@ if __name__ == '__main__':
         species_daily_corr(rootdir, aves_ave_rest, 'ave', 'rest', 'single')
         species_daily_corr(rootdir, aves_ave_move, 'ave', 'movement', 'single')
 
+    # clustered patterns of daily activity
     species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster_daily(aves_ave_spd,
                                                                                                         aves_ave_move,
                                                                                                         aves_ave_rest,
@@ -173,9 +138,10 @@ if __name__ == '__main__':
     # crespuscular_weekly_fish(rootdir, feature, fish_tracks_bin, species)     # for plotting weekly data for each species
 
     feature = 'speed_mm'
+    # get better look at the timing of peaks?
     cres_peaks = crepuscular_peaks(feature, fish_tracks_bin, fish_diel_patterns_sp)
     plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature, peak_feature='peak_amplitude')
-    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature, peak_feature='peak')
+    plot_cre_dawn_dusk_stacked(rootdir, cres_peaks, feature, peak_feature='peak')
 
     cres_peaks_ave = cres_peaks.groupby(by=['species', 'twilight']).mean().reset_index()
     data1 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dawn', ['peak']].reset_index(drop=True)
