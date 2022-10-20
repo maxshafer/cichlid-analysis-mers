@@ -3,15 +3,13 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import seaborn as sns
 from scipy.signal import find_peaks
-from matplotlib.ticker import (MultipleLocator)
 
+from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.als_files import load_als_files, load_bin_als_files
-from cichlidanalysis.analysis.behavioural_state import define_rest, plotting_clustering_states
+from cichlidanalysis.analysis.behavioural_state import define_rest
 from cichlidanalysis.analysis.processing import threshold_data
 from cichlidanalysis.analysis.bouts import find_bout_start_ends_pd
-from cichlidanalysis.analysis.crepuscular_pattern import crespuscular_daily_ave_fish, crepuscular_peaks
 
 
 def plot_example_spd_move_rest():
@@ -79,7 +77,9 @@ def plot_example_spd_move_rest():
 
 
 def plot_example_cres_peaks():
-    rootdir = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid_sleep_videos/_analysis2/Neobue"
+    """ Plot crepuscular peak example plot"""
+    rootdir = select_dir_path()
+    # rootdir = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid_sleep_videos/_analysis2/Neobue"
     fish_tracks_bin = load_bin_als_files(rootdir, "*als_30m.csv")
 
     change_times_unit = [7 * 2, 7.5 * 2, 18.5 * 2, 19 * 2]
@@ -99,38 +99,39 @@ def plot_example_cres_peaks():
         border_bottom = border_bottom * 200
         peak_prom = 7
 
-    fish_example = fishes[1]
-    example_fish_spd = fish_tracks_bin.loc[fish_tracks_bin.FishID == fish_example, :].reset_index(drop=True)
+    for fish in np.arange(0, 10):
+        fish_example = fishes[fish]
+        example_fish_spd = fish_tracks_bin.loc[fish_tracks_bin.FishID == fish_example, :].reset_index(drop=True)
 
-    fig2, ax = plt.subplots(figsize=(5, 4))
-    ax.axvline(6 * 2, c='indianred')
-    ax.axvline(8 * 2, c='indianred')
-    ax.axvline(18 * 2, c='indianred')
-    ax.axvline(20 * 2, c='indianred')
+        fig2, ax = plt.subplots(figsize=(5, 4))
+        ax.axvline(6 * 2, c='indianred')
+        ax.axvline(8 * 2, c='indianred')
+        ax.axvline(18 * 2, c='indianred')
+        ax.axvline(20 * 2, c='indianred')
 
-    ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[2], change_times_unit[3], color='wheat', alpha=0.5, linewidth=0)
-    ax.axvspan(change_times_unit[3], 24 * 2, color='lightblue', alpha=0.5, linewidth=0)
-    ax.set_ylim([0, 60])
-    ax.set_xlim([0, 24 * 2])
-    plt.xlabel("Time (h)")
-    plt.ylabel("Speed (mm/s)")
+        ax.axvspan(0, change_times_unit[0], color='lightblue', alpha=0.5, linewidth=0)
+        ax.axvspan(change_times_unit[0], change_times_unit[1], color='wheat', alpha=0.5, linewidth=0)
+        ax.axvspan(change_times_unit[2], change_times_unit[3], color='wheat', alpha=0.5, linewidth=0)
+        ax.axvspan(change_times_unit[3], 24 * 2, color='lightblue', alpha=0.5, linewidth=0)
+        ax.set_ylim([0, 100])
+        ax.set_xlim([0, 24 * 2])
+        plt.xlabel("Time (h)")
+        plt.ylabel("Speed (mm/s)")
 
-    x = example_fish_spd.loc[0:47, 'speed_mm'].to_numpy()
-    peaks, _ = find_peaks(x, distance=4, prominence=peak_prom, height=(border_bottom, border_top))
-    ax.plot(x)
-    ax.plot(peaks, x[peaks], "o", color="r")
-    ax.set_ylabel("Speed mm/s")
+        x = example_fish_spd.loc[0:47, 'speed_mm'].to_numpy()
+        peaks, _ = find_peaks(x, distance=4, prominence=peak_prom, height=(border_bottom, border_top))
+        ax.plot(x)
+        ax.plot(peaks, x[peaks], "o", color="r")
+        ax.set_ylabel("Speed mm/s")
 
-    steps_hours = 6
-    tick_position = np.arange(0, 48, step=steps_hours * 2)
-    tick_labels = np.arange(0, len(tick_position)*steps_hours, step=steps_hours).tolist()
-    tick_labels_str = [str(e) for e in tick_labels]
-    ax.set_xticks(tick_position)
-    ax.set_xticklabels(tick_labels_str)
-    plt.savefig(os.path.join(rootdir, "Example_find_peaks.png"))
-
+        steps_hours = 6
+        tick_position = np.arange(0, 48, step=steps_hours * 2)
+        tick_labels = np.arange(0, len(tick_position) * steps_hours, step=steps_hours).tolist()
+        tick_labels_str = [str(e) for e in tick_labels]
+        ax.set_xticks(tick_position)
+        ax.set_xticklabels(tick_labels_str)
+        plt.savefig(os.path.join(rootdir, "Example_find_peaks_{}.png".format(fish_example)))
+    return
 
 
 if __name__ == '__main__':

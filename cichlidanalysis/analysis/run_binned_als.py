@@ -22,7 +22,7 @@ from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_r
 from cichlidanalysis.analysis.self_correlations import plot_corr_coefs, get_corr_coefs_daily, week_corr
 from cichlidanalysis.plotting.cluster_plots import cluster_all_fish, cluster_species_daily
 from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box, \
-    plot_day_night_species_ave, plot_cre_dawn_dusk_stacked
+    plot_day_night_species_ave, plot_cre_dawn_dusk_stacked, plot_cre_dawn_dusk_peak_loc
 from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
 from cichlidanalysis.plotting.figure_1 import cluster_daily_ave, clustered_spd_map
 
@@ -139,8 +139,9 @@ if __name__ == '__main__':
 
     feature = 'speed_mm'
     # get better look at the timing of peaks?
-    cres_peaks = crepuscular_peaks(feature, fish_tracks_bin, fish_diel_patterns_sp)
+    cres_peaks = crepuscular_peaks(rootdir, feature, fish_tracks_bin, fish_diel_patterns_sp)
     plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature, peak_feature='peak_amplitude')
+    plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks, feature, change_times_unit, peak_feature='peak_loc')
     plot_cre_dawn_dusk_stacked(rootdir, cres_peaks, feature, peak_feature='peak')
 
     cres_peaks_ave = cres_peaks.groupby(by=['species', 'twilight']).mean().reset_index()

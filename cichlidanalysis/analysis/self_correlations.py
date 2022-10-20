@@ -48,21 +48,7 @@ def fish_weekly_corr(rootdir, fish_tracks_ds, feature, link_method, plot=False):
                                                                                          link_method)))
             plt.close()
 
-    corr_vals_long = pd.melt(corr_vals, var_name='species_six', value_name='corr_coef')
-
-    f, ax = plt.subplots(figsize=(4, 10))
-    sns.boxplot(data=corr_vals_long, x='corr_coef', y='species_six', ax=ax, fliersize=0,
-                order=corr_vals_long.groupby('species_six').mean().sort_values("corr_coef").index.to_list())
-    sns.stripplot(data=corr_vals_long, x='corr_coef', y='species_six', color=".2", ax=ax, size=3,
-                  order=corr_vals_long.groupby('species_six').mean().sort_values("corr_coef").index.to_list())
-    ax.set(xlabel='Correlation', ylabel='Species')
-    ax.set(xlim=(-1, 1))
-    ax = plt.axvline(0, ls='--', color='k')
-    plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "fish_weekly_corr_coefs_{0}.png".format(feature)))
-    plt.close()
     corr_vals_long = pd.melt(corr_vals, var_name='species', value_name='corr_coef')
-
     return corr_vals_long
 
 
