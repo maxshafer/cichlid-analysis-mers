@@ -249,7 +249,7 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature, peak_feature='p
     return
 
 
-def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_unit, peak_feature='peak_loc'):
+def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_unit, name, peak_feature='peak_loc'):
     """ Plot the crepuscular peak location data as a strip and box plot with the coloured background
 
     :param rootdir:
@@ -258,10 +258,10 @@ def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_uni
     :return:
     """
 
-    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
+    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
     sorted_index_dawn = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
 
-    dusk_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
+    dusk_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
     sorted_index_dusk = dusk_index.drop(dusk_index[dusk_index.twilight == 'dawn'].index).set_index('species').sort_values(by=peak_feature).index
 
     # As the bin is plotted at it's starting point, shift all points so that they are plotted in the middle of the bin
@@ -316,12 +316,13 @@ def plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_i, feature, change_times_uni
                       color='black',
                       size=3,
                       jitter=0.25).set(title=period)
-        grped_bplot.set(ylabel='Peak location', xlabel='Species')
+        grped_bplot.set(xlabel='Peak location', ylabel='Species')
         plt.tight_layout()
-        plt.savefig(os.path.join(rootdir, "crepuscular_30min_box_sort_{0}_{1}_{2}_{3}.png".format(period,
-                                                                                                  dt.date.today(),
-                                                                                                  feature,
-                                                                                                  peak_feature)))
+        plt.savefig(os.path.join(rootdir, "crepuscular_30min_box_sort_{0}_{1}_{2}_{3}_{4}.png".format(period,
+                                                                                                      dt.date.today(),
+                                                                                                      feature,
+                                                                                                      peak_feature,
+                                                                                                      name)))
         plt.close()
     return
 
@@ -337,12 +338,21 @@ def plot_cre_dawn_dusk_stacked(rootdir, cres_peaks_i, feature, peak_feature='pea
     :return:
     """
     # use mean of the dawn to sort the order
-    sorted_index = cres_peaks_i.groupby(by='species').mean().sort_values(by=peak_feature).index
+    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
+    sorted_index_dawn = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
+
+    dusk_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
+    sorted_index_dusk = dusk_index.drop(dusk_index[dusk_index.twilight == 'dawn'].index).set_index('species').sort_values(by=peak_feature).index
+
     twilights = ['dawn', 'dusk']
-    cmap = matplotlib.cm.get_cmap('flare')
+    cmap = matplotlib.cm.get_cmap('YlOrBr') #flare #RdPu
 
     for period in twilights:
         first = True
+        if period == 'dawn':
+            sorted_index = sorted_index_dawn
+        elif period == 'dusk':
+            sorted_index = sorted_index_dusk
         for species_i in sorted_index:
             # percentage of the 6 periods that have peaks for each species
             bin_range = np.arange(0, 8)

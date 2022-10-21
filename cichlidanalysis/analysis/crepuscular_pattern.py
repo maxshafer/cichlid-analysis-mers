@@ -214,9 +214,9 @@ def crepuscular_peaks(rootdir, feature, fish_tracks_ds, fish_diel_patterns_sp):
             fish_peaks_dawn = replace_crep_peaks(fish_peaks_dawn, fish_feature, fish, epoques)
             fish_peaks_dusk = replace_crep_peaks(fish_peaks_dusk, fish_feature, fish, epoques)
 
-            # plotting
-            savedir = '/Users/annikanichols/Desktop/'
-            plot_speed_30m_peaks(savedir, fish_feature.iloc[:, fish], fish_peaks_dawn, fish_peaks_dusk)
+            # # plotting
+            # savedir = '/Users/annikanichols/Desktop/'
+            # plot_speed_30m_peaks(savedir, fish_feature.iloc[:, fish], fish_peaks_dawn, fish_peaks_dusk)
 
             fish_peaks_df_dawn = make_fish_peaks_df(fish_peaks_dawn, fish_feature.columns[fish])
             fish_peaks_df_dusk = make_fish_peaks_df(fish_peaks_dusk, fish_feature.columns[fish])
@@ -270,4 +270,4 @@ def crepuscular_peaks(rootdir, feature, fish_tracks_ds, fish_diel_patterns_sp):
     all_feature_combined = all_feature_combined.reset_index(drop=True)
     all_feature_combined = all_feature_combined.loc[:, ~all_feature_combined.columns.duplicated()]
 
-    return all_feature_combined
+    return all_feature_combined, all_peaks_df

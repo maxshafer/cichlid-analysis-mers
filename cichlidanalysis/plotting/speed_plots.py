@@ -183,7 +183,7 @@ def plot_speed_30m_peaks(rootdir, fish_spd, fish_peaks_dawn, fish_peaks_dusk):
 
     ax.plot(fish_peaks_dawn[1, :], fish_peaks_dawn[2, :], "o", color="r")
     ax.plot(fish_peaks_dusk[1, :], fish_peaks_dusk[2, :], "o", color="r")
-    ax.set_ylim([0, 60])
+    ax.set_ylim([0, 100])
     ax.set_xlim([0, 6*48])
     plt.xlabel("Time (h)")
     plt.ylabel("Speed (mm/s)")

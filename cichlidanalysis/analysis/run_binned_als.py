@@ -139,11 +139,33 @@ if __name__ == '__main__':
 
     feature = 'speed_mm'
     # get better look at the timing of peaks?
-    cres_peaks = crepuscular_peaks(rootdir, feature, fish_tracks_bin, fish_diel_patterns_sp)
+    cres_peaks, cres_peaks_indiv = crepuscular_peaks(rootdir, feature, fish_tracks_bin, fish_diel_patterns_sp)
     plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature, peak_feature='peak_amplitude')
-    plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks, feature, change_times_unit, peak_feature='peak_loc')
+    plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks, feature, change_times_unit, name='average', peak_feature='peak_loc')
+    plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_indiv, feature, change_times_unit, name='individual',
+                                peak_feature='peak_loc')
     plot_cre_dawn_dusk_stacked(rootdir, cres_peaks, feature, peak_feature='peak')
 
+    include = ['Neosav', 'Neooli', 'Neopul', 'Neohel', 'Neobri', 'Neocra', 'Neomar', 'NeofaM', "Neogra", 'Neocyg',
+               'Neowal', 'Neofal']
+    cres_peaks_princess = cres_peaks[cres_peaks['species'].isin(include)]
+    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_princess, feature, peak_feature='peak')
+    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_princess, feature, peak_feature='peak_amplitude')
+    plot_cre_dawn_dusk_stacked(rootdir, cres_peaks_princess, feature, peak_feature='peak')
+
+
+    # make and save diel patterns csv
+    cresp_sp = cres_peaks.groupby(['species']).mean()
+    diel_sp = fish_diel_patterns.groupby('species').mean()
+    diel_patterns_df = pd.concat([cresp_sp, diel_sp.day_night_dif], axis=1).reset_index()
+    diel_patterns_df = diel_patterns_df.merge(species_cluster_spd, on="species")
+    # add total rest
+
+    diel_patterns_df.to_csv(os.path.join(rootdir, "combined_diel_patterns_{}_dp.csv".format(dt.date.today())))
+    print("Finished saving out diel pattern data")
+
+    # Correlations
+    # peak fraction
     cres_peaks_ave = cres_peaks.groupby(by=['species', 'twilight']).mean().reset_index()
     data1 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dawn', ['peak']].reset_index(drop=True)
     data2 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dusk', ['peak']].reset_index(drop=True)
@@ -164,15 +186,22 @@ if __name__ == '__main__':
     # model, r_sq = run_linear_reg(data1, data2)
     # plt_lin_reg(rootdir, data1.peak, data2.peak, model, r_sq)
 
-    # make and save diel patterns csv
-    cresp_sp = cres_peaks.groupby(['species']).mean()
-    diel_sp = fish_diel_patterns.groupby('species').mean()
-    diel_patterns_df = pd.concat([cresp_sp, diel_sp.day_night_dif], axis=1).reset_index()
-    diel_patterns_df = diel_patterns_df.merge(species_cluster_spd, on="species")
-    # add total rest
+    # peak location timing
+    data1 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dawn', ['peak_loc']].reset_index(drop=True)
+    data2 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dusk', ['peak_loc']].reset_index(drop=True)
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1.peak_loc, data2.peak_loc, model, r_sq)
 
-    diel_patterns_df.to_csv(os.path.join(rootdir, "combined_diel_patterns_{}_dp.csv".format(dt.date.today())))
-    print("Finished saving out diel pattern data")
+    # peak location timing dawn vs d/n pref
+    data1 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dawn', ['peak_loc']].reset_index(drop=True)
+    model, r_sq = run_linear_reg(data1, diel_sp.day_night_dif)
+    plt_lin_reg(rootdir, data1.peak_loc, diel_sp.loc[:, 'day_night_dif'].reset_index(drop=True), model, r_sq, 'dawn')
+
+    # peak location timing dusk vs d/n pref
+    data1 = cres_peaks_ave.loc[cres_peaks_ave.twilight == 'dusk', ['peak_loc']].reset_index(drop=True)
+    model, r_sq = run_linear_reg(data1, diel_sp.day_night_dif)
+    plt_lin_reg(rootdir, data1.peak_loc, diel_sp.loc[:, 'day_night_dif'].reset_index(drop=True), model, r_sq, 'dusk')
+
 
     # ## feature vs time of day density plot
     # ax = sns.displot(pd.melt(aves_ave_move.reset_index(), id_vars='time_of_day'), x='time_of_day', y='value')

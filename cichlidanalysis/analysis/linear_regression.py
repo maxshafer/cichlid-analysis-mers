@@ -45,8 +45,8 @@ def plt_lin_reg(rootdir, x, y, model, r_sq, label=''):
     ax.text(0.85, 0.90, s="$R^2$={}".format(np.round(r_sq, 2)), va='top', ha='center', transform=ax.transAxes)
     ax.text(0.85, 0.96, s="$r$={}".format(np.round(r[0, 1], 2)), va='top', ha='center', transform=ax.transAxes)
     fig.tight_layout()
-    ax.set_ylabel('Day - night activity')
-    ax.set_xlabel('Peak fraction')
+    # ax.set_ylabel('Day - night activity')
+    # ax.set_xlabel('Peak fraction')
     plt.savefig(os.path.join(rootdir, "feature_correlation_plot_{0}_vs_{1}_{2}.png".format(x.name, y.name, label)), dpi=300)
     plt.close()
 
