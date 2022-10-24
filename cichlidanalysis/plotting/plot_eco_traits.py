@@ -10,9 +10,10 @@ from scipy import stats
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 
 
-def plot_total_rest_ecospace(rootdir, feature_v_eco, fv_eco_sp_ave):
+def plot_total_rest_ecospace(rootdir, fv_eco_sp_ave, ronco_data):
     fig = plt.figure(figsize=(3, 3))
-    ax = sns.scatterplot(feature_v_eco.loc[:, 'd13C'], feature_v_eco.loc[:, 'd15N'], color='silver', s=12)
+    ronco_data_ave = ronco_data.groupby(by='sp').mean()
+    ax = sns.scatterplot(ronco_data_ave.loc[:, 'd13C'], ronco_data_ave.loc[:, 'd15N'], color='silver', s=12)
     ax = sns.scatterplot(data=fv_eco_sp_ave, x='d13C', y='d15N', hue='total_rest', s=20, legend=None, palette='winter')
     ax.set_xlabel('$\delta^{13} C$')
     ax.set_ylabel('$\delta^{15} N$')
@@ -23,14 +24,12 @@ def plot_total_rest_ecospace(rootdir, feature_v_eco, fv_eco_sp_ave):
     return
 
 
-def plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave):
-    ### what background points are being plotted!!!!
+def plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave):
     # pelagic and trophic levels (ecospace) vs temporal guilds
     fig = plt.figure(figsize=(3, 3))
-
-    # the ecospace measurements have X samples per species
     feature_v_eco_all_sp_ave = feature_v_eco.groupby(by='six_letter_name_Ronco').mean()
-    ax = sns.scatterplot(feature_v_eco_all_sp_ave.loc[:, 'd13C'], feature_v_eco_all_sp_ave.loc[:, 'd15N'], color='silver', s=12)
+    ronco_data_ave = ronco_data.groupby(by='sp').mean()
+    ax = sns.scatterplot(ronco_data_ave.loc[:, 'd13C'], ronco_data_ave.loc[:, 'd15N'], color='silver', s=12)
     for key in dic_simple:
         # find the species which are in diel group
         overlap_species = list(
@@ -52,12 +51,43 @@ def plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, diel_patterns, dic_
     return
 
 
-def plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave):
+def plot_ecospace_vs_temporal_guilds_density(rootdir, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave):
+
+    ronco_data_ave = ronco_data.groupby(by='sp').mean()
+
+    col_list = []
+    for ordered_col in fv_eco_sp_ave.cluster_pattern.unique():
+        col_list.append(col_dic_simple[ordered_col])
+
+    fig = plt.figure(figsize=(3, 3))
+    ax = sns.displot(fv_eco_sp_ave, x="d13C", y="d15N", hue="cluster_pattern", kind="kde", levels=2, palette=col_list)
+    plt.scatter(ronco_data_ave.loc[:, 'd13C'], ronco_data_ave.loc[:, 'd15N'], color='silver', s=12)
+    for key in dic_simple:
+        # find the species which are in diel group
+        overlap_species = list(
+            set(diel_patterns.loc[diel_patterns.cluster.isin(dic_simple[key]), 'species'].to_list()) &
+            set(fv_eco_sp_ave.index.to_list()))
+        points = fv_eco_sp_ave.loc[overlap_species, ['d13C', 'd15N']]
+        points = points.to_numpy()
+        plt.scatter(points[:, 0], points[:, 1], color=col_dic_simple[key], s=12)
+    plt.xlabel('$\delta^{13} C$')
+    plt.ylabel('$\delta^{15} N$')
+    sns.despine(top=True, right=True)
+    fig.tight_layout()
+    plt.savefig(os.path.join(rootdir, "d15N_d13C_temporal-guilds_density.png"), dpi=1200)
+    plt.close()
+
+
+
+
+
+def plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data):
     guilds = feature_v_eco.diet.unique()
     diet_col_dic = {'Zooplanktivore': 'sandybrown', 'Algivore': 'mediumseagreen', 'Invertivore': 'tomato',
                     'Piscivore': 'steelblue'}
     fig = plt.figure(figsize=(3, 3))
-    ax = sns.scatterplot(feature_v_eco.loc[:, 'd13C'], feature_v_eco.loc[:, 'd15N'], color='silver', s=12)
+    ronco_data_ave = ronco_data.groupby(by='sp').mean()
+    ax = sns.scatterplot(ronco_data_ave.loc[:, 'd13C'], ronco_data_ave.loc[:, 'd15N'], color='silver', s=12)
     for key in guilds:
         # find the species which are in the diet guild
         guild_species = set(feature_v_eco.loc[feature_v_eco.diet == key, 'six_letter_name_Ronco'].unique())

@@ -2,12 +2,9 @@ import warnings
 import os
 import datetime
 
-import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import scipy.spatial as spatial
-from scipy import stats
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.io_feature_vector import load_feature_vectors, load_diel_pattern
@@ -26,7 +23,8 @@ from cichlidanalysis.plotting.plot_total_rest import plot_total_rest_ordered, pl
 from cichlidanalysis.plotting.plot_bouts import plot_bout_lens_rest_day_night, plot_dn_dif_rest_bouts, \
     plot_bout_lens_non_rest_day_night, plot_dn_dif_non_rest_bouts, rest_bouts_hists
 from cichlidanalysis.plotting.plot_eco_traits import plot_total_rest_ecospace, plot_ecospace_vs_temporal_guilds, \
-    plot_d15N_d13C_diet_guilds, plot_diet_guilds_hist, plot_total_rest_vs_diet_significance
+    plot_d15N_d13C_diet_guilds, plot_diet_guilds_hist, plot_total_rest_vs_diet_significance, \
+    plot_ecospace_vs_temporal_guilds_density
 
 
 # debug pycharm problem
@@ -91,6 +89,7 @@ if __name__ == '__main__':
 
         # calculate ave and stdv
         average = sp_subset.mean(axis=0)
+        average = average.append(pd.Series(sp_subset.cluster_pattern.unique()[0], index=['cluster_pattern']))
         average = average.rename(species_name)
         if species_n == 0:
             averages = average
@@ -206,19 +205,19 @@ if __name__ == '__main__':
 
     #### Correlations for average behaviour vs average species ecological measures
     # combine behavioural data with the Ronco ecological data
-    ave_rest = averages.loc[['total_rest', 'rest_mean_night', 'rest_mean_day', 'fish_length_mm'],
+    ave_rest = averages.loc[['total_rest', 'rest_mean_night', 'rest_mean_day', 'fish_length_mm', 'cluster_pattern'],
                :].transpose().reset_index().rename(
         columns={'index': 'sp'})
     ave_rest['night-day_dif_rest'] = ave_rest.rest_mean_night - ave_rest.rest_mean_day
     sp_in_both = set(ave_rest.sp) & set(ronco_data.sp)
     missing_in_ronco = set(ave_rest.sp) - set(sp_in_both)
     feature_v_eco = pd.merge(ronco_data, ave_rest, how='left', on='sp')
-    feature_v_eco = feature_v_eco.drop(feature_v_eco.loc[(np.isnan(feature_v_eco.loc[:, 'total_rest']))].index).reset_index(drop=True)
+    feature_v_eco = feature_v_eco.drop(feature_v_eco.loc[(pd.isnull(feature_v_eco.loc[:, 'total_rest']))].index).reset_index(drop=True)
     feature_v_eco = feature_v_eco.rename(columns={'sp': 'six_letter_name_Ronco'})
     feature_v_eco = pd.merge(feature_v_eco, cichlid_meta, how='left', on='six_letter_name_Ronco')
 
     # regression between features
-    fv_eco_sp_ave = feature_v_eco.groupby('six_letter_name_Ronco').mean()
+    fv_eco_sp_ave = feature_v_eco.groupby(['six_letter_name_Ronco', 'cluster_pattern']).mean().reset_index('cluster_pattern')
 
     x = feature_v_mean.total_rest
     y = feature_v_mean.fish_length_mm
@@ -227,8 +226,9 @@ if __name__ == '__main__':
 
     diet_vs_size(rootdir, col_vector, cichlid_meta, feature_v_mean)
     feature_correlations(rootdir, feature_v_mean, fv_eco_sp_ave)
-    plot_total_rest_ecospace(rootdir, feature_v_eco, fv_eco_sp_ave)
+    plot_total_rest_ecospace(rootdir, fv_eco_sp_ave, ronco_data)
     plot_ecospace_vs_temporal_guilds(rootdir, feature_v_eco, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
-    plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave)
+    plot_ecospace_vs_temporal_guilds_density(rootdir, ronco_data, diel_patterns, dic_simple, col_dic_simple, fv_eco_sp_ave)
+    plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)
     plot_diet_guilds_hist(rootdir, feature_v_eco, dic_simple, diel_patterns)
     plot_total_rest_vs_diet_significance(rootdir, feature_v_eco)
