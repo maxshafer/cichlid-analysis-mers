@@ -146,12 +146,12 @@ if __name__ == '__main__':
                                 peak_feature='peak_loc')
     plot_cre_dawn_dusk_stacked(rootdir, cres_peaks, feature, peak_feature='peak')
 
-    include = ['Neosav', 'Neooli', 'Neopul', 'Neohel', 'Neobri', 'Neocra', 'Neomar', 'NeofaM', "Neogra", 'Neocyg',
-               'Neowal', 'Neofal']
-    cres_peaks_princess = cres_peaks[cres_peaks['species'].isin(include)]
-    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_princess, feature, peak_feature='peak')
-    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_princess, feature, peak_feature='peak_amplitude')
-    plot_cre_dawn_dusk_stacked(rootdir, cres_peaks_princess, feature, peak_feature='peak')
+    # include = ['Neosav', 'Neooli', 'Neopul', 'Neohel', 'Neobri', 'Neocra', 'Neomar', 'NeofaM', "Neogra", 'Neocyg',
+    #            'Neowal', 'Neofal']
+    # cres_peaks_princess = cres_peaks[cres_peaks['species'].isin(include)]
+    # plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_princess, feature, peak_feature='peak')
+    # plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_princess, feature, peak_feature='peak_amplitude')
+    # plot_cre_dawn_dusk_stacked(rootdir, cres_peaks_princess, feature, peak_feature='peak')
 
 
     # make and save diel patterns csv

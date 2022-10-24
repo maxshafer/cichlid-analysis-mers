@@ -283,6 +283,35 @@ def find_bouts_input(fish_tracks_i, change_times_m,  measure='rest'):
     return fish_bouts
 
 
+def names_bouts():
+    data_names = ['spd_mean', 'move_mean', 'rest_mean', 'y_mean', 'spd_std', 'move_std', 'rest_std', 'y_std',
+                  'move_bout_mean', 'nonmove_bout_mean', 'rest_bout_mean', 'nonrest_bout_mean', 'move_bout_std',
+                  'nonmove_bout_std', 'rest_bout_std', 'nonrest_bout_std']
+    time_v2_m_names = ['predawn', 'dawn', 'day', 'dusk', 'postdusk', 'night']
+
+    spd_means = ['spd_mean_predawn', 'spd_mean_dawn', 'spd_mean_day', 'spd_mean_dusk', 'spd_mean_postdusk',
+                 'spd_mean_night']
+    rest_means = ['rest_mean_predawn', 'rest_mean_dawn', 'rest_mean_day', 'rest_mean_dusk', 'rest_mean_postdusk',
+                  'rest_mean_night']
+    move_means = ['move_mean_predawn', 'move_mean_dawn', 'move_mean_day', 'move_mean_dusk', 'move_mean_postdusk',
+                  'move_mean_night']
+    rest_b_means = ['rest_bout_mean_predawn', 'rest_bout_mean_dawn', 'rest_bout_mean_day', 'rest_bout_mean_dusk',
+                    'rest_bout_mean_postdusk', 'rest_bout_mean_night']
+    nonrest_b_means = ['nonrest_bout_mean_predawn', 'nonrest_bout_mean_dawn', 'nonrest_bout_mean_day',
+                       'nonrest_bout_mean_dusk',
+                       'nonrest_bout_mean_postdusk', 'nonrest_bout_mean_night']
+    move_b_means = ['move_bout_mean_predawn', 'move_bout_mean_dawn', 'move_bout_mean_day', 'move_bout_mean_dusk',
+                    'move_bout_mean_postdusk', 'move_bout_mean_night']
+    nonmove_b_means = ['nonmove_bout_mean_predawn', 'nonmove_bout_mean_dawn', 'nonmove_bout_mean_day',
+                       'nonmove_bout_mean_dusk',
+                       'nonmove_bout_mean_postdusk', 'nonmove_bout_mean_night']
+
+    # movement_bouts = ['move_bout_mean', 'nonmove_bout_mean', 'move_bout_std']
+    # rest_bouts = ['rest_bout_mean', 'nonrest_bout_mean']
+
+    return data_names, time_v2_m_names, spd_means, rest_means, move_means, rest_b_means, nonrest_b_means, move_b_means, nonmove_b_means
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
