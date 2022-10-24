@@ -17,6 +17,7 @@ from cichlidanalysis.analysis.diel_pattern import daily_more_than_pattern_indivi
 from cichlidanalysis.analysis.linear_regression import feature_correlations
 from cichlidanalysis.analysis.bouts import names_bouts
 from cichlidanalysis.analysis.ecological_als import diet_vs_size
+from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 from cichlidanalysis.plotting.figure_1 import cluster_dics
 from cichlidanalysis.plotting.plot_total_rest import plot_total_rest_ordered, plot_total_rest_temporal, \
     plot_total_rest_diet, plot_total_rest_hist, plot_total_rest_vs_spd
@@ -100,7 +101,7 @@ if __name__ == '__main__':
     averages_norm = averages.div(averages.sum(axis=1), axis=0)
 
     # histogram of total rest
-    feature_v_mean = feature_v.groupby('six_letter_name_Ronco').mean()
+    feature_v_mean = feature_v.groupby(['six_letter_name_Ronco', 'cluster_pattern']).mean()
     feature_v_mean = feature_v_mean.reset_index()
 
     feature_v_mean.loc[:, ['six_letter_name_Ronco', 'total_rest', 'peak_amplitude', 'peak', 'day_night_dif', 'cluster']
@@ -232,3 +233,28 @@ if __name__ == '__main__':
     plot_d15N_d13C_diet_guilds(rootdir, feature_v_eco, fv_eco_sp_ave, ronco_data)
     plot_diet_guilds_hist(rootdir, feature_v_eco, dic_simple, diel_patterns)
     plot_total_rest_vs_diet_significance(rootdir, feature_v_eco)
+
+    # vertical position during the day vs total rest
+    data1 = feature_v_mean.total_rest
+    data2 = feature_v_mean.y_mean_day
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    # vertical position during the night vs total rest
+    data1 = feature_v_mean.total_rest
+    data2 = feature_v_mean.y_mean_night
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    # vp day vs night
+    data1 = feature_v_mean.y_mean_day
+    data2 = feature_v_mean.y_mean_night
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq)
+
+    # vertical position during the night vs total rest of diurnal clustered fish
+    cluster_p = 'diurnal'
+    data1 = feature_v_mean.loc[feature_v_mean.cluster_pattern == cluster_p, 'total_rest']
+    data2 = feature_v_mean.loc[feature_v_mean.cluster_pattern == cluster_p, 'y_mean_day']
+    model, r_sq = run_linear_reg(data1, data2)
+    plt_lin_reg(rootdir, data1, data2, model, r_sq, cluster_p)

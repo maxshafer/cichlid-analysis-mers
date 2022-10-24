@@ -18,6 +18,7 @@ from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_r
 
 # insipired by https://towardsdatascience.com/pca-using-python-scikit-learn-e653f8989e60
 
+
 def plot_loadings(rootdir, pca, labels, data_input):
     loadings = pd.DataFrame(pca.components_.T, columns=labels, index=data_input.columns)
 

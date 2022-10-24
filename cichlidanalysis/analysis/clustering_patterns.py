@@ -9,7 +9,7 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (MultipleLocator)
 
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
-from cichlidanalysis.plotting.daily_plots import daily_ave_spd, daily_ave_move, daily_ave_rest
+from cichlidanalysis.plotting.daily_plots import daily_ave_spd, daily_ave_move, daily_ave_rest, daily_ave_vp
 from cichlidanalysis.utils.timings import output_timings
 
 # Inspiration from:
@@ -55,6 +55,16 @@ def plot_bin_cluster(rootdir, subset, cluster_n, change_times_d, feature):
 
 
 def cluster_patterns(data_feature, rootdir, feature, max_d=1.3, label='feature', link_method='single'):
+    """ clusters the data given writes out the cophenetic correlation as a measure of how well the clustering works
+
+    :param data_feature:
+    :param rootdir:
+    :param feature:
+    :param max_d:
+    :param label:
+    :param link_method:
+    :return:
+    """
     individ_corr = data_feature.corr(method='pearson')
     z = linkage(individ_corr, link_method)
 
@@ -86,13 +96,14 @@ def cluster_patterns(data_feature, rootdir, feature, max_d=1.3, label='feature',
     return species_cluster
 
 
-def run_species_pattern_cluster_daily(aves_ave_spd, aves_ave_move, aves_ave_rest, rootdir):
+def run_species_pattern_cluster_daily(aves_ave_spd, aves_ave_move, aves_ave_rest, aves_ave_vp, rootdir):
 
     change_times_unit = [7*2, 7.5*2, 18.5*2, 19*2]
 
     species_cluster_spd = cluster_patterns(aves_ave_spd, rootdir, feature="speed", max_d=1.35, label='daily')
     species_cluster_move = cluster_patterns(aves_ave_move, rootdir, feature="movement", max_d=1.2,  label='daily')
     species_cluster_rest = cluster_patterns(aves_ave_rest, rootdir, feature="rest", max_d=1.05,  label='daily')
+    species_cluster_vp = cluster_patterns(aves_ave_vp, rootdir, feature="vertical", max_d=2,  label='daily')
 
     for i in species_cluster_spd.cluster.unique():
         species_subset = species_cluster_spd.loc[species_cluster_spd.cluster == i, 'species'].tolist()
@@ -108,6 +119,11 @@ def run_species_pattern_cluster_daily(aves_ave_spd, aves_ave_move, aves_ave_rest
         species_subset = species_cluster_rest.loc[species_cluster_rest.cluster == i, 'species'].tolist()
         subset = aves_ave_rest[species_subset]
         daily_ave_rest(subset, subset.std(axis=1), rootdir, 'cluster_{}'.format(i), change_times_unit)
+
+    for i in species_cluster_vp.cluster.unique():
+        species_subset = species_cluster_vp.loc[species_cluster_vp.cluster == i, 'species'].tolist()
+        subset = aves_ave_vp[species_subset]
+        daily_ave_vp(rootdir, subset, subset.std(axis=1), 'cluster_{}'.format(i), change_times_unit)
 
     return species_cluster_spd, species_cluster_move, species_cluster_rest
 

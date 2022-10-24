@@ -13,13 +13,14 @@ from datetime import timedelta
 from cichlidanalysis.utils.timings import output_timings
 
 
-def getKeysByValue(dict, value_to_find):
+def get_keys_by_val(dict, value_to_find):
     listOfKeys = list()
     listOfItems = dict.items()
     for item in listOfItems:
         if item[1].count(value_to_find) > 0:
             listOfKeys.append(item[0])
     return listOfKeys
+
 
 def cluster_dics():
     # dic_complex = {'diurnal': [6], 'nocturnal': [1], 'crepuscular1': [2], 'crepuscular2': [4], 'crepuscular3': [5],
@@ -81,9 +82,9 @@ def dendrogram_sp_clustering(aves_ave_spd, link_method='single', max_d=1.35):
     return individ_corr, species_cluster
 
 
-def clustered_spd_map(rootdir, aves_ave_spd, link_method='single'):
+def clustered_spd_map(rootdir, aves_ave_spd, link_method='single', max_d=1.35):
 
-    individ_corr, species_cluster = dendrogram_sp_clustering(aves_ave_spd, link_method=link_method, max_d=1.35)
+    individ_corr, species_cluster = dendrogram_sp_clustering(aves_ave_spd, link_method=link_method, max_d=max_d)
 
     # Plot cluster map with one dendrogram, main clusters (hardcoded) as row/col colours
     cg = sns.clustermap(individ_corr, figsize=(12, 12), method=link_method, metric='euclidean', vmin=-1, vmax=1,
@@ -97,11 +98,11 @@ def clustered_spd_map(rootdir, aves_ave_spd, link_method='single'):
     return
 
 
-def cluster_daily_ave(rootdir, aves_ave_spd, link_method='single'):
+def cluster_daily_ave(rootdir, aves_ave_spd, label, link_method='single', max_d=1.35):
     dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
     change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, \
     change_times_datetime, change_times_unit = output_timings()
-    individ_corr, species_cluster = dendrogram_sp_clustering(aves_ave_spd, link_method=link_method, max_d=1.35)
+    individ_corr, species_cluster = dendrogram_sp_clustering(aves_ave_spd, link_method=link_method, max_d=max_d)
 
     date_form = DateFormatter('%H')
     feature, ymax, span_max, ylabeling = 'speed_mm', 95, len(cluster_order)*25, 'Speed mm/s'
@@ -133,7 +134,7 @@ def cluster_daily_ave(rootdir, aves_ave_spd, link_method='single'):
         # subset_spd_stdev = subset_spd.std(axis=1)
         daily_speed = subset_spd.mean(axis=1) + top - 25 - cluster_count * 25
 
-        colour = col_dic_complex[getKeysByValue(dic_complex, cluster_n)[0]]
+        colour = col_dic_complex[get_keys_by_val(dic_complex, cluster_n)[0]]
         # plotting
         # ax = sns.lineplot(x=date_time_obj, y=(daily_speed + subset_spd_stdev), color='lightgrey')
         # ax = sns.lineplot(x=date_time_obj, y=(daily_speed - subset_spd_stdev), color='lightgrey')
@@ -160,7 +161,7 @@ def cluster_daily_ave(rootdir, aves_ave_spd, link_method='single'):
     for s in spines:
         ax.spines[s].set_visible(False)
     plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "figure_panel_1_daily_traces_{}.png".format(dt.date.today())))
+    plt.savefig(os.path.join(rootdir, "figure_panel_1_daily_traces_{}.png".format(label)))
     plt.close()
     return
 

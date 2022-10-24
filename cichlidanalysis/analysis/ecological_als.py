@@ -1,10 +1,4 @@
-import os
-
-import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
 

@@ -3,8 +3,6 @@ import os
 
 import datetime as dt
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.als_files import load_bin_als_files
@@ -14,17 +12,18 @@ from cichlidanalysis.utils.species_metrics import tribe_cols
 from cichlidanalysis.analysis.processing import feature_daily, species_feature_fish_daily_ave, \
     fish_tracks_add_day_twilight_night, add_day_number_fish_tracks
 from cichlidanalysis.analysis.diel_pattern import diel_pattern_stats_individ_bin, diel_pattern_stats_species_bin
-from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr
+from cichlidanalysis.analysis.self_correlations import species_daily_corr, fish_daily_corr, fish_weekly_corr, \
+    plot_corr_coefs, get_corr_coefs_daily, week_corr
 from cichlidanalysis.analysis.crepuscular_pattern import crepuscular_peaks
 from cichlidanalysis.analysis.clustering_patterns import run_species_pattern_cluster_daily, \
     run_species_pattern_cluster_weekly
 from cichlidanalysis.analysis.linear_regression import run_linear_reg, plt_lin_reg
-from cichlidanalysis.analysis.self_correlations import plot_corr_coefs, get_corr_coefs_daily, week_corr
 from cichlidanalysis.plotting.cluster_plots import cluster_all_fish, cluster_species_daily
+from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
+from cichlidanalysis.plotting.figure_1 import cluster_daily_ave, clustered_spd_map, cluster_dics
+from cichlidanalysis.plotting.position_plots import plot_combined_v_position
 from cichlidanalysis.plotting.plot_diel_patterns import plot_day_night_species, plot_cre_dawn_dusk_strip_box, \
     plot_day_night_species_ave, plot_cre_dawn_dusk_stacked, plot_cre_dawn_dusk_peak_loc
-from cichlidanalysis.plotting.speed_plots import plot_ridge_plots
-from cichlidanalysis.plotting.figure_1 import cluster_daily_ave, clustered_spd_map
 
 # debug pycharm problem
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -104,18 +103,21 @@ if __name__ == '__main__':
         species_daily_corr(rootdir, aves_ave_spd, 'ave', 'speed_mm', 'single')
         species_daily_corr(rootdir, aves_ave_rest, 'ave', 'rest', 'single')
         species_daily_corr(rootdir, aves_ave_move, 'ave', 'movement', 'single')
+        species_daily_corr(rootdir, aves_ave_vp, 'ave', 'vertical', 'single')
 
     # clustered patterns of daily activity
     species_cluster_spd, species_cluster_move, species_cluster_rest = run_species_pattern_cluster_daily(aves_ave_spd,
                                                                                                         aves_ave_move,
                                                                                                         aves_ave_rest,
+                                                                                                        aves_ave_vp,
                                                                                                         rootdir)
     # species_cluster_spd_wk, species_cluster_move_wk, species_cluster_rest_wk = run_species_pattern_cluster_weekly(
     #     averages_spd, averages_move, averages_rest, rootdir)
 
     # Figures of clustered corr matrix and cluster average speed: figure 1
-    clustered_spd_map(rootdir, aves_ave_spd, link_method='single')
-    cluster_daily_ave(rootdir, aves_ave_spd, link_method='single')
+    clustered_spd_map(rootdir, aves_ave_spd, link_method='single', max_d=1.35)
+    cluster_daily_ave(rootdir, aves_ave_spd, 'speed', link_method='single', max_d=1.35)
+    cluster_daily_ave(rootdir, aves_ave_vp, 'vertical', link_method='single', max_d=2)
 
     # ###########################
     # ### Define and plot diel pattern for each type ###
@@ -141,6 +143,7 @@ if __name__ == '__main__':
     # get better look at the timing of peaks?
     cres_peaks, cres_peaks_indiv = crepuscular_peaks(rootdir, feature, fish_tracks_bin, fish_diel_patterns_sp)
     plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature, peak_feature='peak_amplitude')
+    plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks, feature, peak_feature='peak')
     plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks, feature, change_times_unit, name='average', peak_feature='peak_loc')
     plot_cre_dawn_dusk_peak_loc(rootdir, cres_peaks_indiv, feature, change_times_unit, name='individual',
                                 peak_feature='peak_loc')
@@ -163,6 +166,15 @@ if __name__ == '__main__':
 
     diel_patterns_df.to_csv(os.path.join(rootdir, "combined_diel_patterns_{}_dp.csv".format(dt.date.today())))
     print("Finished saving out diel pattern data")
+
+    # add column for cluster, hardcoded!!!!
+    dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
+    fish_tracks_bin['cluster_pattern'] = 'placeholder'
+    for key in dic_simple:
+        # find the species which are in diel cluster group
+        sp_diel_group = set(diel_patterns_df.loc[diel_patterns_df.cluster.isin(dic_simple[key]), 'species'].to_list())
+        fish_tracks_bin.loc[fish_tracks_bin.species.isin(sp_diel_group), 'cluster_pattern'] = key
+
 
     # Correlations
     # peak fraction
@@ -207,3 +219,5 @@ if __name__ == '__main__':
     # ax = sns.displot(pd.melt(aves_ave_move.reset_index(), id_vars='time_of_day'), x='time_of_day', y='value')
     # for axes in ax.axes.flat:
     #     _ = axes.set_xticklabels(axes.get_xticklabels(), rotation=90)
+
+    plot_combined_v_position(rootdir, fish_tracks_bin, fish_diel_patterns)
