@@ -173,7 +173,7 @@ def get_corr_coefs_daily(rootdir, fish_tracks_bin, feature, species_sixes):
 
 def plot_corr_coefs(rootdir, corr_vals_long, feature, title):
     f, ax = plt.subplots(figsize=(4, 10))
-    sns.boxplot(data=corr_vals_long, x='corr_coef', y='species', ax=ax, fliersize=0,
+    sns.boxplot(data=corr_vals_long, x='corr_coef', y='species', ax=ax, fliersize=0, color='gainsboro',
                 order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())
     sns.stripplot(data=corr_vals_long, x='corr_coef', y='species', color=".2", ax=ax, size=3,
                   order=corr_vals_long.groupby('species').mean().sort_values("corr_coef").index.to_list())

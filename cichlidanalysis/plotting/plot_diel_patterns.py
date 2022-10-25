@@ -201,10 +201,10 @@ def plot_cre_dawn_dusk_strip_box(rootdir, cres_peaks_i, feature, peak_feature='p
     :param feature:
     :return:
     """
-    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
+    dawn_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
     sorted_index_dawn = dawn_index.drop(dawn_index[dawn_index.twilight == 'dusk'].index).set_index('species').sort_values(by=peak_feature).index
 
-    dusk_index = cres_peaks_i.groupby(by=['species', 'twilight']).median().reset_index()
+    dusk_index = cres_peaks_i.groupby(by=['species', 'twilight']).mean().reset_index()
     sorted_index_dusk = dusk_index.drop(dusk_index[dusk_index.twilight == 'dawn'].index).set_index('species').sort_values(by=peak_feature).index
 
     twilights = ['dawn', 'dusk']
