@@ -2,6 +2,7 @@ import os
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import seaborn as sns
 
 
@@ -16,6 +17,9 @@ def plot_total_rest_ordered(rootdir, feature_v):
     ax = sns.boxplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', dodge=False,
                      showfliers=False, color='darkorchid',
                      order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values("total_rest").index.to_list())
+    for patch in ax.artists:
+        fc = patch.get_facecolor()
+        patch.set_facecolor(mcolors.to_rgba(fc, 0.3))
     ax = sns.swarmplot(data=feature_v, y='six_letter_name_Ronco', x='total_rest', color=".2", size=4,
                        order=feature_v.groupby('six_letter_name_Ronco').mean().sort_values(
                            "total_rest").index.to_list())

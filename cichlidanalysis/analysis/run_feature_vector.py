@@ -49,10 +49,7 @@ def subset_feature_plt(rootdir, averages_i, features, plot_label, labelling):
     plt.close()
 
 
-if __name__ == '__main__':
-    # Allows user to select top directory and load all als files here
-    rootdir = select_dir_path()
-
+def setup_feature_vector_data(rootdir):
     feature_v = load_feature_vectors(rootdir, "*als_fv2.csv")
     diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
     ronco_data_path, cichlid_meta_path = get_meta_paths()
@@ -72,8 +69,6 @@ if __name__ == '__main__':
     feature_v = feature_v.merge(diel_patterns.rename(columns={'species': 'six_letter_name_Ronco'}),
                                 on="six_letter_name_Ronco")
     species = feature_v['six_letter_name_Ronco'].unique()
-
-    tribe_col = tribe_cols()
 
     # add column for cluster, hardcoded!!!!
     dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
@@ -98,7 +93,17 @@ if __name__ == '__main__':
             averages = pd.concat([averages, average], axis=1, join='inner')
         stdv = sp_subset.std(axis=0)
 
-    averages_norm = averages.div(averages.sum(axis=1), axis=0)
+    return feature_v, averages, ronco_data, cichlid_meta, diel_patterns, species
+
+
+if __name__ == '__main__':
+    # Allows user to select top directory and load all als files here
+    rootdir = select_dir_path()
+
+    feature_v, averages, ronco_data, cichlid_meta, diel_patterns, species = setup_feature_vector_data(rootdir)
+
+    dic_complex, dic_simple, col_dic_simple, col_dic_complex, col_dic_simple, cluster_order = cluster_dics()
+    tribe_col = tribe_cols()
 
     # histogram of total rest
     feature_v_mean = feature_v.groupby(['six_letter_name_Ronco', 'cluster_pattern']).mean()
@@ -108,7 +113,30 @@ if __name__ == '__main__':
     ].to_csv(os.path.join(rootdir, "combined_cichlid_data_{}.csv".format(datetime.date.today())))
     print("Finished saving out species data")
 
+    # combine behavioural data with the Ronco ecological data
+    ave_rest = averages.loc[['total_rest', 'rest_mean_night', 'rest_mean_day', 'fish_length_mm', 'cluster_pattern'],
+               :].transpose().reset_index().rename(
+        columns={'index': 'sp'})
+    ave_rest['night-day_dif_rest'] = ave_rest.rest_mean_night - ave_rest.rest_mean_day
+    sp_in_both = set(ave_rest.sp) & set(ronco_data.sp)
+    missing_in_ronco = set(ave_rest.sp) - set(sp_in_both)
+    feature_v_eco = pd.merge(ronco_data, ave_rest, how='left', on='sp')
+    feature_v_eco = feature_v_eco.drop(feature_v_eco.loc[(pd.isnull(feature_v_eco.loc[:, 'total_rest']))].index).reset_index(drop=True)
+    feature_v_eco = feature_v_eco.rename(columns={'sp': 'six_letter_name_Ronco'})
+    feature_v_eco = pd.merge(feature_v_eco, cichlid_meta, how='left', on='six_letter_name_Ronco')
+
+    # regression between features
+    fv_eco_sp_ave = feature_v_eco.groupby(['six_letter_name_Ronco', 'cluster_pattern']).mean().reset_index('cluster_pattern')
+
     # ## heatmap of fv
+    # averages_vals = averages.drop(averages[averages.isna().any(axis=1)].index)
+    # rows = []
+    # for i, element in enumerate(averages_vals.iloc[:, 0]):
+    #     if isinstance(element, float):
+    #         rows.append(i)
+    # averages_vals = averages_vals.iloc[rows, :]
+    # averages_norm = averages_vals.div(averages_vals.sum(axis=1), axis=0)
+
     # fig1, ax1 = plt.subplots()
     # fig1.set_figheight(6)
     # fig1.set_figwidth(12)
@@ -116,7 +144,7 @@ if __name__ == '__main__':
     # ax1.get_yaxis().set_ticks(np.arange(0, len(species)))
     # ax1.get_yaxis().set_ticklabels(averages_norm.columns, rotation=0)
     # ax1.get_xaxis().set_ticks(np.arange(0, averages_norm.shape[0]))
-    #
+
     # ax1.get_xaxis().set_ticklabels(averages_norm.index, rotation=90)
     # plt.title('Feature vector (normalised by feature)')
     # fig1.tight_layout(pad=3)
@@ -124,17 +152,6 @@ if __name__ == '__main__':
     # # clustered heatmap of  fv
     # fig = sns.clustermap(averages_norm, figsize=(20, 10), col_cluster=False, method='single', yticklabels=True)
     # plt.savefig(os.path.join(rootdir, "cluster_map_fv_{0}.png".format(datetime.date.today())))
-
-    # # # total rest
-    # # ax = sns.catplot(data=feature_v, y='species_six', x='total_rest', kind="swarm")
-    # fig = plt.figure(figsize=(5, 12))
-    # ax = sns.boxplot(data=feature_v, y='species_six', x='total_rest', hue='tribe')
-    # ax = sns.swarmplot(data=feature_v, y='species_six', x='total_rest', color=".2")
-    # ax.set(xlabel='Average total rest per day', ylabel='Species')
-    # ax.set(xlim=(0, 24))
-    # plt.tight_layout()
-    # ax = plt.axvline(12, ls='--', color='k')
-    # plt.savefig(os.path.join(rootdir, "total_rest_{0}.png".format(datetime.date.today())))
 
     ### summary statistics ###
     # N per species histogram
@@ -205,21 +222,6 @@ if __name__ == '__main__':
     plt.close()
 
     #### Correlations for average behaviour vs average species ecological measures
-    # combine behavioural data with the Ronco ecological data
-    ave_rest = averages.loc[['total_rest', 'rest_mean_night', 'rest_mean_day', 'fish_length_mm', 'cluster_pattern'],
-               :].transpose().reset_index().rename(
-        columns={'index': 'sp'})
-    ave_rest['night-day_dif_rest'] = ave_rest.rest_mean_night - ave_rest.rest_mean_day
-    sp_in_both = set(ave_rest.sp) & set(ronco_data.sp)
-    missing_in_ronco = set(ave_rest.sp) - set(sp_in_both)
-    feature_v_eco = pd.merge(ronco_data, ave_rest, how='left', on='sp')
-    feature_v_eco = feature_v_eco.drop(feature_v_eco.loc[(pd.isnull(feature_v_eco.loc[:, 'total_rest']))].index).reset_index(drop=True)
-    feature_v_eco = feature_v_eco.rename(columns={'sp': 'six_letter_name_Ronco'})
-    feature_v_eco = pd.merge(feature_v_eco, cichlid_meta, how='left', on='six_letter_name_Ronco')
-
-    # regression between features
-    fv_eco_sp_ave = feature_v_eco.groupby(['six_letter_name_Ronco', 'cluster_pattern']).mean().reset_index('cluster_pattern')
-
     x = feature_v_mean.total_rest
     y = feature_v_mean.fish_length_mm
     col_vector = cichlid_meta.set_index('six_letter_name_Ronco').loc[

@@ -8,8 +8,8 @@ import datetime as dt
 
 
 def run_rfft(rootdir, fish_tracks):
-    """ Runs fast fourier transform on real value input. Need the ts in %Y-%m-%d %H:%M:%S format and "speed_mm" values.
-    Computes the sample rate from the difference between ts[0] and ts[1].
+    """ Runs fast fourier transform on real value input. Need the ts in %Y-%m-%d %H:%M:%S format (as str or in dt
+    format) and "speed_mm" values. Computes the sample rate from the difference between ts[0] and ts[1].
 
     :param rootdir:
     :param fish_tracks_bin:

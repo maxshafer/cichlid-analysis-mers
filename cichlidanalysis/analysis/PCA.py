@@ -1,5 +1,6 @@
 from tkinter.filedialog import askdirectory
 from tkinter import *
+import os
 
 import pandas as pd
 import numpy as np
@@ -45,17 +46,17 @@ def reconstruct_pc(data_input, pca, mu, pc_n):
     f, ax = plt.subplots(figsize=(10, 5))
     plt.plot(reconstructed.iloc[:, 0:5:])
 
-    species = 'Tylpol'
-    f, ax = plt.subplots(figsize=(10, 5))
-    plt.plot(reconstructed.loc[:, species])
-    plt.plot(data_input.loc[:, species])
-    plt.close('all')
+    # species = 'Astbur'
+    # f, ax = plt.subplots(figsize=(10, 5))
+    # plt.plot(reconstructed.loc[:, species])
+    # plt.plot(data_input.loc[:, species])
+    # plt.close('all')
 
 
 def run_pca(rootdir, data_input):
 
-    data_input = sp_metrics_sub
-    data_input = aves_ave_spd
+    # data_input = sp_metrics_sub
+    # data_input = aves_ave_spd
     # Standardizing the features
     n_com = 2
     x = StandardScaler().fit_transform(data_input.values)
@@ -77,6 +78,8 @@ def run_pca(rootdir, data_input):
     reconstructed = pd.DataFrame(data=Xhat, columns=data_input.columns)
     f, ax = plt.subplots(figsize=(10, 5))
     plt.plot(reconstructed)
+    plt.savefig(os.path.join(rootdir, "reconstructed.png"), dpi=1000)
+    plt.close()
 
     # plot reconstruction of pc 'n'
     reconstruct_pc(data_input, pca, mu, 1)
@@ -85,12 +88,18 @@ def run_pca(rootdir, data_input):
     loadings = plot_loadings(rootdir, pca, labels, data_input)
     f, ax = plt.subplots(figsize=(10, 5))
     plt.plot(reconstructed.loc[:, 'Astbur'])
+    plt.savefig(os.path.join(rootdir, "reconstructed_Astbur.png"), dpi=1000)
+    plt.close()
 
     # plot variance explained
     f, ax = plt.subplots(figsize=(10, 5))
     plt.plot(principalDf)
+    plt.savefig(os.path.join(rootdir, "principalDf.png"), dpi=1000)
+    plt.close()
     f, ax = plt.subplots(figsize=(10, 5))
     plt.plot(np.cumsum(pca.explained_variance_))
+    plt.savefig(os.path.join(rootdir, "explained_variance_.png"), dpi=1000)
+    plt.close()
 
     # plot 2D PC space with labeled points
     day = set(np.where(data_input.index.to_series().reset_index(drop=True) <'19:00')[0]) & set(np.where(aves_ave_spd.index.to_series().reset_index(drop=True) >= '07:00')[0])
@@ -119,6 +128,7 @@ def run_pca(rootdir, data_input):
         ax.scatter(finalDf.loc[indicesToKeep, 'pc1'], finalDf.loc[indicesToKeep, 'pc2'], c=cmap(time_n/len(timepoints)), s=50)
     ax.legend(timepoints)
     ax.grid()
+    plt.savefig(os.path.join(rootdir, "PCA.png"), dpi=1000)
     return pca, labels, loadings
 
 
@@ -142,10 +152,27 @@ if __name__ == '__main__':
 
     # ### generate averages of the averages ###
     aves_ave_spd = feature_daily(averages_spd)
+    aves_ave_vp = feature_daily(averages_vp)
     aves_ave_rest = feature_daily(averages_rest)
     aves_ave_move = feature_daily(averages_move)
 
     aves_ave_spd.columns = species_sixes
+    aves_ave_vp.columns = species_sixes
+    aves_ave_rest.columns = species_sixes
+    aves_ave_move.columns = species_sixes
+
+    # reshape fish_tracks_bin by making FishID the rows,
+    # Columns:
+    #   speed_mm for each 30min bin
+    #   rest for each 30min bin
+    #   vertical position for each 30min bin
+    #    'body_PC1', 'body_PC2',
+    #        'LPJ_PC1', 'LPJ_PC2',  'oral_PC1', 'oral_PC2', 'd15N', 'd13C',
+    #         'size_male', 'size_female', 'habitat', 'diet'
+    #   'fish_length_mm'
+
+
+
 
     spd_df = aves_ave_spd.T.reset_index().rename(columns={'index': 'six_letter_name_Ronco'})
 
