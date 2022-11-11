@@ -71,36 +71,43 @@ def fish_bin_pca_df(fish_tracks_bin, ronco_data):
     return pca_df, targets
 
 
-def fish_fv_pca_df(feature_v):
-    pca_df_fv = feature_v.drop(columns=['parental_care', 'sociality', 'distribution', 'comments/links', 'size_male',
+def fish_fv_pca_df(feature_v, ronco_data):
+    fv = feature_v.drop(columns=['parental_care', 'sociality', 'distribution', 'comments/links', 'size_male',
                                         'size_female', 'diet_contents', 'breeding', 'mouth_brooder', 'monogomous',
                                         'habitat_details', 'genome', 'tribe', 'notes', 'species_six', 'fish_n',
-                                        'species_true', 'species_our_names'])
-    pca_df_fv, df_key = replace_cat_with_nums(pca_df_fv, col_names=['habitat', 'diet', 'cluster', 'cluster_pattern'])
+                                        'species_true', 'species_our_names', 'cluster'])
+
+    combined = fv.merge(ronco_data.rename(columns={"sp": "six_letter_name_Ronco"}), 'left', on='six_letter_name_Ronco')
+    ronco_to_fish = combined.groupby(['fish_ID'], as_index=False).agg(
+        {'six_letter_name_Ronco': 'first', 'habitat': 'first',
+         'diet': 'first', 'body_PC1': 'mean', 'body_PC2': 'mean', 'LPJ_PC1': 'mean', 'LPJ_PC2': 'mean',
+         'oral_PC1': 'mean', 'oral_PC2': 'mean', 'd15N': 'mean', 'd13C': 'mean'})
+    ronco_to_fish = ronco_to_fish.drop(columns=['six_letter_name_Ronco', 'habitat', 'diet'])
+    pca_df_fv = fv.merge(ronco_to_fish, 'left', on='fish_ID')
+
+    pca_df_fv, df_key = replace_cat_with_nums(pca_df_fv, col_names=['habitat', 'diet', 'cluster_pattern'])
     pca_df_fv = pca_df_fv.dropna()
-    # drop movement cols
+    # drop undesired cols pf move and bout
     pca_df_fv = pca_df_fv.drop(columns=pca_df_fv.columns[pca_df_fv.columns.str.contains('move')])
-    # bouts
     pca_df_fv = pca_df_fv.drop(columns=pca_df_fv.columns[pca_df_fv.columns.str.contains('bout')])
 
     # for species
     pca_df_fv_sp = pca_df_fv.groupby(by='six_letter_name_Ronco').mean()
 
     targets = pca_df_fv.six_letter_name_Ronco
-    all_targets = pca_df_fv.loc[:, ['six_letter_name_Ronco', 'habitat', 'diet', 'cluster', 'cluster_pattern']]
+    all_targets = pca_df_fv.loc[:, ['six_letter_name_Ronco', 'habitat', 'diet', 'cluster_pattern']]
     pca_df_fv = pca_df_fv.drop(columns=['six_letter_name_Ronco']).set_index('fish_ID')
     return pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp
 
 
-def run_pca(rootdir, data_input):
+def run_pca(rootdir, data_input, n_com = 10):
 
-    # check there's no nans
+    # check that there's no nans
     if np.max(np.max(data_input.isnull())):
         print('Some nulls in the data, cannot run')
         return
 
-    # Standardizing the features
-    n_com = 6
+    # Standardizing the features -> is therefore covariance (if not scaled would be correlation)
     x = StandardScaler().fit_transform(data_input.values)
     mu = np.mean(data_input, axis=0)
 
@@ -110,6 +117,7 @@ def run_pca(rootdir, data_input):
     labels = []
     for i in range(n_com):
         labels.append('pc{}'.format(i + 1))
+
     principalDf = pd.DataFrame(data=principalComponents, columns=labels)
     finalDf = pd.concat([principalDf, data_input.index.to_series().reset_index(drop=True)], axis=1)
 
@@ -181,16 +189,19 @@ if __name__ == '__main__':
     diel_patterns = load_diel_pattern(rootdir, suffix="*dp.csv")
 
     pca_df, targets = fish_bin_pca_df(fish_tracks_bin, ronco_data)
-    pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v)
+    pca_df_fv, targets, all_targets, df_key, pca_df_fv_sp = fish_fv_pca_df(feature_v, ronco_data)
 
-    pca, labels, loadings, principalDf, finalDf, principalComponents = run_pca(rootdir, pca_df_fv_sp)
+    run_pca_df = pca_df_fv_sp
+    pca, labels, loadings, principalDf, finalDf, principalComponents = run_pca(rootdir, run_pca_df)
+
+    finalDf['target'] = run_pca_df.loc[:, 'cluster_pattern'].reset_index(drop=True)
+    finalDf['species'] = run_pca_df.index.to_list()
 
     plot_variance_explained(rootdir, principalDf, pca)
-    finalDf['species'] = pca_df_fv_sp.loc[:, 'cluster_pattern'].reset_index(drop=True)
-    plot_2D_pc_space(rootdir, finalDf)
+    plot_2D_pc_space(rootdir, finalDf, target='target')
     plot_3D_pc_space(rootdir, finalDf)
     plot_factor_loading_matrix(rootdir, loadings, top_pc=3)
-    pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), pca_df_fv_sp.columns)
+    pc_loadings_on_2D(rootdir, principalComponents[:, 0:2], np.transpose(pca.components_[0:2, :]), loadings, top_n=3)
 
     loadings = loadings.reset_index().rename(columns={'index': 'features'})
     pca_df = loadings.merge(diel_patterns, on='features')

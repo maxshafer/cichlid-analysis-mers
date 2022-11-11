@@ -118,6 +118,7 @@ if __name__ == '__main__':
                :].transpose().reset_index().rename(
         columns={'index': 'sp'})
     ave_rest['night-day_dif_rest'] = ave_rest.rest_mean_night - ave_rest.rest_mean_day
+    ave_rest['day-night_dif_rest'] = ave_rest.rest_mean_day - ave_rest.rest_mean_night
     sp_in_both = set(ave_rest.sp) & set(ronco_data.sp)
     missing_in_ronco = set(ave_rest.sp) - set(sp_in_both)
     feature_v_eco = pd.merge(ronco_data, ave_rest, how='left', on='sp')
@@ -127,6 +128,7 @@ if __name__ == '__main__':
 
     # regression between features
     fv_eco_sp_ave = feature_v_eco.groupby(['six_letter_name_Ronco', 'cluster_pattern']).mean().reset_index('cluster_pattern')
+
 
     # ## heatmap of fv
     # averages_vals = averages.drop(averages[averages.isna().any(axis=1)].index)
