@@ -24,4 +24,4 @@ run_combine_fish.als (creates combined data and bins data for that species, gene
 You can move the _als_30m.csv and _als_fv2.csv files to a folder which has these files for all species. This will allow you to run:
 run_binned.py (for plots and analysis across fish species using the _als_30m.csv data)
 and
-feature_vector_v2.py (for plots and analysis across fish species using the _als_fv2.csv data)
+run_feature_vector.py (for plots and analysis across fish species using the _als_fv2.csv data)
