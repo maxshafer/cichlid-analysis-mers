@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 from tkinter.filedialog import askdirectory, askopenfilename
 from tkinter import Tk
@@ -8,12 +10,15 @@ def get_meta_paths():
 
     :return:
     """
+    file_path = os.path.realpath(__file__)
+    code_path = os.path.dirname(os.path.dirname(os.path.dirname(file_path)))
+
     # paths for Ronco 2021 data
-    ronco_data_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/Fig2_data.csv"
+    ronco_data_path = os.path.join(code_path, "example_data", "Fig2_data.csv")
     # https://www.nature.com/articles/s41586-020-2930-4#Sec30
 
     # path for cichlid meta
-    cichlid_meta_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/cichlid_meta_20220428.csv"
+    cichlid_meta_path = os.path.join(code_path, "example_data", "cichlid_meta_20220428.csv")
 
     # voucher_key_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/01_specimen_voucher_key.csv"
     # pigmentation_pattern_path = "/Volumes/BZ/RG Schier/Scientific Data/Cichlid-genomes/06_scores_pigmentation_pattern.csv"

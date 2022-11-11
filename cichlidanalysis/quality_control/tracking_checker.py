@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 from cichlidanalysis.io.meta import load_yaml, extract_meta
 from cichlidanalysis.io.tracks import extract_tracks_from_fld, get_file_paths_from_nums
-from cichlidanalysis.analysis.processing import int_nan_streches, remove_high_spd_xy, smooth_speed
+from cichlidanalysis.analysis.processing import interpolate_nan_streches, remove_high_spd_xy, smooth_speed
 
 
 def tracker_checker_inputs(video_path_i):
@@ -102,8 +102,8 @@ def tracker_checker_inputs(video_path_i):
     roi_n = rois["roi_" + fish_data['roi'][1]]
     # interpolate between NaN streches
     try:
-        x_n = int_nan_streches(track_single_i[:, 1])
-        y_n = int_nan_streches(track_single_i[:, 2])
+        x_n = interpolate_nan_streches(track_single_i[:, 1])
+        y_n = interpolate_nan_streches(track_single_i[:, 2])
     except:
         x_n = track_single_i[:, 1]
         y_n = track_single_i[:, 2]

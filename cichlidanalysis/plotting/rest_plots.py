@@ -103,7 +103,7 @@ def plot_rest_mstd(rootdir, fish_tracks_ds, change_times_d, ds_unit):
         plt.figure(figsize=(10, 4))
         ax = sns.lineplot(x=rest_piv.index, y=average + stdv, color='lightgrey')
         sns.lineplot(x=rest_piv.index, y=average - stdv, color='lightgrey')
-        sns.lineplot(x=rest_piv.index, y=average)
+        sns.lineplot(x=rest_piv.index, y=average, color='darkorchid')
         ax.xaxis.set_major_locator(MultipleLocator(0.5))
         ax.xaxis.set_major_formatter(date_form)
         fill_plot_ts(ax, change_times_d, fish_tracks_ds[fish_tracks_ds.FishID == fish_IDs[0]].ts)

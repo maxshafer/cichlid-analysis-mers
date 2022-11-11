@@ -29,7 +29,7 @@ def neg_values(array):
     return new_array
 
 
-def int_nan_streches(data_input):
+def interpolate_nan_streches(data_input):
     """ finds nan streches and interporlates the strech, pads start as continuous"""
     data = copy.copy(data_input)
 
@@ -245,7 +245,7 @@ def ave_daily_fish(fish_tracks_30m, fish, measure):
 
 
 def species_feature_fish_daily_ave(fish_tracks_ds_i, species_name, feature):
-    """ Gets fish of species "species_name", finds the daily average of  the given feature
+    """ Gets fish of species "species_name", finds the daily average of the given feature
 
     :param fish_tracks_ds_i:
     :param species_name:

@@ -13,8 +13,6 @@ import seaborn as sns
 from cichlidanalysis.analysis.processing import add_col, standardise_cols
 from cichlidanalysis.plotting.speed_plots import fill_plot_ts
 
-# functions for clustering speed mean + std data into different behavioural states
-
 
 def kmeans_cluster(input_pd_df, resample_unit_i, cluster_number=15):
     """ Clusters behaviour by z-scored values of all input columns and uses kmeans cluster on up to cluster_number

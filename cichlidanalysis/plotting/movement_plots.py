@@ -107,7 +107,7 @@ def plot_movement_30m_mstd(rootdir, fish_tracks_30m, change_times_d, move_thresh
         plt.figure(figsize=(10, 4))
         ax = sns.lineplot(x=sp_spd.index, y=average + stdv, color='lightgrey')
         sns.lineplot(x=sp_spd.index, y=average - stdv, color='lightgrey')
-        sns.lineplot(x=sp_spd.index, y=average)
+        sns.lineplot(x=sp_spd.index, y=average, color='palevioletred')
         ax.xaxis.set_major_locator(MultipleLocator(0.5))
         ax.xaxis.set_major_formatter(date_form)
         fill_plot_ts(ax, change_times_d, fish_tracks_30m[fish_tracks_30m.FishID == fish_IDs[0]].ts)

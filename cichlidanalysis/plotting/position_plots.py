@@ -7,7 +7,6 @@ import datetime as dt
 
 from cichlidanalysis.utils.species_names import add_species_from_FishID
 from cichlidanalysis.io.meta import check_fish_species
-from cichlidanalysis.utils.species_names import six_letter_sp_name
 
 
 def spd_vs_y(meta, fish_tracks_30m, fish_IDs, rootdir):
@@ -219,14 +218,13 @@ def plot_combined_v_position(rootdir, fish_tracks_ds, fish_diel_patterns):
     :param fish_diel_patterns:
     :return:
     """
-    fish_tracks_dn = fish_tracks_ds.groupby(['daynight', 'FishID', 'species']).mean().reset_index()
-    fish_tracks_dn['species_six'] = six_letter_sp_name(fish_tracks_dn.species)
+    fish_tracks_dn = fish_tracks_ds.groupby(['daynight', 'FishID', 'species', 'cluster_pattern']).mean().reset_index()
 
-    # dn_index = fish_tracks_dn.groupby(by=['species_six', 'daynight']).median().reset_index()
-    # sorted_index = dn_index.drop(dn_index[dn_index.daynight == 'd'].index).set_index('species_six').sort_values(by='vertical_pos').index
-    sorted_index = fish_diel_patterns.groupby('species_six').median().sort_values(by='day_night_dif').index
+    # dn_index = fish_tracks_dn.groupby(by=['species', 'daynight']).median().reset_index()
+    # sorted_index = dn_index.drop(dn_index[dn_index.daynight == 'd'].index).set_index('species').sort_values(by='vertical_pos').index
+    sorted_index = fish_diel_patterns.groupby('species').median().sort_values(by='day_night_dif').index
 
-    grped_bplot = sns.catplot(x='species_six',
+    grped_bplot = sns.catplot(x='species',
                               y='vertical_pos',
                               kind="box",
                               height=6,
@@ -240,7 +238,7 @@ def plot_combined_v_position(rootdir, fish_tracks_ds, fish_diel_patterns):
                               palette="bwr_r")
 
     cmap = plt.cm.get_cmap('bwr_r')
-    grped_bplot = sns.stripplot(x='species_six',
+    grped_bplot = sns.stripplot(x='species',
                                 y='vertical_pos',
                                 hue='daynight',
                                 data=fish_tracks_dn,
@@ -254,35 +252,34 @@ def plot_combined_v_position(rootdir, fish_tracks_ds, fish_diel_patterns):
     plt.tight_layout()
     plt.savefig(os.path.join(rootdir, "species_vertical_pos_30min_box_strip_{0}.png".format(dt.date.today())))
 
-    fish_tracks_dt = fish_tracks_ds.groupby(['daytime', 'FishID', 'species']).mean().reset_index()
-    fish_tracks_dt['species_six'] = six_letter_sp_name(fish_tracks_dt.species)
-    cmap_f = plt.cm.get_cmap('flare')
-    grped_bplot = sns.catplot(x='species_six',
-                              y='vertical_pos',
-                              kind="box",
-                              height=6,
-                              aspect=4,
-                              legend=False,
-                              hue='daytime',
-                              boxprops=dict(alpha=0.5),
-                              fliersize=1,
-                              order=sorted_index,
-                              data=fish_tracks_dt,
-                              palette=[cmap_f(20), cmap(0), cmap(1000)])
+    # for subset of the species that fall into a certain cluster pattern
+    for key in ['nocturnal', 'diurnal', 'crepuscular', 'undefined']:
+        grped_bplot = sns.catplot(x='species',
+                                  y='vertical_pos',
+                                  kind="box",
+                                  height=6,
+                                  aspect=4,
+                                  legend=False,
+                                  hue='daynight',
+                                  boxprops=dict(alpha=0.7),
+                                  fliersize=0,
+                                  data=fish_tracks_dn.loc[fish_tracks_dn.cluster_pattern == key, :],
+                                  palette="bwr_r")
 
-    grped_bplot = sns.stripplot(x='species_six',
-                                y='vertical_pos',
-                                hue='daytime',
-                                data=fish_tracks_dt,
-                                order=sorted_index,
-                                palette=[cmap_f(20), cmap(0), cmap(1000)],
-                                size=3,
-                                dodge=True)
-    grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
-    grped_bplot.set(ylabel='Vertical position', xlabel='Species')
-    grped_bplot.set(ylim=[0, 1])
-    plt.tight_layout()
-    plt.savefig(os.path.join(rootdir, "species_vertical_pos_30min_box_strip_day-night-cres_{0}.png".format(dt.date.today())))
+        cmap = plt.cm.get_cmap('bwr_r')
+        grped_bplot = sns.stripplot(x='species',
+                                    y='vertical_pos',
+                                    hue='daynight',
+                                    data=fish_tracks_dn.loc[fish_tracks_dn.cluster_pattern == key, :],
+                                    palette=[cmap(0), cmap(1000)],
+                                    size=3,
+                                    dodge=True)
+        # grped_bplot.set_xticklabels(labels=sorted_index, rotation=90)
+        grped_bplot.set(ylabel='Vertical position', xlabel='Species')
+        grped_bplot.set(ylim=[0, 1])
+        plt.tight_layout()
+        plt.savefig(os.path.join(rootdir, "species_vertical_pos_30min_box_strip_{0}.png".format(key)))
+    return
 
 
 def plot_v_position_hists(rootdir, vp_hist):

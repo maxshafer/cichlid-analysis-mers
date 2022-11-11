@@ -12,6 +12,7 @@ import datetime as dt
 from datetime import timedelta
 
 from cichlidanalysis.plotting.single_plots import fill_plot_ts
+from cichlidanalysis.utils.timings import load_timings
 
 
 def plot_ridge_plots(fish_tracks_bin, change_times_datetime, rootdir, sp_metrics, tribe_col):
@@ -26,28 +27,28 @@ def plot_ridge_plots(fish_tracks_bin, change_times_datetime, rootdir, sp_metrics
     """
     # daily
     feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
-    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
-                                  sp_metrics, tribe_col)
+    plot_ridge_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                    sp_metrics, tribe_col)
     feature, ymax, span_max, ylabeling = 'movement', 1, 0.8, 'Movement'
-    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
-                                  sp_metrics, tribe_col)
+    plot_ridge_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                    sp_metrics, tribe_col)
     feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
-    plot_spd_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
-                                  sp_metrics, tribe_col)
+    plot_ridge_30min_combined_daily(fish_tracks_bin, feature, ymax, span_max, ylabeling, change_times_datetime, rootdir,
+                                    sp_metrics, tribe_col)
 
     # weekly
     feature, ymax, span_max, ylabeling = 'vertical_pos', 1, 0.8, 'Vertical position'
-    averages_vp, date_time_obj_vp, sp_vp_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
-                                                                            ylabeling, change_times_datetime, rootdir)
+    averages_vp, date_time_obj_vp, sp_vp_combined = plot_ridge_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                              ylabeling, change_times_datetime, rootdir)
     feature, ymax, span_max, ylabeling = 'speed_mm', 95, 80, 'Speed mm/s'
-    averages_spd, _, sp_spd_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
-                                                               ylabeling, change_times_datetime, rootdir)
+    averages_spd, _, sp_spd_combined = plot_ridge_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                 ylabeling, change_times_datetime, rootdir)
     feature, ymax, span_max, ylabeling = 'rest', 1, 0.8, 'Rest'
-    averages_rest, _, sp_rest_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
-                                                                 ylabeling, change_times_datetime, rootdir)
+    averages_rest, _, sp_rest_combined = plot_ridge_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                   ylabeling, change_times_datetime, rootdir)
     feature, ymax, span_max, ylabeling = 'movement', 1, 0.8, 'Movement'
-    averages_move, _, sp_move_combined = plot_spd_30min_combined(fish_tracks_bin, feature, ymax, span_max,
-                                                                 ylabeling, change_times_datetime, rootdir)
+    averages_move, _, sp_move_combined = plot_ridge_30min_combined(fish_tracks_bin, feature, ymax, span_max,
+                                                                   ylabeling, change_times_datetime, rootdir)
 
     return averages_vp, date_time_obj_vp, sp_vp_combined, averages_spd, sp_spd_combined, averages_rest, \
            sp_rest_combined, averages_move, sp_move_combined
@@ -155,7 +156,45 @@ def plot_speed_30m_mstd(rootdir, fish_tracks_30m, change_times_d):
         plt.close()
 
 
-def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling, change_times_datetime_i, rootdir):
+def plot_speed_30m_peaks(rootdir, fish_spd, fish_peaks_dawn, fish_peaks_dusk):
+    """ Plot individual fish speed with dawn/dusk peaks """
+
+    # fps, tv_ns, tv_sec, tv_24h_sec, num_days, tv_s_type, change_times_s, change_times_ns, change_times_h, \
+    # day_ns, day_s, change_times_d, change_times_m, change_times_datetime, change_times_unit \
+    #     = load_timings(len(fish_spd))
+
+    date_form = DateFormatter("%H")
+    date_time_obj = []
+    for i in fish_spd.reset_index().ts:
+        date_time_obj.append(dt.datetime.strptime(i, '%Y-%m-%d %H:%M:%S'))
+    date_time_df = pd.DataFrame(date_time_obj, columns=['ts'])
+
+    plt.figure(figsize=(10, 4))
+    ax = sns.lineplot(x=fish_spd.index, y=fish_spd)
+    ax.xaxis.set_major_locator(MultipleLocator(24))
+    ax.xaxis.set_major_formatter(date_form)
+    # fill_plot_ts(ax, change_times_d, date_time_df)
+    days = 6
+    for day in np.arange(0, days):
+        ax.axvline(6 * 2 + 48*day, c='indianred')
+        ax.axvline(8 * 2 + 48*day, c='indianred')
+        ax.axvline(18 * 2 + 48*day, c='indianred')
+        ax.axvline(20 * 2 + 48*day, c='indianred')
+
+    ax.plot(fish_peaks_dawn[1, :], fish_peaks_dawn[2, :], "o", color="r")
+    ax.plot(fish_peaks_dusk[1, :], fish_peaks_dusk[2, :], "o", color="r")
+    ax.set_ylim([0, 100])
+    ax.set_xlim([0, 6*48])
+    plt.xlabel("Time (h)")
+    plt.ylabel("Speed (mm/s)")
+    plt.title(fish_spd.name)
+    plt.tight_layout()
+    plt.savefig(os.path.join(rootdir, "speed_30min_peaks_{0}.png".format(fish_spd.name)))
+    plt.close()
+    return
+
+
+def plot_ridge_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling, change_times_datetime_i, rootdir):
     """  Plot ridge plot of each species from a down sampled fish_tracks pandas structure
 
     :param fish_tracks_ds_i:
@@ -265,8 +304,8 @@ def plot_spd_30min_combined(fish_tracks_ds_i, feature, ymax, span_max, ylabeling
     return aves_feature, date_time_obj, sp_feature_combined
 
 
-def plot_spd_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, ylabeling, change_times_datetime_i,
-                                  rootdir, sp_metrics, tribe_col):
+def plot_ridge_30min_combined_daily(fish_tracks_ds_i, feature, ymax, span_max, ylabeling, change_times_datetime_i,
+                                    rootdir, sp_metrics, tribe_col):
     """  Plot ridge plot of each species from a down sampled fish_tracks pandas structure
 
     :param fish_tracks_ds_i:

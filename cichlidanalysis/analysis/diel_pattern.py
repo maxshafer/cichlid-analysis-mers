@@ -298,7 +298,8 @@ def day_night_ratio_species(averages):
 
 def replace_crep_peaks(fish_peaks, fish_feature, fish_num, epoques):
     """for crepuscular peaks, this finds if the first row (intra day 30min bin) is == 0, which means it didn't have a
-    peak and replaces it's peak height with the value of the mode of the first row. It then corrects the peak amplitude.
+    peak and replaces its peak height with the day/night mean (the negative value of the last row of the fish peaks).
+     It then corrects the peak amplitude to 0 (as there's no peak).
 
     :param fish_peaks:
     :param fish_feature:
@@ -307,13 +308,12 @@ def replace_crep_peaks(fish_peaks, fish_feature, fish_num, epoques):
     """
     # check if any of the peaks need replacing
     if (fish_peaks[0, :] == 0).any():
-        common_peak = stats.mode(fish_peaks[0, :])[0][0]
         no_peaks = np.where(fish_peaks[0, :] == 0)[0]
         for no_peak in no_peaks:
             # add in peak height
-            fish_peaks[2, no_peak] = fish_feature.iloc[int(epoques[no_peak] + common_peak), fish_num]
+            fish_peaks[2, no_peak] = np.abs(fish_peaks[3, no_peak])
             # correct peak amplitude
-            fish_peaks[3, no_peak] = fish_peaks[3, no_peak] + fish_peaks[2, no_peak]
+            fish_peaks[3, no_peak] = 0
     return fish_peaks
 
 

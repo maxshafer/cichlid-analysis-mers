@@ -43,7 +43,7 @@ def load_als_files(folder, suffix="*als.csv"):
     return data
 
 
-def load_ds_als_files(folder, suffix="*als.csv"):
+def load_bin_als_files(folder, suffix="*als.csv"):
     os.chdir(folder)
     files = glob.glob(suffix)
     files.sort()
@@ -65,37 +65,4 @@ def load_ds_als_files(folder, suffix="*als.csv"):
     data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
 
     print("All binned als.csv files loaded")
-    return data
-
-
-def load_vertical_rest_als_files(folder, suffix="*als_vertical_pos_hist_rest-non-rest.csv"):
-    """ load *als_vertical_pos_hist_rest-non-rest.csv files and add species name
-
-    :param folder:
-    :param suffix:
-    :return:
-    """
-    os.chdir(folder)
-    files = glob.glob(suffix)
-    files.sort()
-    first_done = 0
-
-    for file in files:
-        if first_done:
-            data_s = pd.read_csv(os.path.join(folder, file), sep=',')
-            print("loaded file {}".format(file))
-            data_s['species'] = file[0:-40]
-            data = pd.concat([data, data_s])
-
-        else:
-            # initiate data frames for each of the species
-            data = pd.read_csv(os.path.join(folder, file), sep=',')
-            print("loaded file {}".format(file))
-            data['species'] = file[0:-40]
-            first_done = 1
-
-    # workaround to deal with Removed index_col=0, as is giving Type error ufunc "isnan'
-    data.drop(data.filter(regex="Unname"), axis=1, inplace=True)
-    data = data.reset_index(drop=True)
-    print("All binned als_vertical_pos_hist_rest-non-rest.csv files loaded")
     return data
