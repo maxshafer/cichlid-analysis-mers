@@ -1,13 +1,15 @@
 import copy
 import os
 
+import sys
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from cichlidanalysis.io.meta import load_yaml
 from cichlidanalysis.io.tracks import extract_tracks_from_fld, adjust_old_time_ns
-from cichlidanalysis.utils.timings import output_timings, get_start_time_of_video, set_time_vector
+from cichlidanalysis.utils.timings import get_start_time_of_video, set_time_vector
 from cichlidanalysis.analysis.processing import interpolate_nan_streches, remove_high_spd_xy, smooth_speed, neg_values
 from cichlidanalysis.plotting.single_plots import filled_plot, plot_hist_2, image_minmax, sec_axis_h
 from cichlidanalysis.io.get_file_folder_paths import select_dir_path, select_top_folder_path
@@ -346,6 +348,16 @@ def full_analysis(rootdir):
 
 
 if __name__ == '__main__':
+    recordings_in_bz = 'm'
+    while recordings_in_bz not in {'y', 'n'}:
+        recordings_in_bz = input("Where recordings done in the New BZ (8am-10pm lighs) (y) or not (n)?: \n")
+
+    if recordings_in_bz == 'y':
+        from cichlidanalysis.utils.timings import output_timings_bz as output_timings
+
+    if recordings_in_bz == 'n':
+        from cichlidanalysis.utils.timings import output_timings as output_timings
+
     analyse_multiple_folders = 'm'
     while analyse_multiple_folders not in {'y', 'n'}:
         analyse_multiple_folders = input("Analyse multiple folders (ROIs) (y) or only one ROI (n)?: \n")
@@ -357,14 +369,23 @@ if __name__ == '__main__':
         topdir = select_top_folder_path()
         list_subfolders_with_paths = [f.path for f in os.scandir(topdir) if f.is_dir()]
 
-        for camera_folder in list_subfolders_with_paths:
-            list_subsubfolders_with_paths = [f.path for f in os.scandir(camera_folder) if f.is_dir()]
-            # for skipping folders with lights
-            list_subsubfolders_with_paths_without_lights = []
-            for i in list_subsubfolders_with_paths:
+        if "_c" in topdir:
+            list_subfolders_with_paths_without_lights = []
+            for i in list_subfolders_with_paths:
                 if i[-3:] != '_sl':
-                    list_subsubfolders_with_paths_without_lights.append(i)
-
-            for roi_folder in list_subsubfolders_with_paths_without_lights:
+                    list_subfolders_with_paths_without_lights.append(i)
+            for roi_folder in list_subfolders_with_paths_without_lights:
                 if roi_folder.find('EXCLUDE') == -1:
                     full_analysis(roi_folder)
+        else:
+            for camera_folder in list_subfolders_with_paths:
+                list_subsubfolders_with_paths = [f.path for f in os.scandir(camera_folder) if f.is_dir()]
+                # for skipping folders with lights
+                list_subsubfolders_with_paths_without_lights = []
+                for i in list_subsubfolders_with_paths:
+                    if i[-3:] != '_sl':
+                        list_subsubfolders_with_paths_without_lights.append(i)
+
+                for roi_folder in list_subsubfolders_with_paths_without_lights:
+                    if roi_folder.find('EXCLUDE') == -1:
+                        full_analysis(roi_folder)

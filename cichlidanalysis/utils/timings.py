@@ -14,6 +14,32 @@ def infer_tv(fps, filechunk):
     return tv
 
 
+def output_timings_bz():
+    """ set sunrise, day, sunset, night times (ns, s, m, h).
+    Sunrise starts at 7am, Day 7.30am, Sunset 9.30pm, Night 10pm in the new BZ facility
+    Seems to be all in seconds (7 hours x 60 mins x 60 seconds)
+    :return:
+    """
+    change_times_s = [8*60*60, 7*60*60 + 30*60, 21*60*60 + 30*60, 22*60*60]
+    change_times_ns = [i * 10**9 for i in change_times_s]
+    change_times_m = [i / 60 for i in change_times_s]
+    change_times_h = [i / 60 / 60 for i in change_times_s]
+    change_times_d = [i / 24 for i in change_times_h]
+    change_times_unit = [7 * 2, 7.5 * 2, 18.5 * 2, 19 * 2]
+
+    # set day in ns (nanoseconds)
+    day_ns = 24 * 60 * 60 * 10**9
+    day_s = 24 * 60 * 60
+
+    change_times_datetime = [dt.datetime.strptime("1970-1-2 07:00:00", '%Y-%m-%d %H:%M:%S'),
+                             dt.datetime.strptime("1970-1-2 07:30:00", '%Y-%m-%d %H:%M:%S'),
+                             dt.datetime.strptime("1970-1-2 18:30:00", '%Y-%m-%d %H:%M:%S'),
+                             dt.datetime.strptime("1970-1-2 19:00:00", '%Y-%m-%d %H:%M:%S'),
+                             dt.datetime.strptime("1970-1-3 00:00:00", '%Y-%m-%d %H:%M:%S')]
+
+    return change_times_s, change_times_ns, change_times_m, change_times_h, day_ns, day_s, change_times_d, \
+           change_times_datetime, change_times_unit
+
 def output_timings():
     """ set sunrise, day, sunset, night times (ns, s, m, h).
     Sunrise starts at 7am, Day 7.30am, Sunset 6.30pm, Night 7pm
@@ -27,7 +53,7 @@ def output_timings():
     change_times_d = [i / 24 for i in change_times_h]
     change_times_unit = [7 * 2, 7.5 * 2, 18.5 * 2, 19 * 2]
 
-    # set day in ns
+    # set day in ns (nanoseconds)
     day_ns = 24 * 60 * 60 * 10**9
     day_s = 24 * 60 * 60
 

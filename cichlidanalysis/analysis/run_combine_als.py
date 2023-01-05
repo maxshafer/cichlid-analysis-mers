@@ -38,6 +38,16 @@ if __name__ == '__main__':
     TIME_WINDOW_SEC = 60
     FRACTION_THRESH = 0.05
 
+    recordings_in_bz = 'm'
+    while recordings_in_bz not in {'y', 'n'}:
+        recordings_in_bz = input("Where recordings done in the New BZ (8am-10pm lighs) (y) or not (n)?: \n")
+
+    if recordings_in_bz == 'y':
+        from cichlidanalysis.utils.timings import output_timings_bz as output_timings
+
+    if recordings_in_bz == 'n':
+        from cichlidanalysis.utils.timings import output_timings as output_timings
+
     rootdir = select_dir_path()
 
     t0 = time.time()
