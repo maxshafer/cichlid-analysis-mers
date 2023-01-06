@@ -16,7 +16,6 @@ from cichlidanalysis.io.get_file_folder_paths import select_dir_path
 from cichlidanalysis.io.meta import load_meta_files
 from cichlidanalysis.io.als_files import load_als_files
 from cichlidanalysis.io.io_feature_vector import create_fv1, create_fv2
-from cichlidanalysis.utils.timings import load_timings
 from cichlidanalysis.analysis.processing import add_col, threshold_data, remove_cols
 from cichlidanalysis.analysis.bouts import find_bouts_input
 from cichlidanalysis.analysis.behavioural_state import define_rest, plotting_clustering_states
@@ -43,10 +42,10 @@ if __name__ == '__main__':
         recordings_in_bz = input("Where recordings done in the New BZ (8am-10pm lighs) (y) or not (n)?: \n")
 
     if recordings_in_bz == 'y':
-        from cichlidanalysis.utils.timings import output_timings_bz as output_timings
+        from cichlidanalysis.utils.timings import load_timings_bz as load_timings
 
     if recordings_in_bz == 'n':
-        from cichlidanalysis.utils.timings import output_timings as output_timings
+        from cichlidanalysis.utils.timings import load_timings as load_timings
 
     rootdir = select_dir_path()
 
