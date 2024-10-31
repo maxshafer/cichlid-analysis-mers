@@ -49,6 +49,7 @@ def print_roi(roi_path, video_path):
 def define_roi_still(image_input, folder_path):
     roi_num = roi_input()
     image = np.array(image_input, copy=True)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # rr = np.arange(4 * roi_num).reshape(roi_num, 4)
     scalingF = 1
     dict_file = {"cam_ID": "na"}

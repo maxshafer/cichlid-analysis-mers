@@ -6,6 +6,7 @@
 # https://stackoverflow.com/questions/32111705/overlay-a-graph-over-a-video
 
 from tkinter import Tk
+from tkinter.filedialog import askdirectory, askopenfilename
 from tkinter.filedialog import askdirectory
 import os
 import sys
@@ -27,10 +28,7 @@ def tracker_checker_inputs(video_path_i):
     :return:
     """
     vid_folder_path = os.path.split(video_path_i)[0]
-    # The below doesn't work when I have added "_compressed" to the video file name, but now it does for new and old
-    #vid_timestamp = os.path.split(video_path_i)[1][0:-10]
-    vid_timestamp = os.path.split(video_path_i)[1]
-    vid_timestamp = '_'.join(vid_timestamp.split('_')[0:2])
+    vid_timestamp = os.path.split(video_path_i)[1][0:-10]
     cam_folder_path = os.path.split(vid_folder_path)[0]
     vid_folder = os.path.split(vid_folder_path)[1]
 
@@ -347,21 +345,28 @@ def run_tracker_checker():
     :return:
     """
     # define movie number to check
-    video_num = '-1'
-    while int(video_num) == -1:
-        video_num = input("What is the number of the movie you would like to check?:")
+    # video_num = '-1'
+    # while int(video_num) == -1:
+        # video_num = input("What is the number of the movie you would like to check?:")
 
     # Allows a user to select folder138
+    # root = Tk()
+    # video_folder_path = askdirectory(parent=root, title="Select movie file")
+    # root.destroy()
+
     root = Tk()
-    video_folder_path = askdirectory(parent=root, title="Select movie file")
+    # root.withdraw()
+    # root.update()
+    video_path = askopenfilename(title="Select movie file",
+                                 filetypes=(("mp4 files", "*.mp4"), ("all files", "*.*")))
     root.destroy()
 
-    video_path = get_file_paths_from_nums(video_folder_path, video_num, file_format='*.mp4')
-    if len(video_path):
-        video_path = video_path[0]
-    else:
-        print("Couldn't find the movie. Exiting")
-        return
+    # video_path = get_file_paths_from_nums(video_folder_path, video_num, file_format='*.mp4')
+    # if len(video_path):
+        # video_path = video_path[0]
+    # else:
+        # print("Couldn't find the movie. Exiting")
+        # return
 
     next_vid = True
 
@@ -375,7 +380,7 @@ def run_tracker_checker():
         next_movie_n = "_" + str(int(video_path.split('_')[-2]) + 1).zfill(len(video_path.split('_')[-2])) + "_"
 
         os.chdir(os.path.split(video_path)[0])
-        video_files = glob.glob("*.mp4")
+        video_files = glob.glob("*.MP4")
         for vid in video_files:
             if next_movie_n in vid:
                 video_path = os.path.join(os.path.split(video_path)[0], vid)
